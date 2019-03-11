@@ -4,7 +4,7 @@
 
 ----------------------------------------------------------------------------
 
-    Copyright (C) 2005-2018 Marc Penninga.
+    Copyright (C) 2005-2019 Marc Penninga.
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 
 =begin Comment
 
-    The next three tables map the names of weights, widths and shapes
+    The next few tables map the names of weights, widths and shapes
     to NFSS codes. New entries can be added, but the names should be
     all lowercase. Also make sure that the NFSS 'series' attribute
     (the concatenation of weight and width) is unique!
@@ -71,26 +71,105 @@ my %FD_WEIGHT = (
     four            => '4',
     eight           => '8',
     hair            => 'a',
+    hairline        => 'a',
     thin            => 'i',
     ultralight      => 'ul',
     extralight      => 'el',
     light           => 'l',
+    book            => $nfss_book,
+    blond           => $nfss_book,
     regular         => '',
     text            => $nfss_text,
-    book            => $nfss_book,
     medium          => 'mb',
     demi            => 'db',
     demibold        => 'db',
     semibold        => 'sb',
     bold            => 'b',
     extrabold       => 'eb',
-    ultra           => 'ub',
     ultrabold       => 'ub',
     black           => 'k',
     extrablack      => 'ek',
+    ultra           => 'uk',
     ultrablack      => 'uk',
     heavy           => 'h',
+    #ultraheavy      => $TODO
     poster          => 'r',
+    super           => 'r',
+);
+
+=begin Comment
+
+    Some remarks on this table:
+    - Poster and Super are not only very heavy, but also much wider than other fonts
+    - Two, Four and Eight are (experimental) weights that only occur
+        in Fira Sans
+    - Heavy is difficult to place: sometimes it's heavier than Extrabold and Black,
+        sometimes it sits between Bold and Extrabold, sometimes it's lighter than Bold
+    - Medium has two meanings: sometimes it means Semibold, but more often
+        it's just slightly heavier than Regular
+    - Book is usually slightly lighter than Regular, but sometimes (especially in
+        fonts from DTL and FontFont) slightly heavier
+    - There's some confusion between Thin and Ultralight
+    - Semilight fonts are almost non-existent (except for Thesis)
+
+    - HelveticaNeue: Ultralight=25, Thin=35, Light=45, Regular=55, 
+        Medium=65, Bold=75, Heavy=85, Black=95, Extrablack=107
+    - Frutiger: Light < Roman < Bold < Black < UltraBlack
+    - Bodoni: Book < Regular < Bold < Black
+    - Futura: Light < Book < Medium < Heavy < Bold < Extrabold
+    - AkzidenzGrotesk: Light < Regular < Medium < Bold < Extrabold
+    - Univers: Thin=35 < Light=45 < Regular=55 < Bold=65 < Black=75 < Extrablack=85
+    - Optima: Regular < Medium < Demibold < Bold < Black < Extrablack
+    - Franklin Gothic: Book < Medium < Demi < Heavy
+    - Interstate: 
+        Hairline < Thin < Extralight < Light < Regular < Bold < Black < Ultrablack
+    - Thesis: 
+        Extralight < Light < Semilight < Regular < Semibold < Bold < Extrabold < Black
+    - Arnhem: Blond < Normal < Bold < Black
+    - Minion: Regular < Medium < Semibold < Bold
+    - Myriad: Light < Regular < Semibold < Bold < Black
+    - Syntax: Regular < Bold < Black < Ultrablack
+    - FedraSans: Light < Book < Normal < Medium < Bold
+    - Peignot: Light < Demi < Bold
+    - Gotham: Thin < Extralight < Light < Book < Medium < Bold < Black < Ultra
+    - Dax: Thin < Light < Regular < Medium < Bold < Extrabold < Black
+    - Amplitude: Light < Book < Regular < Medium < Bold < Black < Ultra
+    - AvenirNext: Light=35 < Book=45 < Regular=55 < Medium=65 < Heavy=85 < Black=95
+    - Alegreya: Thin < Light < Regular < Medium < Bold < Black
+    - Fira Sans: Thin < Ultralight < Extralight < Light < Book < Regular 
+        < Medium < Semibold < Bold < Extrabold < Heavy < Ultra
+    - Noto: Thin < Extralight < Light < Regular < Medium < Semibold < Bold 
+        < Extrabold < Black
+    - IBM Plex: Thin < Extralight < Light < Regular < Text < Medium < Semibold < Bold
+    - GillSans: Light < Book < Medium < Bold < Heavy < Extrabold < Ultrabold
+    - FF Meta Pro: Normal < Book < Medium < Bold < Black
+    - FF Kievit OT: Thin < Extralight < Light < Regular < Book < Medium < Bold 
+        < Extrabold < Black
+    - Lato: Hairline < Thin < Light < Regular < Medium < Semibold < Bold 
+        < Heavy < Black
+    - DTL Argo: Light < Regular < Bold < Black < Heavy < Ultraheavy
+    - Quadraat Sans Pro: Thin < Extralight < Light < Regular < Demibold < Bold < Black
+
+=end Comment
+
+=cut
+
+my %UNABBREVIATE = (
+    demi    =>  'demibold',
+    hair    =>  'hairline',
+    ultra   =>  'ultrablack',
+);
+
+my %SSUB_WEIGHT = (
+    ul  =>  [ 'ultralight', 'thin', 'hairline', ],
+    el  =>  [ 'extralight', ],
+    l   =>  [ 'light', ],
+    sl  =>  [ ],
+    m   =>  [ 'regular', 'normal', 'text', 'book', 'medium', ],
+    sb  =>  [ 'semibold', 'demibold', ],
+    b   =>  [ 'bold', ],
+    eb  =>  [ 'extrabold', ],
+    ub  =>  [ 'ultrabold', 'black', 'extrablack', 'ultrablack', ],
 );
 
 my %FD_WIDTH = (
@@ -109,10 +188,39 @@ my %FD_WIDTH = (
     regular         => '',
     semiextended    => 'sx',
     extended        => 'x',
+    #semiexpanded    => $TODO
     expanded        => 'e',
     wide            => 'w',
 );
 my @FD_WIDTH = uniq(values %FD_WIDTH);
+
+=begin Comment
+
+    - Ultracondensed < Condensed < Semicondensed < Regular < Semiextended < Extended
+    - Narrow < Regular < Wide
+    - Regular < Semiexpanded < Expanded
+
+    - Compact usually isn't just a width, but more a different design 
+        (see e.g., Antique Olive)
+
+    - Amplitude: Extracompressed < Compressed < Condensed < Regular < Wide
+    - Agenda: Ultracondensed < Extracondensed < Condensed < Regular
+
+=end Comment
+
+=cut
+
+my %SSUB_WIDTH = (
+    uc  =>  [ 'ultracondensed', 'extracompressed', 'ultracompressed', ],
+    ec  =>  [ 'extracondensed', 'compressed', ],
+    c   =>  [ 'condensed', 'narrow', ],
+    sc  =>  [ 'semicondensed', ],
+    m   =>  [ 'regular', ],
+    sx  =>  [ 'semiextended', 'semiexpanded', ],
+    x   =>  [ 'extended', 'expanded', 'wide', ],
+    .   =>  [ '', ],
+    .   =>  [ '', ],
+);
 
 my %FD_SHAPE = (
     roman           => 'n',
@@ -1890,25 +1998,25 @@ such as Helvetica Neue and Fira Sans.
     Two            2                    Ultra Compressed    up
     Four           4                    Extra Compressed    ep
     Eight          8                    Compressed          p
-    Hair           a                    Compact             p
+    Hair(line)     a                    Compact             p
     Thin           i                    Ultra Condensed     uc
     Ultra Light    ul                   Extra Condensed     ec
     Extra Light    el                   Condensed           c
     Light          l                    Narrow              n
     Regular        -     [1]            Semicondensed       sc
-    Text           t     [2]            Regular             -       [1]
-    Book           o     [2]            Semiextended        sx
+    Book, Blond    o     [2]            Regular             -       [1]
+    Text           t     [2]            Semiextended        sx
     Medium         mb                   Extended            x
     Demibold       db                   Expanded            e
     Semibold       sb                   Wide                w
     Bold           b                    
     Extra Bold     eb                   SHAPE
-    Ultra (Bold)   ub                   -------------------------------
+    Ultra Bold     ub                   -------------------------------
     Black          k                    Roman, Upright      n       [3]
     Extra Black    ek                   Italic, Cursive,
-    Ultra Black    uk                       Kursiv          it
+    Ultra (Black)  uk                       Kursiv          it
     Heavy          h                    Oblique, Slanted,
-    Poster         r                        Incline(d)      sl
+    Poster, Super  r     [4]                Incline(d)      sl
 
 
 =over 4
@@ -1930,6 +2038,12 @@ to substitute "Text" or "Book" (in that order) in its place.
 
 Adobe Silentium Pro contains two roman shapes;
 "Roman I" is mapped to "n", "Roman II" to "it".
+
+=item [4]
+
+I'm not really sure if "Poster" and "Super" should count as weights or as
+separate shapes; they're usually not only heavier but also much wider than 
+other fonts in the same family.
 
 =back
 
@@ -2184,7 +2298,7 @@ from Perl or from the OS), include these I<verbatim>; don't paraphrase.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005-2018 Marc Penninga.
+Copyright (C) 2005-2019 Marc Penninga.
 
 
 =head1 LICENSE
