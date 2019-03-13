@@ -1114,7 +1114,7 @@ sub parse_basicinfo {
     # Some font families put condensed or extended widths into separate families;
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
-        $widths = join '|', mqrs( map { @{$_} } values %NFSS_WIDTH );
+        my $widths = join '|', mqrs( map { @{$_} } values %NFSS_WIDTH );
         if ($info->{width} eq 'regular'
             && $info->{family} =~ m/(.+?) [ ]* (${widths})$/xmsi)
         {
@@ -1596,17 +1596,17 @@ END_SSUB_SHAPE
     NFSSWEIGHT:
     for my $nfssweight (keys %NFSS_WEIGHT) {
         NFSSWIDTH:
-        for my nfsswidth (keys %NFSS_WIDTH) {
+        for my $nfsswidth (keys %NFSS_WIDTH) {
             my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
 
             for my $weight ( @{$NFSS_WEIGHT{$nfssweight}} ) {
                 for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
                     my $series = $weight . $width;
-                    if ( exists $data{$series} ) {
-                        for my $shape ( keys %{$data{$series}} ) {
+                    if ( exists $data->{$series} ) {
+                        for my $shape ( keys %{$data->{$series}} ) {
                             print {$FD} <<"END_SSUB_SERIES";
 \\DeclareFontShape{$enc}{${fam}-${sty}}{$nfssseries}{$shape}{
-      <-> ssub * ${fam}-${sty}/${series}/${replace}
+      <-> ssub * ${fam}-${sty}/${series}/${shape}
 }{}
 
 END_SSUB_SERIES
