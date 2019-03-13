@@ -1570,6 +1570,7 @@ sub write_fdfile {
 END_FD_HEADER
 
     while (my ($series, $fdseries) = each %$data) {
+        print {$FD} "\n%   ----  declarations for '$series'  ----\n\n";
         while (my ($shape, $fdshape) = each %$fdseries) {
             print {$FD}
                 "\\DeclareFontShape{$enc}{${fam}-${sty}}{$series}{$shape}{\n";
@@ -1598,8 +1599,11 @@ END_SSUB_SHAPE
         }
     }
 
-    # Here we create ssub rules to map standard NFSS series codes (e.g., 'bc')
-    # to our own 'long' series names (such as 'boldcondensed')
+    print {$FD} <<"END_COMMENT";
+%
+%   ====  Extra 'ssub' rules map the standard NFSS codes to our fancy names  ====
+%
+END_COMMENT
     my %seen;
     NFSSWEIGHT:
     for my $nfssweight (keys %NFSS_WEIGHT) {
