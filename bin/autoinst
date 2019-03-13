@@ -75,10 +75,15 @@ my %UNABBREVIATE = (
     widths isn't always consistent between font families.
 
     To handle this situation, we use a two-tiered approach:
-    1.  We install all fonts using whatever names for weight and width
-        the font designer has come up with.
-    2.  We add 'ssub' rules to the .fd files that map the standard NFSS codes
+    1.  We install all fonts using a "series" name that is the concatenation
+        of whatever the font designer has chosen to call the weight and width
+        (but in all *lower*case).
+    2.  We add "ssub" rules to the .fd files that map the standard NFSS codes
         to actual fonts.
+
+    In step 1, we follow NFSS in leaving out any occurrence of the word "regular"
+    unless *both* weight and width are Regular; in that case, the series attribute
+    becomes "regular".
 
     The two tables %NFSS_WEIGHT and %NFSS_WIDTH are used to control step 2.
     It contains several entries of the form
@@ -1139,7 +1144,10 @@ sub parse_basicinfo {
     # how most fonts are named (which is 'width + weight').
     # Take care to unabbreviate weight and width; otherwise a CondensedUltra font
     # might get a 'series' attribute of ultracondensed, which is not the same!
-    $info->{series} = $info->{weight} . $info->{width};
+    $info->{series} = ($info->{width} eq 'regular')  ? $info->{weight}
+                    : ($info->{weight} eq 'regular') ? $info->{width}
+                    :                                  $info->{weight} . $info->{width}
+                    ;
 
     return $info;
 }
@@ -1600,8 +1608,10 @@ END_SSUB_SHAPE
             my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
 
             for my $weight ( @{$NFSS_WEIGHT{$nfssweight}} ) {
+                $weight = '' if $weight eq 'regular';
                 for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
-                    my $series = $weight . $width;
+                    $width = '' if $width eq 'regular';
+                    my $series = ( $weight . $width ) || 'regular';
                     if ( exists $data->{$series} ) {
                         for my $shape ( keys %{$data->{$series}} ) {
                             print {$FD} <<"END_SSUB_SERIES";
