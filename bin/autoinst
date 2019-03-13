@@ -131,21 +131,21 @@ my %UNABBREVIATE = (
     - Semilight weights are virtually nonexistent, except for Thesis
         (which contains a Semilight weight) and Arnhem (which has Blond).
     - Book is usually slightly lighter than Regular (and so could be mapped to "sl"),
-        but sometimes (especially in fonts from DTL and FSI) slightly *heavier*.
+        but sometimes (mainly in fonts from DTL and FontFont/FSI) slightly *heavier*.
     - Likewise, Medium can really be two different things:
         - a synonym for Semibold
-        - (especially in newer fonts) between Regular and Semibold.
-        We treat it as if it's always the first.
+        - (especially in newer fonts) an extra step between Regular and Semibold
+        I treat it as if it's always the first.
     - Heavy can mean very different things; it's often heavier than Black,
         but sometimes it's a synonym for Extrabold, and in some families (Futura)
-        it's even lighter than Bold. We treat it here as Ultrabold.
+        it's even lighter than Bold. I treat it here as "very black".
     - Font families that have both Condensed and Compressed widths
-        seem to treat Compressed as narrower than Condensed.
+        seem to define Compressed as narrower than Condensed.
     - In Basic Sans (which is the only family I know with both Narrow and Condensed
         fonts) Narrow is a bit wider than Condensed. So I mapped Narrow to "sc".
     - Extended and Expanded seem to be used interchangeably.
-    - I haven't found any Extra- or Ultra-Extended or -Wide fonts, so the entries
-        for "ex" and "ux" are currently empty.
+    - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts in the wild,
+        so the ex and ux entries are currently empty
 
 =end Comment
 
