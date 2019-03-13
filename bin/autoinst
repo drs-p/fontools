@@ -155,7 +155,7 @@ my %UNABBREVIATE = (
 
     And a final postscript on the implementation: we define these tables as arrays
     and assign those to a hash, so that we might use the order of the keys 
-    in the array as a key when sorting fonts.
+    in each array to determine the sorting order when sorting fonts.
 
     TODO: actually implement the sorting.
 
