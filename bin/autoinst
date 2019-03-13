@@ -892,7 +892,7 @@ END_USAGE
     swash        => '1',     # 0 = no, 1 = yes
     titling      => '1',     # 0 = no, 1 = yes
     superiors    => '1',     # 0 = no, 1 = yes
-    inferiors    => '',      # possible values: '' (empty), 'sinf', 'subs', 'dnom'
+    inferiors    => '',      # possible values: '', 'sinf', 'subs', 'dnom'
     ornaments    => '1',     # 0 = no, 1 = yes
     fractions    => '0',     # 0 = no, 1 = yes
     nfss         => 'rm',
@@ -1073,7 +1073,7 @@ sub parse_basicinfo {
     $data{fullname}  =  lc $data{fullname};
 
     # clean up family name (it's used in LaTeX command names)
-    $data{family}    =~ s/\A(?: Adobe | FF | ITC | LT | MT)//xms;
+    $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data{family}    =~ s/[^A-Za-z]+//xmsg;
 
@@ -1922,10 +1922,16 @@ standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 
 =head2 NFSS codes
 
-I<NOTE: this functionality has been completely rewritten in release 2019-03-12.
-The older code tried to map all fonts to short NFSS codes,
-but often had to invent non-standard codes in order to deal with all possible
-(combinations of) weights and widths that occur in the wild.>
+I<< B<NOTE>: this functionality was almost completely rewritten in release 2019-03-13.
+Older versions tried to directly map all fonts to short NFSS codes,
+but often had to invent non-standard codes in order to deal with the
+many different weights and widths that occur in the wild.
+These non-standard NFSS codes used by older versions of B<autoinst> will no longer
+work for fonts installed with newer versions; for those you'll have to either
+use the long names or stick to the standard NFSS codes.
+This change mainly concerns very light or very heavy weights and very condensed widths;
+for more moderate weights and widths, existing code will probably continue to work.
+>>
 
 NFSS identifies fonts by a combination of family, series
 (the concatenation of weight and width), shape and size.
@@ -1933,11 +1939,13 @@ B<autoinst> parses the font's metadata (more precisely: the output of C<otfinfo 
 to determine these parameters. When this fails
 (usually because the font family contains uncommon weights, widths or shapes),
 B<autoinst> ends up with different fonts having the I<same> values
-for these font parameters; since there's then no way for NFSS to distinguish
-these fonts, B<autoinst> will print a detailed error message and quit.
-In this case, either rerun B<autoinst> on a smaller set of fonts
+for these font parameters; such fonts cannot be used in NFSS, since there's no way
+distinguish them.
+Whenever B<autoinst> detects such a situation, it will quit with a detailed
+error message.
+If that happens, either rerun B<autoinst> on a smaller set of fonts
 or add the missing widths, weights and shapes to
-the tables C<%NFSS_WIDTH>, C<%NFSS_WEIGHT> and C<%NFSS_SHAPE>, at the beginning
+the tables C<%NFSS_WIDTH>, C<%NFSS_WEIGHT> and C<%NFSS_SHAPE>, near the top
 of the source code. Please also send a bug report (see L<AUTHOR> below).
 
 The mapping of shapes to NFSS codes is done using the following table:
@@ -1948,31 +1956,32 @@ The mapping of shapes to NFSS codes is done using the following table:
     Italic, Cursive, Kursive            it
     Oblique, Slant(ed), Incline(d)      sl
 
-(Note: Adobe Silentium Pro contains two Roman shapes; the first of these
-is mapped to "n", for the second one we abuse the "it" code as the font
-doesn't contain an Italic shape.)
+(I<Exception:> Adobe Silentium Pro contains two Roman shapes; we map the first of these
+to "n", for the second one we [ab]use the "it" code as this family doesn't contain
+an Italic shape.)
 
-The mapping of weights and widths to NFSS code is more complex.
-First, all fonts are installed using a "series" attribute that is just
-the concatenation of whatever the font's designer decided to call its weight
-and width (but coverted to all I<lowercase> text).
-So an Extrabold font of Condensed width will be known as "extraboldcondensed".
+The mapping of weights and widths to NFSS code is a more complex, two-step proces.
+In the first step, all fonts are assigned a "series" name that is simply
+the concatenation of its full weight and width (expanding any abbreviations
+and converting to lowercase).
+So a font with "Cond" width and "Ultra" weight will be known as "ultrablackcondensed".
 
-In the second step, B<autoinst> tries to map all combinations of standard NFSS codes
+In the second step, B<autoinst> tries to map all combinations of NFSS codes
 (ul, el, l, sl, m, sb, b, eb and ub for weights;
- uc, ec, c, sc, m, sx, x, ex and ux for widths) to actual fonts.
-Of course, not all 81 combinations of NFSS weights and widths will map to
-existing fonts; and similarly it may not be possible to assign every existing font
-to a unique code in a sane way (especially on the "Weight" axis, the standard NFSS
-codes do not offer a fine enough granularity to deal with some extended font families;
-as an example, the Fira Sans family currently contains fifteen(!) different weights).
+uc, ec, c, sc, m, sx, x, ex and ux for widths) to actual fonts.
+Of course, not all 81 combinations of these NFSS weights and widths will map to
+existing fonts; and conversely it may not be possible to assign every existing font
+a unique code in a sane way (especially on the weight axis, some font families
+offer more choices or finer granularity than NFSS's codes can handle;
+e.g., Fira Sans contains fifteen(!) different weights,
+including an additional "Medium" weight between Regular and Semibold).
 
-The mapping between NFSS codes and actual fonts is based on a few principles:
+This mapping between NFSS codes and actual fonts is based on a few principles:
 
 =over 4
 
-=item B<Usefulness>. We try hard to make sure that as many of the most common
-NFSS codes as possible point to actual fonts.
+=item B<Usefulness>. As many of the most commonly used NFSS codes as possible
+should point to actual fonts.
 
 =item B<Exactness>. Exact matches always win: if the font family contains
 a Condensed Semibold font, that's what the "sbc" code will map to.
@@ -1982,18 +1991,21 @@ If there's no Semibold font it might map to Demibold or Medium,
 but never to Black. If there is no close match, the NFSS code will simply not be used.
 
 =item B<Well-ordering>. The mapping respects the ordering that is inherent in
-the NFSS codes: so "sb" will be heavier than "m" and lighter than "b".
+the NFSS codes, so "sb" will be heavier than "m" and lighter than "b".
 
-=item B<Uniqueness>. No two codes will map to the same font (with the exception of "bx";
-since this is so ubiquitous in Latex, B<autoinst> will treat it as a synonym for "b"
-if there is no real ExtendedBold font).
+=item B<Uniqueness>. No two NFSS codes will map to the same font (with the exception
+of "bx"; since this is so ubiquitous in Latex, B<autoinst> will treat it as a synonym
+for "b" if there is no BoldExtended font).
 
 =back
 
-These rules should ensure that the standard NFSS codes (plus high-level commands
+These rules should ensure that the standard NFSS codes (and high-level commands
 such as C<\bfseries>, which are built on top of these codes) will "just work".
-To choose a specific font, use the lower-level C<\fontseries> command with
+To access specific weights or widths, use the C<\fontseries> command with
 the full series name (i.e., C<\fontseries{demibold}\selectfont>).
+
+To see exactly which NFSS codes map to which fonts, please refer to
+the generated F<fd> files.
 
 
 =head2 A note for MiKTeX users
@@ -2034,18 +2046,17 @@ F<autoinst.log> showing which fonts would have been generated.
 
 =item B<-encoding>=I<encoding[,encoding]>
 
-Generate the specified encoding(s) for the text fonts. The default is
-"OT1,T1,LY1".
+Generate the specified encoding(s) for the text fonts. Multiple text encodings may be
+specified as a comma-separated list: C<-encoding=OT1,T1,LY1> (without spaces!).
+The generated style file passes these encodings to F<fontenc> in the specified order,
+so the last one will become the default text encoding for your document.
+
+The default choice of encodings is "OT1,T1,LY1".
 For each encoding, a file F<< <encoding>.enc >> (in all I<lowercase>!)
 should be somewhere where F<otftotfm> can find it. Suitable encoding files
 for OT1, T1/TS1, LY1, LGR and T2A/B/C come with B<autoinst>. (These files are
 called F<fontools_ot1.enc> etc. to avoid name clashes with other packages;
 the "fontools_" prefix may be omitted.)
-
-Multiple text encodings can be specified as a comma-separated list:
-C<-encoding=OT1,T1> (without spaces!). The generated style file passes these encodings
-to F<fontenc> in the specified order, so the last one will become
-the default text encoding for your documents.
 
 =item B<-ts1> / B<-nots1>
 
@@ -2115,7 +2126,7 @@ with inferior characters.
 
 I<< Note that many fonts contain only one (or even none) of these types
 of inferior characters. If you specify a style of inferiors that isn't
-actually present in the font, B<autoinst> silently falls back to its default
+present in the font, B<autoinst> silently falls back to its default
 of not creating fonts with inferiors; it doesn't try to substitute one of
 the other features. >>
 
@@ -2274,19 +2285,25 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-12>
+=item I<2019-03-13>
 
-Overhauled the mapping of fonts to NFSS codes. Instead of inventing our own codes
-to deal with every possible weight and width out there, we now create codes
-based on the names in the font metadata. Then we create "ssub" rules in the F<fd>
-files to map the standard NFSS codes to our fancy names (based on discussions
-with Frank Mittelbach and Bob Tennent).
-
+Overhauled the mapping of fonts (more specifically of weights and widths;
+the mapping of shapes didn't change) to NFSS codes. Instead of inventing our own codes
+to deal with every possible weight and width out there, we now create "long" codes
+based on the names in the font metadata. Then we add "ssub" rules to the F<fd>
+files to map the standard NFSS codes to our fancy names (see the section B<NFSS codes>;
+based on discussions with Frank Mittelbach and Bob Tennent).
 
 =item I<2018-08-10>
 
 Added encoding files for LGR and T2A/B/C to I<fontools>.
 
+=back
+
+
+=begin Really_old_history
+
+=over 12
 
 =item I<2018-03-26>
 
@@ -2310,13 +2327,6 @@ B<autoinst> now always creates a log file.
 
 Updated the F<fontools_ot1.enc> encoding file to include the "Lslash"
 and "lslash" glyphs (thanks to Bob Tennent).
-
-=back
-
-
-=begin Really_old_history
-
-=over 12
 
 =item I<2015-11-22>
 
