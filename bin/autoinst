@@ -85,7 +85,7 @@ my %UNABBREVIATE = (
     unless *both* weight and width are Regular; in that case, the series attribute
     becomes "regular".
 
-    The two tables %NFSS_WEIGHT and %NFSS_WIDTH are used to control step 2.
+    The two tables @NFSS_WEIGHT and @NFSS_WIDTH are used to control step 2.
     It contains several entries of the form
 
         sc  =>  [ qw( semicondensed narrow ) ],
@@ -152,11 +152,18 @@ my %UNABBREVIATE = (
     - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts in the wild,
         so the ex and ux entries are currently empty
 
+
+    And a final postscript on the implementation: we define these tables as arrays
+    and assign those to a hash, so that we might use the order of the keys 
+    in the array as a key when sorting fonts.
+
+    TODO: actually implement the sorting.
+
 =end Comment
 
 =cut
 
-my %NFSS_WEIGHT = (
+my @NFSS_WEIGHT = (
     ul  =>  [ qw( ultralight thin hair hairline eight four two ) ],
     el  =>  [ qw( extralight ) ],
     l   =>  [ qw( light ) ],
@@ -168,8 +175,9 @@ my %NFSS_WEIGHT = (
     ub  =>  [ qw( ultrabold black extrablack ultra ultrablack heavy ultraheavy
                   poster super ) ],
 );
+my %NFSS_WEIGHT = @NFSS_WEIGHT;
 
-my %NFSS_WIDTH = (
+my @NFSS_WIDTH = (
     uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
     ec  =>  [ qw( extracondensed cmp comp compressed compact ) ],
     c   =>  [ qw( cond condensed ) ],
@@ -180,10 +188,11 @@ my %NFSS_WIDTH = (
     ex  =>  [ ],
     ux  =>  [ ],
 );
+my %NFSS_WIDTH = @NFSS_WIDTH;
 
 =begin Comment
 
-    The %NFSS_SHAPE table maps various shape names to NFSS codes.
+    The @NFSS_SHAPE table maps various shape names to NFSS codes.
 
     Note that this table works the other way around compared to
     the two previous tables; it directly maps shape names to NFSS codes.
@@ -201,7 +210,7 @@ my %NFSS_WIDTH = (
 
 =cut
 
-my %NFSS_SHAPE = (
+my @NFSS_SHAPE = (
     roman       =>  'n',
     upright     =>  'n',
     italic      =>  'it',
@@ -217,6 +226,7 @@ my %NFSS_SHAPE = (
     romani      =>  'n',    # Adobe Silentium Pro has two roman shapes, but no italic;
     romanii     =>  'it',   # so we cheat by mapping the second roman shape to 'it'
 );
+my %NFSS_SHAPE = @NFSS_SHAPE;
 
 =begin Comment
 
@@ -1250,7 +1260,7 @@ my $ERR_PARSE =<<'END_ERR_PARSE';
         -   Run 'autoinst' on a smaller set of fonts,
             omitting the ones that weren't parsed correctly;
         -   Add the missing widths, weights or shapes to the tables
-            '%NFSS_WIDTH', '%NFSS_WEIGHT' or '%NFSS_SHAPE' near the top
+            '@NFSS_WIDTH', '@NFSS_WEIGHT' or '@NFSS_SHAPE' near the top
             of the source code;
 
         Please also send a bug report to the author.
@@ -1949,7 +1959,7 @@ Whenever B<autoinst> detects such a situation, it will quit with a detailed
 error message.
 If that happens, either rerun B<autoinst> on a smaller set of fonts
 or add the missing widths, weights and shapes to
-the tables C<%NFSS_WIDTH>, C<%NFSS_WEIGHT> and C<%NFSS_SHAPE>, near the top
+the tables C<@NFSS_WIDTH>, C<@NFSS_WEIGHT> and C<@NFSS_SHAPE>, near the top
 of the source code. Please also send a bug report (see L<AUTHOR> below).
 
 The mapping of shapes to NFSS codes is done using the following table:
