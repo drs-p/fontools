@@ -2303,18 +2303,17 @@ based on discussions with Frank Mittelbach and Bob Tennent).
 
 Added encoding files for LGR and T2A/B/C to I<fontools>.
 
+=item I<2018-03-26>
+
+Added the I<-(no)mergewidths> option.
+Tried to improve the documentation.
+
 =back
 
 
 =begin Really_old_history
 
 =over 12
-
-=item I<2018-03-26>
-
-Added the "Text" weight and the I<-(no)mergewidths> option.
-Changed the NFSS codes for "Thin" and "Book" to "i" and "o", respectively.
-Tried to improve the documentation.
 
 =item I<2018-01-09>
 
