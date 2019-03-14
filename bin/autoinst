@@ -1601,7 +1601,7 @@ END_SSUB_SHAPE
 
     print {$FD} <<"END_COMMENT";
 %
-%   ====  Extra 'ssub' rules map the standard NFSS codes to our fancy names  ====
+%   ====  Extra 'ssub' rules to map the standard NFSS codes to our fancy names  ====
 %
 END_COMMENT
     my %seen;
