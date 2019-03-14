@@ -1570,7 +1570,7 @@ sub write_fdfile {
 END_FD_HEADER
 
     while (my ($series, $fdseries) = each %$data) {
-        print {$FD} "\n%   ----  declarations for '$series'  ----\n\n";
+        print {$FD} "\n%   ----  $series  ----\n\n";
         while (my ($shape, $fdshape) = each %$fdseries) {
             print {$FD}
                 "\\DeclareFontShape{$enc}{${fam}-${sty}}{$series}{$shape}{\n";
@@ -1926,7 +1926,7 @@ standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 
 =head2 NFSS codes
 
-I<< B<NOTE>: this functionality was almost completely rewritten in release 2019-03-13.
+I<< B<NOTE>: this functionality was almost completely rewritten in release 2019-03-14.
 Older versions tried to directly map all fonts to short NFSS codes,
 but often had to invent non-standard codes in order to deal with the
 many different weights and widths that occur in the wild.
@@ -2289,7 +2289,7 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-13>
+=item I<2019-03-14>
 
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes. Instead of inventing our own codes
