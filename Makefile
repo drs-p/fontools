@@ -1,4 +1,4 @@
 .PHONY: dist
 
 dist:
-	(cd ..; zip -r fontools fontools -x fontools/.git\* fontools/Makefile)
+	(cd ..; zip -r fontools-$(shell date +'%Y%m%d') fontools -x fontools/.git\* fontools/Makefile)
