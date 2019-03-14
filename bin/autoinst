@@ -1617,6 +1617,7 @@ END_COMMENT
                     $width = '' if $width eq 'regular';
                     my $series = ( $weight . $width ) || 'regular';
                     if ( exists $data->{$series} ) {
+                        print {$FD} "\n%   $nfssseries --> $series\n\n";
                         for my $shape ( keys %{$data->{$series}} ) {
                             print {$FD} <<"END_SSUB_SERIES";
 \\DeclareFontShape{$enc}{${fam}-${sty}}{$nfssseries}{$shape}{
