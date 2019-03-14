@@ -157,8 +157,8 @@ my %UNABBREVIATE = (
 =cut
 
 my %NFSS_WEIGHT = (
-    ul  =>  [ qw( ultralight thin hair hairline eight four two ) ],
-    el  =>  [ qw( extralight ) ],
+    ul  =>  [ qw( ultralight hair hairline eight four two ) ],
+    el  =>  [ qw( extralight thin ) ],
     l   =>  [ qw( light ) ],
     sl  =>  [ qw( semilight blond ) ],
     ''  =>  [ qw( regular text book ) ],
