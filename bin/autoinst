@@ -165,7 +165,7 @@ my %NFSS_WEIGHT = (
     sb  =>  [ qw( semibold demi demibold medium ) ],
     b   =>  [ qw( bold ) ],
     eb  =>  [ qw( extrabold ) ],
-    ub  =>  [ qw( ultrabold black extrablack ultra ultrablack heavy ultraheavy
+    ub  =>  [ qw( ultrabold black heavy extrablack ultra ultrablack ultraheavy
                   poster super ) ],
 );
 
@@ -994,7 +994,7 @@ sub parse_options {
     delete @STYLE{qw(LF OsF)}    unless $ARGV{proportional};
     delete @STYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
 
-    my $default_target = File::Spec->join( File::Spec->curdir(), 'autoinst' );
+    my $default_target = File::Spec->join( File::Spec->curdir(), 'autoinst_texmf' );
     if ($ARGV{manual}) {
         warn "[WARNING] option '-target' overridden by '-manual'!\n"
             if $ARGV{target};
@@ -1002,23 +1002,25 @@ sub parse_options {
         $ARGV{updmap} = 0;
     }
     elsif (not $ARGV{target}) {
-        my @dirs = grep { -w $_ }
-                        map { split m/:/xms, substr $_, 0, -1 }
-                            `kpsewhich --expand-path='\$TEXMFLOCAL'`;
-        $ARGV{target} = $dirs[0];
-        if (!$dirs[0]) {
+        my $texmflocal = substr `kpsewhich --expand-path='\$TEXMFLOCAL'`, 0, -1;
+        my @texmflocal = split m/:/xms, $texmflocal;
+        my @writable = grep { -w $_ } @texmflocal;
+        $ARGV{target} = $writable[0];
+        if (!$ARGV{target}) {
             $ARGV{target} = $default_target;
             $ARGV{updmap} = 0;
             warn <<"END_WARNING_TEXMF";
 [WARNING]   No TEXMFLOCAL directory found, or directory not user-writable.
-            I'm moving all files to '$ARGV{target}'.
+            \$TEXMFLOCAL = "$texmflocal"
 
-            Please install the generated files into a suitable TEXMF directory,
+            I'm placing all generated files in '$ARGV{target}'.
+
+            Please install these files into a suitable TEXMF directory,
             update the filename database and run 'updmap' (or similar);
             see your TeX installation's documentation.
 
-            Alternatively, you may also delete the generated directory
-            and rerun autoinst, either with the '-target' option or as root.
+            Alternatively, you may delete the generated directory
+            and rerun autoinst either with the '-target' option or as root.
 END_WARNING_TEXMF
         }
     }
@@ -1951,23 +1953,24 @@ These non-standard NFSS codes used by older versions of B<autoinst> will no long
 work for fonts installed with newer versions; for those you'll have to either
 use the long names or stick to the standard NFSS codes.
 This change mainly concerns very light or very heavy weights and very condensed widths;
-for more moderate weights and widths, existing code will probably continue to work.
+for more moderate weights and widths, existing code will very probably continue to work.
 >>
 
-NFSS identifies fonts by a combination of family, series
-(the concatenation of weight and width), shape and size.
+LaTeX's New Font Selection System (NFSS)
+identifies fonts by a combination of family,
+series (the concatenation of weight and width), shape and size.
 B<autoinst> parses the font's metadata (more precisely: the output of C<otfinfo --info>)
-to determine these parameters. When this fails
-(usually because the font family contains uncommon weights, widths or shapes),
+to determine these parameters.
+When this fails (usually because the font family contains uncommon weights, widths
+or shapes),
 B<autoinst> ends up with different fonts having the I<same> values
-for these font parameters; such fonts cannot be used in NFSS, since there's no way
-distinguish them.
-Whenever B<autoinst> detects such a situation, it will quit with a detailed
-error message.
-If that happens, either rerun B<autoinst> on a smaller set of fonts
-or add the missing widths, weights and shapes to
-the tables C<%NFSS_WIDTH>, C<%NFSS_WEIGHT> and C<%NFSS_SHAPE>, near the top
-of the source code. Please also send a bug report (see L<AUTHOR> below).
+for these font parameters; such fonts cannot be used in NFSS,
+since there's no way distinguish them.
+When B<autoinst> detects such a situation, it will print an error message and abort.
+If that happens, either rerun B<autoinst> on a smaller set of fonts,
+or add the missing widths, weights and shapes to the tables C<%NFSS_WIDTH>,
+C<%NFSS_WEIGHT> and C<%NFSS_SHAPE>, near the top of the source code.
+Please also send a bug report (see L<AUTHOR> below).
 
 The mapping of shapes to NFSS codes is done using the following table:
 
@@ -1983,7 +1986,7 @@ an Italic shape.)
 
 The mapping of weights and widths to NFSS code is a more complex, two-step proces.
 In the first step, all fonts are assigned a "series" name that is simply
-the concatenation of its full weight and width (expanding any abbreviations
+the concatenation of its full weight and width (after expanding any abbreviations
 and converting to lowercase).
 So a font with "Cond" width and "Ultra" weight will be known as "ultrablackcondensed".
 
@@ -2005,7 +2008,7 @@ This mapping between NFSS codes and actual fonts is based on a few principles:
 should point to actual fonts.
 
 =item B<Exactness>. Exact matches always win: if the font family contains
-a Condensed Semibold font, that's what the "sbc" code will map to.
+a Semibold Condensed font, that's what the "sbc" code will map to.
 
 =item B<Sanity>. A code like "sb" will always map to something semi-boldish.
 If there's no Semibold font it might map to Demibold or Medium,
@@ -2032,7 +2035,7 @@ the generated F<fd> files.
 =head2 A note for MiKTeX users
 
 Automatically installing the fonts into a suitable TEXMF tree
-(as B<autoinst> tries to do by default) requires a TeX-installation that uses
+(as B<autoinst> tries to do by default) only works for TeX-installations that use
 the F<kpathsea> library; with TeX distributions that implement their
 own directory searching (such as MiKTeX), B<autoinst> will complain that
 it cannot find the F<kpsewhich> program and install all generated files
@@ -2057,6 +2060,7 @@ You may use either one or two dashes before options,
 and option names may be shortened to a unique prefix
 (e.g., B<-encoding> may be abbreviated to B<-enc> or even B<-en>,
 but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
+
 
 =over 4
 
@@ -2197,51 +2201,43 @@ it should be properly quoted.
 
 =item B<-manual>
 
-Manual mode. By default, B<autoinst> immediately executes all F<otftotfm>
-commands it generates; with the B<-manual> option, these commands are
-instead written to a file F<autoinst.bat>.
-Furthermore it adds the I< --pl> option
-(which tells F<otftotfm> to generate human readable/editable F<pl>
-and F<vpl> files instead of the default F<tfm> and F<vf> files)
-and omits the I< --automatic> option
-(which causes F<otftotfm> to put all generated files in a subdirectory F<./autoinst/>
-of the current working directory, rather than install them into your TeX installation).
-Manual mode is mainly meant for power users who want
-to tweak the generated commands or post-process generated files.
+Manual mode; for users who want to post-process the generated files and commands.
+By default, B<autoinst> immediately executes all F<otftotfm> commands it generates;
+in manual mode, these are instead written to a file F<autoinst.bat>.
+Furthermore it tells F<otftotfm> to generate human readable (and editable)
+F<pl/vpl> files instead of the default F<tfm/vf> ones,
+and to place all generated files in a subdirectory C<./autoinst_texmf/>
+of the current directory, rather than install them into your TeX installation.
 
-When using this option, run F<pltotf> and F<vptovf> after executing
-the commands (to convert the F<pl> and F<vf> files to F<tfm> and F<vf> format),
-move all generated files to their proper destination,
-update the filename database and tell TeX about the new F<.map> file
-(by running C<updmap> or similar).
+When using this option, you need to execute the following manual steps after
+B<autoinst> has finished:
+
+=over 2
+
+=item B<-> run F<pltotf> and F<vptovf> on the generated F<pl> and F<vf> files,
+to convert them to F<tfm/vf> format;
+
+=item B<-> move all generated files to a proper TEXMF tree,
+and, if necessary, update the filename database;
+
+=item B<-> tell TeX about the new F<map> file (usually by running C<updmap> or similar).
 
 =back
 
-All following options are only meaningful in automatic mode,
-and hence ignored in manual mode:
-
-=over 4
+Note that some options (I<-target>, I<-vendor> and I<-typeface>, I<-[no]updmap>)
+are meaningless, and hence ignored, in manual mode.
 
 =item B<-target>=I<DIRECTORY>
 
 Install all generated files into the TEXMF tree at I<DIRECTORY>.
-This option allows the user to override B<autoinst>'s default behaviour,
-which is to search the $TEXMFLOCAL path and install all files
-into (subdirectories of) the first user-writable TEXMF tree it finds.
 
-If B<autoinst> cannot find a user-writable directory,
-it will print a warning message
-and move all files into the subdirectory F<./autoinst/> in the current directory.
-It will also behave as if the B<-noupdmap> option has been given
-(since it's unlikely that your TeX installation will be able to find files
-in that non-standard directory, there's no point in running F<updmap>).
-
-In this case, it's up to the user to move the generated files
-to a better location and update all relevant databases
-(usually by calling F<texhash> and F<updmap>);
-note that if you create a new TEXMF directory to hold these files,
-you may need to tell your TeX installation about this new directory first
-(for TeXLive, call F<tlmgr> with the I<-conf> option).
+By default, B<autoinst> searches the $TEXMFLOCAL path and installs all files
+into the first user-writable TEXMF tree it finds there.
+If B<autoinst> cannot find such a user-writable directory,
+it will print a warning message and move all files into the subdirectory
+C<./autoinst_texmf/> of the current directory.
+It's then up to the user to move the generated files to a better location
+and update all relevant databases (usually by calling F<texhash> and F<updmap>).
 
 =item B<-vendor>=I<VENDOR>
 
@@ -2323,9 +2319,11 @@ GNU General Public License for more details.
 
 =item I<2019-03-25>
 
-No longer install files to $TEXMFHOME when $TEXMFLOCAL isn't found
-(or isn't user-writable), to avoid the issue of F<updmap-user> versus F<updmap-sys>.
-Instead, warn the user and put everything into a subdirectory F<./autoinst/>
+No longer install files to $TEXMFHOME when $TEXMFLOCAL is either not found
+or not user-writable.
+Using $TEXMFHOME will force the user to become involved in the intricacies
+of updmap-user vs updmap-sys (see F<https://tug.org/texlive/scripts-sys-user.html>).
+Instead, warn the user and put everything into a subdirectory C<./autoinst_texmf/>
 of the current working directory.
 
 =item I<2019-03-14> (note: not released to CTAN)
