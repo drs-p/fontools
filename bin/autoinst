@@ -802,7 +802,7 @@ my @FILETYPES = qw(tfm vf type1 truetype);
 sub set_targetdirs {
     my $family = shift;
 
-    my %dir = map { ($_ => File::Spec->catdir(
+    my %dir = map { ($_ => File::Spec->join(
                         $ARGV{target},
                         'fonts',
                         $_,
@@ -811,7 +811,7 @@ sub set_targetdirs {
                   }
                   @FILETYPES;
 
-    $dir{$_} = File::Spec->catdir(
+    $dir{$_} = File::Spec->join(
             $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
         for qw(enc map);
 
@@ -994,17 +994,33 @@ sub parse_options {
     delete @STYLE{qw(LF OsF)}    unless $ARGV{proportional};
     delete @STYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
 
+    my $default_target = File::Spec->join( File::Spec->curdir(), 'autoinst' );
     if ($ARGV{manual}) {
         warn "[WARNING] option '-target' overridden by '-manual'!\n"
             if $ARGV{target};
-        $ARGV{target} = File::Spec->curdir();
+        $ARGV{target} = $default_target;
+        $ARGV{updmap} = 0;
     }
     elsif (not $ARGV{target}) {
         my @dirs = grep { -w $_ }
                         map { split m/:/xms, substr $_, 0, -1 }
-                            ( `kpsewhich --expand-path='\$TEXMFLOCAL'`,
-                              `kpsewhich --expand-path='\$TEXMFHOME'`, );
-        $ARGV{target} = $dirs[0] || File::Spec->curdir();
+                            `kpsewhich --expand-path='\$TEXMFLOCAL'`;
+        $ARGV{target} = $dirs[0];
+        if (!$dirs[0]) {
+            $ARGV{target} = $default_target;
+            $ARGV{updmap} = 0;
+            warn <<"END_WARNING_TEXMF";
+[WARNING]   No TEXMFLOCAL directory found, or directory not user-writable.
+            I'm moving all files to '$ARGV{target}'.
+
+            Please install the generated files into a suitable TEXMF directory,
+            update the filename database and run 'updmap' (or similar);
+            see your TeX installation's documentation.
+
+            Alternatively, you may also delete the generated directory
+            and rerun autoinst, either with the '-target' option or as root.
+END_WARNING_TEXMF
+        }
     }
 
     if (!$ARGV{figurekern}) {
@@ -1343,7 +1359,7 @@ sub write_stylefile {
     my %seen = %{ get_keys($data) };
 
     my $fn = sprintf "%s.sty", $fam;
-    my $dir = File::Spec->catdir(
+    my $dir = File::Spec->join(
         $ARGV{target}, 'tex', 'latex', $ARGV{typeface} || $fam);
     File::Path::make_path($dir);
     $fn = File::Spec->catfile($dir, $fn);
@@ -1547,7 +1563,7 @@ sub write_fdfile {
     my ($fam, $enc, $sty, $data) = @_;
 
     my $fn = sprintf "%s%s-%s.fd", $enc, $fam, $sty;
-    my $dir = File::Spec->catdir(
+    my $dir = File::Spec->join(
         $ARGV{target}, 'tex', 'latex', $ARGV{typeface} || $fam);
     File::Path::make_path($dir);
     $fn = File::Spec->catfile($dir, $fn);
@@ -2187,14 +2203,17 @@ instead written to a file F<autoinst.bat>.
 Furthermore it adds the I< --pl> option
 (which tells F<otftotfm> to generate human readable/editable F<pl>
 and F<vpl> files instead of the default F<tfm> and F<vf> files)
-and omits the I< --automatic> option (which causes F<otftotfm> to
-leave all generated files in the current directory, rather than install
-them into your TEXMF tree). Manual mode is meant to enable tweaking
-the generated commands and post-processing the generated files.
+and omits the I< --automatic> option
+(which causes F<otftotfm> to put all generated files in a subdirectory F<./autoinst/>
+of the current working directory, rather than install them into your TeX installation).
+Manual mode is mainly meant for power users who want
+to tweak the generated commands or post-process generated files.
 
 When using this option, run F<pltotf> and F<vptovf> after executing
-the commands (to convert the F<pl> and F<vf> files to F<tfm> and F<vf> format)
-and move all generated files to their proper destinations.
+the commands (to convert the F<pl> and F<vf> files to F<tfm> and F<vf> format),
+move all generated files to their proper destination,
+update the filename database and tell TeX about the new F<.map> file
+(by running C<updmap> or similar).
 
 =back
 
@@ -2207,10 +2226,22 @@ and hence ignored in manual mode:
 
 Install all generated files into the TEXMF tree at I<DIRECTORY>.
 This option allows the user to override B<autoinst>'s default behaviour,
-which is to search the $TEXMFLOCAL and $TEXMFHOME paths and install all files
-into subdirectories of the first writable TEXMF tree it finds
-(or into subdirectories of the current directory,
-if no writable directory is found).
+which is to search the $TEXMFLOCAL path and install all files
+into (subdirectories of) the first user-writable TEXMF tree it finds.
+
+If B<autoinst> cannot find a user-writable directory,
+it will print a warning message
+and move all files into the subdirectory F<./autoinst/> in the current directory.
+It will also behave as if the B<-noupdmap> option has been given
+(since it's unlikely that your TeX installation will be able to find files
+in that non-standard directory, there's no point in running F<updmap>).
+
+In this case, it's up to the user to move the generated files
+to a better location and update all relevant databases
+(usually by calling F<texhash> and F<updmap>);
+note that if you create a new TEXMF directory to hold these files,
+you may need to tell your TeX installation about this new directory first
+(for TeXLive, call F<tlmgr> with the I<-conf> option).
 
 =item B<-vendor>=I<VENDOR>
 
@@ -2290,7 +2321,14 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-14>
+=item I<2019-03-25>
+
+No longer install files to $TEXMFHOME when $TEXMFLOCAL isn't found
+(or isn't user-writable), to avoid the issue of F<updmap-user> versus F<updmap-sys>.
+Instead, warn the user and put everything into a subdirectory F<./autoinst/>
+of the current working directory.
+
+=item I<2019-03-14> (note: not released to CTAN)
 
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes. Instead of inventing our own codes
