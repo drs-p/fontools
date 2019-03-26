@@ -333,7 +333,7 @@ my %SSUB_SHAPE = (
     which figure style is default for the current font.
 
     The 'reqd' subtable for the Inf style is also empty; this may be filled
-    with either 'sinf' or 'subs' depending on the -inferiors options.
+    with 'sinf', 'subs' or 'dnom' depending on the -inferiors options.
 
 =end Comment
 
@@ -850,7 +850,8 @@ Possible options:
     -(no)swash              Toggle creation of swash shape
     -(no)titling            Toggle creation of titling shape
     -(no)superiors          Toggle creation of fonts with superior characters
-    -inferiors=[sinf|subs]  Use this style for subscripts (see docs)
+    -inferiors=[auto|sinf|subs|dnom]
+                            Use this style for subscripts (see docs)
     -(no)ornaments          Toggle creation of ornament fonts
     -(no)fractions          Toggle creation of fonts with digits for fractions
 
@@ -893,7 +894,7 @@ END_USAGE
     swash        => '1',     # 0 = no, 1 = yes
     titling      => '1',     # 0 = no, 1 = yes
     superiors    => '1',     # 0 = no, 1 = yes
-    inferiors    => '',      # possible values: '', 'sinf', 'subs', 'dnom'
+    inferiors    => '',      # possible values: '', 'auto', 'sinf', 'subs', 'dnom'
     ornaments    => '1',     # 0 = no, 1 = yes
     fractions    => '0',     # 0 = no, 1 = yes
     nfss         => 'rm',
@@ -961,7 +962,8 @@ sub parse_options {
     delete $STYLE{Sup}           unless $ARGV{superiors};
     delete $STYLE{Orn}           unless $ARGV{ornaments};
     delete @STYLE{qw(Numr Dnom)} unless $ARGV{fractions};
-    if    ($ARGV{inferiors} eq 'sinf') { $STYLE{Inf}{reqd} = ['sinf'] }
+    if    ($ARGV{inferiors} eq 'auto') { ; }   # handle later
+    elsif ($ARGV{inferiors} eq 'sinf') { $STYLE{Inf}{reqd} = ['sinf'] }
     elsif ($ARGV{inferiors} eq 'subs') { $STYLE{Inf}{reqd} = ['subs'] }
     elsif ($ARGV{inferiors} eq 'dnom') { $STYLE{Inf}{reqd} = ['dnom'] }
     else  {
