@@ -1882,9 +1882,9 @@ and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
 =head2 A note for MacTeX users
 
 By default, B<autoinst> will try to install all files into the $TEXMFLOCAL tree;
-when this directory isn't user-writable, it will use the $TEXMFHOME tree instead. 
-Unfortunately, MacTeX's version of C<updmap-sys> 
-(which is called behind the scenes) doesn't search in $TEXMFHOME, 
+when this directory isn't user-writable, it will use the $TEXMFHOME tree instead.
+Unfortunately, MacTeX's version of C<updmap-sys>
+(which is called behind the scenes) doesn't search in $TEXMFHOME,
 and hence MacTeX will not find the new fonts.
 
 To remedy this, either run B<autoinst> as root (so that it can install
@@ -2314,8 +2314,8 @@ Marc Penninga (F<marcpenninga@gmail.com>)
 
 When sending a bug report, please give as much relevant information as
 possible.
-If you see any error messages 
-(whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl 
+If you see any error messages
+(whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl
 or from the OS), include these I<verbatim>; don't paraphrase.
 
 
