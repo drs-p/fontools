@@ -1003,26 +1003,25 @@ sub parse_options {
         $ARGV{updmap} = 0;
     }
     elsif (!$ARGV{target}) {
-        my $texmflocal = eval {
-            substr qx( kpsewhich --expand-path='\$TEXMFLOCAL' ), 0, -1;
+        my $kpsepath = eval {
+            qx( kpsewhich -expand-var='\$TEXMFLOCAL:\$TEXMFHOME' );
         };
-        if (!$texmflocal) {
+        if (!$kpsepath) {
             warn <<"END_WARNING_KPSEWHICH";
 [WARNING] Call to "kpsewhich" failed.
           Maybe your TeX system doesn't use the kpathsea library?
 
+          Consider using the "-target" command line option
+          to specify a TEXMF tree where autoinst should install all files.
+
 END_WARNING_KPSEWHICH
         }
         else {
-            my @texmflocal = split m/:/xms, $texmflocal;
-            my @writable = grep { -w $_ } @texmflocal;
-            $ARGV{target} = $writable[0];
-            if (!$ARGV{target}) {
-                warn <<"END_WARNING_TEXMF";
-[WARNING] No TEXMFLOCAL directory found, or directory not user-writable.
-          \$TEXMFLOCAL = "$texmflocal"
-
-END_WARNING_TEXMF
+            for my $dir ( split m/[:;]/xms, substr $kpsepath, 0, -1 ) {
+                if (-w $dir) { $ARGV{target} = $dir; last }
+                if (-e $dir) { next }
+                my $par = File::Spec->catdir( $dir, File::Spec->updir() );
+                if (-w $par) { $ARGV{target} = $dir; last }
             }
         }
     }
@@ -1031,7 +1030,9 @@ END_WARNING_TEXMF
         $ARGV{target} = $localtarget;
         $ARGV{updmap} = 0;
         warn <<"END_WARNING_DUMPING_FILES";
-          I'm placing all generated files in "$ARGV{target}".
+[WARNING] No user-writable TEXMF-tree found!
+
+          I'm putting all generated files in "$ARGV{target}".
 
           Please install these files into a suitable TEXMF directory,
           update the filename database and run 'updmap' (or similar);
@@ -1860,14 +1861,37 @@ and I<< <enc> >> is the encoding (also in lowercase).
 A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 
 
-=head2 On the choice of text encoding
+=head2 A note for MiKTeX users
 
-By default, B<autoinst> generates text fonts with OT1, T1 and LY1
-encodings, and the generated style files use LY1 as the default text encoding.
-LY1 has been chosen over T1 because it has some empty slots to accommodate
-the additional ligatures found in many OpenType fonts.
-Other encodings can be chosen using the I<-encoding> option
-(see L</"COMMAND-LINE OPTIONS"> below).
+Automatically installing the fonts into a suitable TEXMF tree
+(as B<autoinst> tries to do by default) only works for TeX-installations that use
+the F<kpathsea> library; with TeX distributions that implement their
+own directory searching (such as MiKTeX), B<autoinst> will complain that
+it cannot find the F<kpsewhich> program and move all generated files
+into a subdirectory C<./autoinst_output/> of the current directory.
+If you use such a TeX distribution, you should either move these files
+to their correct destinations by hand, or use the I<-target> option
+(see L</"COMMAND-LINE OPTIONS"> below) to manually specify a TEXMF tree.
+
+Also, some OpenType fonts contain so many kerning pairs that the resulting
+F<pl> and F<vpl> files are too big for MiKTeX's F<pltotf> and F<vptovf>;
+the versions that come with W32TeX (F<http://www.w32tex.org>)
+and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
+
+
+=head2 A note for MacTeX users
+
+By default, B<autoinst> will try to install all files into the $TEXMFLOCAL tree;
+when this directory isn't user-writable, it will use the $TEXMFHOME tree instead. 
+Unfortunately, MacTeX's version of C<updmap-sys> 
+(which is called behind the scenes) doesn't search in $TEXMFHOME, 
+and hence MacTeX will not find the new fonts.
+
+To remedy this, either run B<autoinst> as root (so that it can install
+everything into $TEXMFLOCAL) or manually run C<updmap -user> to tell
+TeX about the files in $TEXMFHOME.
+The latter option does, however, have some caveats;
+see F<https://tug.org/texlive/scripts-sys-user.html>.
 
 
 =head2 Using the fonts in your LaTeX documents
@@ -1957,9 +1981,19 @@ cannot be found, you're limited to using the lower-level commands from
 standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 
 
+=head2 On the choice of text encoding
+
+By default, B<autoinst> generates text fonts with OT1, T1 and LY1
+encodings, and the generated style files use LY1 as the default text encoding.
+LY1 has been chosen over T1 because it has some empty slots to accommodate
+the additional ligatures found in many OpenType fonts.
+Other encodings can be chosen using the I<-encoding> option
+(see L</"COMMAND-LINE OPTIONS"> below).
+
+
 =head2 NFSS codes
 
-I<< B<NOTE>: this functionality was almost completely rewritten in release 2019-03-14.
+I<< B<CAVEAT>: this functionality was almost completely rewritten in release 2019-03-14.
 Older versions tried to directly map all fonts to short NFSS codes,
 but often had to invent non-standard codes in order to deal with the
 many different weights and widths that occur in the wild.
@@ -2044,24 +2078,6 @@ the full series name (i.e., C<\fontseries{demibold}\selectfont>).
 
 To see exactly which NFSS codes map to which fonts, please refer to
 the generated F<fd> files.
-
-
-=head2 A note for MiKTeX users
-
-Automatically installing the fonts into a suitable TEXMF tree
-(as B<autoinst> tries to do by default) only works for TeX-installations that use
-the F<kpathsea> library; with TeX distributions that implement their
-own directory searching (such as MiKTeX), B<autoinst> will complain that
-it cannot find the F<kpsewhich> program and move all generated files
-into a subdirectory C<./autoinst_output/> of the current directory.
-If you use such a TeX distribution, you should either move these files
-to their correct destinations by hand, or use the I<-target> option
-(see L</"COMMAND-LINE OPTIONS"> below) to specify a TEXMF tree.
-
-Also, some OpenType fonts contain so many kerning pairs that the resulting
-F<pl> and F<vpl> files are too big for MiKTeX's F<pltotf> and F<vptovf>;
-the versions that come with W32TeX (F<http://www.w32tex.org>)
-and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -2245,10 +2261,11 @@ are meaningless, and hence ignored, in manual mode.
 
 Install all generated files into the TEXMF tree at I<DIRECTORY>.
 
-By default, B<autoinst> searches the $TEXMFLOCAL path and installs all files
-into the first user-writable TEXMF tree it finds there.
-If B<autoinst> cannot find such a user-writable directory,
-it will print a warning message and move all files into the subdirectory
+By default, B<autoinst> searches the $TEXMFLOCAL and $TEXMFHOME trees
+and installs all files into the first user-writable TEXMF tree it finds.
+If B<autoinst> cannot find such a user-writable directory
+(which shouldn't happen, since $TEXMFHOME is supposed to be user-writable)
+it will print a warning message and put all files into the subdirectory
 C<./autoinst_output/> of the current directory.
 It's then up to the user to move the generated files to a better location
 and update all relevant databases (usually by calling F<texhash> and F<updmap>).
@@ -2297,8 +2314,9 @@ Marc Penninga (F<marcpenninga@gmail.com>)
 
 When sending a bug report, please give as much relevant information as
 possible.
-If you see any error messages (either from B<autoinst> itself, from the I<LCDF TypeTools>,
-from Perl or from the OS), include these I<verbatim>; don't paraphrase.
+If you see any error messages 
+(whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl 
+or from the OS), include these I<verbatim>; don't paraphrase.
 
 
 =head1 COPYRIGHT
@@ -2333,12 +2351,13 @@ GNU General Public License for more details.
 
 =item I<2019-03-26>
 
-No longer use $TEXMFHOME as an alternative to $TEXMFLOCAL when
-the latter is not found or not user-writable;
-using $TEXMFHOME will force the user to become involved in the intricacies
-of updmap-user vs updmap-sys (see F<https://tug.org/texlive/scripts-sys-user.html>).
-Instead, warn the user and put everything into a subdirectory C<./autoinst_output/>
-of the current working directory.
+Fine-tuned the decision where to put generated files;
+in particular, create $TEXMFHOME if it doesn't already exist
+and $TEXMFLOCAL isn't user-writable.
+
+In manual mode, or when we can't find a user-writable TEXMF tree,
+put all generated files into a subdirectory C<./autoinst_output/>
+instead of all over the current working directory.
 
 =item I<2019-03-14> (note: not released to CTAN)
 
