@@ -1002,28 +1002,41 @@ sub parse_options {
         $ARGV{target} = $default_target;
         $ARGV{updmap} = 0;
     }
-    elsif (not $ARGV{target}) {
-        my $texmflocal = substr `kpsewhich --expand-path='\$TEXMFLOCAL'`, 0, -1;
-        my @texmflocal = split m/:/xms, $texmflocal;
-        my @writable = grep { -w $_ } @texmflocal;
-        $ARGV{target} = $writable[0];
-        if (!$ARGV{target}) {
-            $ARGV{target} = $default_target;
-            $ARGV{updmap} = 0;
-            warn <<"END_WARNING_TEXMF";
+    elsif (!$ARGV{target}) {
+        my $texmflocal = eval {
+            substr qx( kpsewhich --expand-path='\$TEXMFLOCAL' ), 0, -1;
+        };
+        if (!$texmflocal) {
+            warn <<"END_WARNING_KPSEWHICH";
+[WARNING]   Call to "kpsewhich" failed.
+            Maybe your TeX system doesn't use the kpathsea library?
+
+END_WARNING_KPSEWHICH
+        }
+        else {
+            my @texmflocal = split m/:/xms, $texmflocal;
+            my @writable = grep { -w $_ } @texmflocal;
+            $ARGV{target} = $writable[0];
+            if (!$ARGV{target}) {
+                warn <<"END_WARNING_TEXMF";
 [WARNING]   No TEXMFLOCAL directory found, or directory not user-writable.
             \$TEXMFLOCAL = "$texmflocal"
 
-            I'm placing all generated files in '$ARGV{target}'.
-
-            Please install these files into a suitable TEXMF directory,
-            update the filename database and run 'updmap' (or similar);
-            see your TeX installation's documentation.
-
-            Alternatively, you may delete the generated directory
-            and rerun autoinst either with the '-target' option or as root.
 END_WARNING_TEXMF
+            }
         }
+    }
+
+    if (!$ARGV{target}) {
+        $ARGV{target} = $default_target;
+        $ARGV{updmap} = 0;
+        warn <<"END_WARNING_DUMPING_FILES";
+        I'm placing all generated files in "$ARGV{target}".
+
+        Please install these files into a suitable TEXMF directory,
+        update the filename database and run 'updmap' (or similar);
+        see your TeX installation's documentation.
+END_WARNING_DUMPING_FILES
     }
 
     if (!$ARGV{figurekern}) {
@@ -2039,8 +2052,8 @@ Automatically installing the fonts into a suitable TEXMF tree
 (as B<autoinst> tries to do by default) only works for TeX-installations that use
 the F<kpathsea> library; with TeX distributions that implement their
 own directory searching (such as MiKTeX), B<autoinst> will complain that
-it cannot find the F<kpsewhich> program and install all generated files
-into subdirectories of the current directory.
+it cannot find the F<kpsewhich> program and move all generated files
+into a subdirectory C<./autoinst_texmf/> of the current directory.
 If you use such a TeX distribution, you should either move these files
 to their correct destinations by hand, or use the I<-target> option
 (see L</"COMMAND-LINE OPTIONS"> below) to specify a TEXMF tree.
@@ -2318,11 +2331,11 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-25>
+=item I<2019-03-26>
 
-No longer install files to $TEXMFHOME when $TEXMFLOCAL is either not found
-or not user-writable.
-Using $TEXMFHOME will force the user to become involved in the intricacies
+No longer use $TEXMFHOME as an alternative to $TEXMFLOCAL when
+the latter is not found or not user-writable;
+using $TEXMFHOME will force the user to become involved in the intricacies
 of updmap-user vs updmap-sys (see F<https://tug.org/texlive/scripts-sys-user.html>).
 Instead, warn the user and put everything into a subdirectory C<./autoinst_texmf/>
 of the current working directory.
