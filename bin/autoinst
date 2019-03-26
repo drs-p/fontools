@@ -995,11 +995,11 @@ sub parse_options {
     delete @STYLE{qw(LF OsF)}    unless $ARGV{proportional};
     delete @STYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
 
-    my $default_target = File::Spec->catdir( Cwd->getcwd(), 'autoinst_texmf' );
+    my $localtarget = File::Spec->catdir( Cwd->getcwd(), 'autoinst_output' );
     if ($ARGV{manual}) {
         warn "[WARNING] option '-target' overridden by '-manual'!\n"
             if $ARGV{target};
-        $ARGV{target} = $default_target;
+        $ARGV{target} = $localtarget;
         $ARGV{updmap} = 0;
     }
     elsif (!$ARGV{target}) {
@@ -1008,8 +1008,8 @@ sub parse_options {
         };
         if (!$texmflocal) {
             warn <<"END_WARNING_KPSEWHICH";
-[WARNING]   Call to "kpsewhich" failed.
-            Maybe your TeX system doesn't use the kpathsea library?
+[WARNING] Call to "kpsewhich" failed.
+          Maybe your TeX system doesn't use the kpathsea library?
 
 END_WARNING_KPSEWHICH
         }
@@ -1019,8 +1019,8 @@ END_WARNING_KPSEWHICH
             $ARGV{target} = $writable[0];
             if (!$ARGV{target}) {
                 warn <<"END_WARNING_TEXMF";
-[WARNING]   No TEXMFLOCAL directory found, or directory not user-writable.
-            \$TEXMFLOCAL = "$texmflocal"
+[WARNING] No TEXMFLOCAL directory found, or directory not user-writable.
+          \$TEXMFLOCAL = "$texmflocal"
 
 END_WARNING_TEXMF
             }
@@ -1028,14 +1028,14 @@ END_WARNING_TEXMF
     }
 
     if (!$ARGV{target}) {
-        $ARGV{target} = $default_target;
+        $ARGV{target} = $localtarget;
         $ARGV{updmap} = 0;
         warn <<"END_WARNING_DUMPING_FILES";
-        I'm placing all generated files in "$ARGV{target}".
+          I'm placing all generated files in "$ARGV{target}".
 
-        Please install these files into a suitable TEXMF directory,
-        update the filename database and run 'updmap' (or similar);
-        see your TeX installation's documentation.
+          Please install these files into a suitable TEXMF directory,
+          update the filename database and run 'updmap' (or similar);
+          see your TeX installation's documentation.
 END_WARNING_DUMPING_FILES
     }
 
@@ -2053,7 +2053,7 @@ Automatically installing the fonts into a suitable TEXMF tree
 the F<kpathsea> library; with TeX distributions that implement their
 own directory searching (such as MiKTeX), B<autoinst> will complain that
 it cannot find the F<kpsewhich> program and move all generated files
-into a subdirectory C<./autoinst_texmf/> of the current directory.
+into a subdirectory C<./autoinst_output/> of the current directory.
 If you use such a TeX distribution, you should either move these files
 to their correct destinations by hand, or use the I<-target> option
 (see L</"COMMAND-LINE OPTIONS"> below) to specify a TEXMF tree.
@@ -2220,7 +2220,7 @@ By default, B<autoinst> immediately executes all F<otftotfm> commands it generat
 in manual mode, these are instead written to a file F<autoinst.bat>.
 Furthermore it tells F<otftotfm> to generate human readable (and editable)
 F<pl/vpl> files instead of the default F<tfm/vf> ones,
-and to place all generated files in a subdirectory C<./autoinst_texmf/>
+and to place all generated files in a subdirectory C<./autoinst_output/>
 of the current directory, rather than install them into your TeX installation.
 
 When using this option, you need to execute the following manual steps after
@@ -2249,7 +2249,7 @@ By default, B<autoinst> searches the $TEXMFLOCAL path and installs all files
 into the first user-writable TEXMF tree it finds there.
 If B<autoinst> cannot find such a user-writable directory,
 it will print a warning message and move all files into the subdirectory
-C<./autoinst_texmf/> of the current directory.
+C<./autoinst_output/> of the current directory.
 It's then up to the user to move the generated files to a better location
 and update all relevant databases (usually by calling F<texhash> and F<updmap>).
 
@@ -2337,7 +2337,7 @@ No longer use $TEXMFHOME as an alternative to $TEXMFLOCAL when
 the latter is not found or not user-writable;
 using $TEXMFHOME will force the user to become involved in the intricacies
 of updmap-user vs updmap-sys (see F<https://tug.org/texlive/scripts-sys-user.html>).
-Instead, warn the user and put everything into a subdirectory C<./autoinst_texmf/>
+Instead, warn the user and put everything into a subdirectory C<./autoinst_output/>
 of the current working directory.
 
 =item I<2019-03-14> (note: not released to CTAN)
