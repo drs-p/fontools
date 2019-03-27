@@ -333,7 +333,7 @@ my %SSUB_SHAPE = (
     which figure style is default for the current font.
 
     The 'reqd' subtable for the Inf style is also empty; this may be filled
-    with 'sinf', 'subs' or 'dnom' depending on the -inferiors options.
+    with 'subs', 'sinf' or 'dnom' depending on the -inferiors options.
 
 =end Comment
 
@@ -454,6 +454,25 @@ sub main {
     my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
     Fontinfo::assert_unique(@fonts);
 
+    # We can only handle the '-inferiors=auto' option now,
+    # since this requires knowing which inferior figures this font supports;
+    # so we have to do the font info parsing first.
+    if ($ARGV{inferiors} eq 'auto') {
+        FONT:
+        for my $font (@fonts) {
+            for my $inf (qw(subs sinf dnom)) {
+                if (exists $font->{feature}{$inf}) {
+                    $ARGV{inferiors} = $inf;
+                    $STYLE{Inf}{reqd} = [$inf];
+                    last FONT;
+                }
+            }
+        }
+    }
+    # If we didn't find any inferior figures, delete the 'Inf' entry
+    # frin the %STYLE table to indicate we don't want to generate this style.
+    delete $STYLE{Inf} if $ARGV{inferiors} eq 'auto';
+
     # For each font, figure out the styles, shapes and encodings to generate
     my @worklist
         = cleanup(expand_encodings(expand_shapes(expand_styles(@fonts))));
@@ -508,7 +527,7 @@ sub uniq {
 sub expand_styles {
     return map { my $font = $_;
                  map { { font => $font, style => $_ } }
-                     grep { has_all_reqd_styles($font, $STYLE{$_}) }
+                     grep { has_all_reqd_features($font, $STYLE{$_}) }
                           keys %STYLE
                }
                @_;
@@ -517,7 +536,7 @@ sub expand_styles {
 #-----------------------------------------------------------------------
 # Check if $font has all features mentioned in the 'reqd' subtable of $target
 #-----------------------------------------------------------------------
-sub has_all_reqd_styles {
+sub has_all_reqd_features {
     my ($font, $target) = @_;
 
     return 0 unless defined $target;
@@ -850,7 +869,7 @@ Possible options:
     -(no)swash              Toggle creation of swash shape
     -(no)titling            Toggle creation of titling shape
     -(no)superiors          Toggle creation of fonts with superior characters
-    -inferiors=[auto|sinf|subs|dnom]
+    -inferiors=[none|auto|subs|sinf|dnom]
                             Use this style for subscripts (see docs)
     -(no)ornaments          Toggle creation of ornament fonts
     -(no)fractions          Toggle creation of fonts with digits for fractions
@@ -894,7 +913,7 @@ END_USAGE
     swash        => '1',     # 0 = no, 1 = yes
     titling      => '1',     # 0 = no, 1 = yes
     superiors    => '1',     # 0 = no, 1 = yes
-    inferiors    => '',      # possible values: '', 'auto', 'sinf', 'subs', 'dnom'
+    inferiors    => 'none',  # possible values: none, auto, subs, sinf, dnom
     ornaments    => '1',     # 0 = no, 1 = yes
     fractions    => '0',     # 0 = no, 1 = yes
     nfss         => 'rm',
@@ -962,14 +981,12 @@ sub parse_options {
     delete $STYLE{Sup}           unless $ARGV{superiors};
     delete $STYLE{Orn}           unless $ARGV{ornaments};
     delete @STYLE{qw(Numr Dnom)} unless $ARGV{fractions};
-    if    ($ARGV{inferiors} eq 'auto') { ; }   # handle later
-    elsif ($ARGV{inferiors} eq 'sinf') { $STYLE{Inf}{reqd} = ['sinf'] }
+    if    ($ARGV{inferiors} eq 'auto') { $STYLE{Inf}{reqd} = ['auto'] }
     elsif ($ARGV{inferiors} eq 'subs') { $STYLE{Inf}{reqd} = ['subs'] }
+    elsif ($ARGV{inferiors} eq 'sinf') { $STYLE{Inf}{reqd} = ['sinf'] }
     elsif ($ARGV{inferiors} eq 'dnom') { $STYLE{Inf}{reqd} = ['dnom'] }
     else  {
-        warn "[WARNING] unknown value -inferiors=$ARGV{inferiors} ignored!\n"
-            if $ARGV{inferiors};
-        $ARGV{inferiors} = 'no';
+        $ARGV{inferiors} = 'none';
         delete $STYLE{Inf}
     }
 
@@ -1115,7 +1132,8 @@ sub parse_basicinfo {
     my $fullinfo =  lc "$data{subfamily} | $data{fullname}";
 
     # We need to be careful when parsing the font info; in particular
-    # we must avoid parsing 'UltraCondensed' fonts as having 'Ultra' weight...
+    # we must parse 'UltraCondensed' as 'Regular' weight
+    # and 'UltraCondensed' width, not as 'Ultra' weight and 'Condensed' width.
     # The following two rules should prevent accidents:
     # 1.  Search for matching widths before matching weights
     #     (as none of the widths is a proper substring of some weight)
@@ -1163,6 +1181,8 @@ sub parse_basicinfo {
         }
     }
 
+    # Take care to unabbreviate weight and width; CondensedUltra fonts
+    # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
     if (exists $UNABBREVIATE{ $info->{width} }) {
         $info->{width} = $UNABBREVIATE{ $info->{width} };
     }
@@ -1177,12 +1197,11 @@ sub parse_basicinfo {
 
     # We define 'series' as 'weight + width'. This matches NFSS, but contradicts
     # how most fonts are named (which is 'width + weight').
-    # Take care to unabbreviate weight and width; otherwise a CondensedUltra font
-    # might get a 'series' attribute of ultracondensed, which is not the same!
-    $info->{series} = ($info->{width} eq 'regular')  ? $info->{weight}
-                    : ($info->{weight} eq 'regular') ? $info->{width}
-                    :                                  $info->{weight} . $info->{width}
-                    ;
+    $info->{series} 
+        = ($info->{width} eq 'regular')  ? $info->{weight}
+        : ($info->{weight} eq 'regular') ? $info->{width}
+        :                                  $info->{weight} . $info->{width}
+        ;
 
     return $info;
 }
@@ -1996,7 +2015,7 @@ Other encodings can be chosen using the I<-encoding> option
 =head2 NFSS codes
 
 I<< B<CAVEAT>: this functionality was almost completely rewritten in release 2019-03-14.
-Older versions tried to directly map all fonts to short NFSS codes,
+Older versions tried to map all fonts directly to short NFSS codes,
 but often had to invent non-standard codes in order to deal with the
 many different weights and widths that occur in the wild.
 These non-standard NFSS codes used by older versions of B<autoinst> will no longer
@@ -2172,18 +2191,19 @@ Control the creation of titling fonts. The default is B<-titling>.
 Control the creation of fonts with superior characters.
 The default is B<-superiors>.
 
-=item B<-inferiors>=[ B<sinf> | B<subs> | B<dnom> ]
+=item B<-inferiors>=[ B<none> | B<auto> | B<subs> | B<sinf> | B<dnom> ]
 
 The OpenType standard defines several kinds of digits that might be used
-as inferiors or subscripts: "Scientific Inferiors"
-(OpenType feature "sinf"), "Subscripts" ("subs") and "Denominators" ("dnom").
+as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
+"Scientific Inferiors" ("sinf"), and "Denominators" ("dnom").
 This option allows the user to determine which of these styles B<autoinst>
-should use for the inferior characters. The default is not to create fonts
-with inferior characters.
+should use for the inferior characters.
+Alternatively, the value "auto" tells B<autoinst> the first value
+in "subs", "sinf" or "dnom" that is supported by the fonts.
+The default value is "none".
 
-I<< Note that many fonts contain only one (or even none) of these types
-of inferior characters. If you specify a style of inferiors that isn't
-present in the font, B<autoinst> silently falls back to its default
+I<< Note that if you specify a style of inferiors that isn't
+present in the font, B<autoinst> silently falls back to its default behaviour
 of not creating fonts with inferiors; it doesn't try to substitute one of
 the other features. >>
 
@@ -2351,7 +2371,7 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-26>
+=item I<2019-03-27>
 
 Fine-tuned the decision where to put generated files;
 in particular, create $TEXMFHOME if it doesn't already exist
@@ -2360,6 +2380,9 @@ and $TEXMFLOCAL isn't user-writable.
 In manual mode, or when we can't find a user-writable TEXMF tree,
 put all generated files into a subdirectory C<./autoinst_output/>
 instead of all over the current working directory.
+
+Added to "auto" value to the I<inferiors> option,
+to tell B<autoinst> to use whatever inferior characters are available.
 
 =item I<2019-03-14> (note: not released to CTAN)
 
@@ -2400,7 +2423,7 @@ Added the "Two", "Four", "Eight" and "Hair" weights (for Fira Sans).
 =item I<2017-06-16>
 
 Changed the I<-inferiors> option from a binary yes-or-no choice to allow
-the user to choose one of the "sinf", "subs" and "dnom" features.
+the user to choose one of the "subs", "sinf" and "dnom" features.
 B<autoinst> now always creates a log file.
 
 =item I<2017-03-21>
