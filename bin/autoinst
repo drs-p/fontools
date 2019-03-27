@@ -2198,8 +2198,8 @@ as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
 "Scientific Inferiors" ("sinf"), and "Denominators" ("dnom").
 This option allows the user to determine which of these styles B<autoinst>
 should use for the inferior characters.
-Alternatively, the value "auto" tells B<autoinst> the first value
-in "subs", "sinf" or "dnom" that is supported by the fonts.
+Alternatively, the value "auto" tells B<autoinst> to use the first value
+in the list "subs", "sinf" or "dnom" that is supported by the fonts.
 The default value is "none".
 
 I<< Note that if you specify a style of inferiors that isn't
