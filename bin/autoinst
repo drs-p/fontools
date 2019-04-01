@@ -2381,7 +2381,7 @@ In manual mode, or when we can't find a user-writable TEXMF tree,
 put all generated files into a subdirectory C<./autoinst_output/>
 instead of all over the current working directory.
 
-Added to "auto" value to the I<inferiors> option,
+Added "auto" value to the I<inferiors> option,
 to tell B<autoinst> to use whatever inferior characters are available.
 
 =item I<2019-03-14> (never released to CTAN)
