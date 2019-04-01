@@ -2371,7 +2371,7 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-03-27>
+=item I<2019-04-01>
 
 Fine-tuned the decision where to put generated files;
 in particular, create $TEXMFHOME if it doesn't already exist
@@ -2384,7 +2384,7 @@ instead of all over the current working directory.
 Added to "auto" value to the I<inferiors> option,
 to tell B<autoinst> to use whatever inferior characters are available.
 
-=item I<2019-03-14> (note: not released to CTAN)
+=item I<2019-03-14> (never released to CTAN)
 
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes. Instead of inventing our own codes
