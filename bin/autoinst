@@ -470,7 +470,7 @@ sub main {
         }
     }
     # If we didn't find any inferior figures, delete the 'Inf' entry
-    # frin the %STYLE table to indicate we don't want to generate this style.
+    # from the %STYLE table to indicate we don't want to generate this style.
     delete $STYLE{Inf} if $ARGV{inferiors} eq 'auto';
 
     # For each font, figure out the styles, shapes and encodings to generate
