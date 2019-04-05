@@ -461,6 +461,7 @@ sub main {
 
     my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
     Fontinfo::assert_unique(@fonts);
+
     # We can only handle the '-inferiors=auto' option now,
     # since this requires knowing which inferior figures this font supports;
     # so we have to do the font info parsing first.
@@ -474,6 +475,7 @@ sub main {
 
     # Organize the worklist by family, encoding, style, series and shape
     my %fddata;
+    my ( %weight, %width );
     for my $item (@worklist) {
         my $family   = $item->{font}{family};
         my $encoding = $item->{encoding}[1];
@@ -485,7 +487,13 @@ sub main {
 
         push @{$fddata{$family}{$encoding}{$style}{$series}{$shape}},
              [ $minsize, $maxsize, $item->{fontname} ];
+
+        $weight{ $item->{weight} } = 1;
+        $width{ $item->{width} } = 1;
     }
+
+    # Decide to which weights and widths we'll map the standard NFSS codes
+    decide_nfss_mappings( %weight, %width );
 
     create_logfile(@worklist);
 
@@ -629,6 +637,35 @@ sub cleanup {
     }
 
     return @worklist;
+}
+
+#-----------------------------------------------------------------------
+# Modify NFSS_WEIGHT and _WIDTH tables: pick one choice for each NFSS code
+#-----------------------------------------------------------------------
+sub decide_nfss_mappings {
+    my %seen = @_;
+
+    NFSSWEIGHT:
+    for my $nfssweight (@NFSS_WEIGHT) {
+        for my $weight ( @{$NFSS_WEIGHT{$nfssweight}} ) {
+            if ( $seen{$weight} ) {
+                $NFSS_WEIGHT{$nfssweight} = [ $weight ];
+                next NFSSWEIGHT;
+            }
+        }
+        $NFSS_WEIGHT{$nfssweight} = [];
+    }
+
+    NFSSWIDTH:
+    for my $nfsswidth (@NFSS_WIDTH) {
+        for my $width ( @{$NFSS_Width{$nfsswidth}} ) {
+            if ( $seen{$width} ) {
+                $NFSS_WIDTH{$nfsswidth} = [ $width ];
+                next NFSSWIDTH;
+            }
+        }
+        $NFSS_WIDTH{$nfsswidth} = [];
+    }
 }
 
 #-----------------------------------------------------------------------
