@@ -461,25 +461,12 @@ sub main {
 
     my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
     Fontinfo::assert_unique(@fonts);
-
     # We can only handle the '-inferiors=auto' option now,
     # since this requires knowing which inferior figures this font supports;
     # so we have to do the font info parsing first.
     if ($ARGV{inferiors} eq 'auto') {
-        FONT:
-        for my $font (@fonts) {
-            for my $inf (qw(subs sinf dnom)) {
-                if (exists $font->{feature}{$inf}) {
-                    $ARGV{inferiors} = $inf;
-                    $STYLE{Inf}{reqd} = [$inf];
-                    last FONT;
-                }
-            }
-        }
+        Fontinfo::handle_auto_inferiors(@fonts);
     }
-    # If we didn't find any inferior figures, delete the 'Inf' entry
-    # from the %STYLE table to indicate we don't want to generate this style.
-    delete $STYLE{Inf} if $ARGV{inferiors} eq 'auto';
 
     # For each font, figure out the styles, shapes and encodings to generate
     my @worklist
@@ -1388,6 +1375,26 @@ sub get_orn {
     }
 
     return $enc_name;
+}
+
+#-----------------------------------------------------------------------
+# Handle the -inferiors=auto option
+#-----------------------------------------------------------------------
+sub handle_auto_inferiors {
+    FONT:
+    for my $font (@fonts) {
+        for my $inf (qw(subs sinf dnom)) {
+            if (exists $font->{feature}{$inf}) {
+                $ARGV{inferiors} = $inf;
+                $STYLE{Inf}{reqd} = [$inf];
+                last FONT;
+            }
+        }
+    }
+
+    # If we didn't find any inferior figures, delete the 'Inf' entry
+    # from the %STYLE table to indicate we don't want to generate this style.
+    delete $STYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
 
