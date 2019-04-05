@@ -679,7 +679,7 @@ sub create_logfile {
                     || $a->{style} cmp $b->{style}
                } @_;
 
-    open my $LOG, '>', $ARGV{logfile}
+    open my $LOG, '>>', $ARGV{logfile}
         or die "$0: cannot create $ARGV{logfile}: $!";
 
     print {$LOG} <<"END_ARGUMENTS";
@@ -692,7 +692,7 @@ sub create_logfile {
     $ARGV{cmdline}
 
 
-****************************************************************************
+============================================================================
 
 
 I'm using the following options:
@@ -743,11 +743,11 @@ END_ARGUMENTS
     my ($prevfn, $prevsty, $prevenc) = ('') x 3;
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
-            push @cmds, "\n" . '*' x 76;
+            push @cmds, "\n" . '=' x 76;
             print {$LOG} <<"END_FONTINFO";
 
 
-****************************************************************************
+============================================================================
 
 
 $item->{font}{filename}
