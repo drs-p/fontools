@@ -38,6 +38,7 @@ use File::Path ();
 use File::Spec ();
 use Getopt::Long ();
 use Pod::Usage ();
+use POSIX ();
 
 my ($d, $m, $y) = (localtime time)[3 .. 5];
 my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
@@ -683,7 +684,12 @@ sub create_logfile {
 
     print {$LOG} <<"END_ARGUMENTS";
 
-$ARGV{cmdline}
+****************************************************************************
+
+@{[ POSIX::strftime("%F %T", localtime time) ]}  $0
+
+
+    $ARGV{cmdline}
 
 
 ****************************************************************************
@@ -725,8 +731,16 @@ I'm using the following options:
 
 END_ARGUMENTS
 
+    printf {$LOG} "\n\n", '*' x 76, "\n\n\nNFSS mappings:\n\n";
+    for my $weight (@NFSSWEIGHT) {
+        printf "    %-3s =>  %s\n", $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '(none)';
+    }
+    printf "\n";
+    for my $width (@NFSSWIDTH) {
+        printf "    %-3s =>  %s\n", $width || 'm', $NFSS_WIDTH{$width}[0] || '(none)';
+    }
+
     my ($prevfn, $prevsty, $prevenc) = ('') x 3;
-    my @cmds;
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
             push @cmds, "\n" . '*' x 76;
@@ -766,12 +780,8 @@ END_FONTINFO
         $prevfn  = $item->{font}{filename};
         $prevsty = $item->{style};
         $prevenc = $item->{encoding}[1];
-
-        push @cmds, $item->{cmdline};
     }
 
-    print {$LOG} join "\n\n", @cmds;
-    print {$LOG} "\n";
     close $LOG;
 }
 
