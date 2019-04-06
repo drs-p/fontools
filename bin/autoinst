@@ -1247,7 +1247,7 @@ sub parse_basicinfo {
 
     # We define 'series' as 'weight + width'. This matches NFSS, but contradicts
     # how most fonts are named (which is 'width + weight').
-    $info->{series} 
+    $info->{series}
         = ($info->{width} eq 'regular')  ? $info->{weight}
         : ($info->{weight} eq 'regular') ? $info->{width}
         :                                  $info->{weight} . $info->{width}
@@ -1950,6 +1950,14 @@ where I<< <suffix> >> is the same as above (but in lowercase),
 I<< <shape> >> is either empty, "sc", "swash" or "titling",
 and I<< <enc> >> is the encoding (also in lowercase).
 A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
+
+
+=head2 About the log file
+
+B<autoinst> writes some info about what it thinks it's doing to a log file F<autoinst.log>.
+Note that if that file already exists, B<autoinst> will append to it rather than overwrite it.
+Use the I<-verbose> command-line option (see L</"COMMAND-LINE OPTIONS"> below)
+to ask for more detailed info.
 
 
 =head2 A note for MiKTeX users
