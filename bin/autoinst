@@ -476,7 +476,6 @@ sub main {
 
     # Organize the worklist by family, encoding, style, series and shape
     my %fddata;
-    my ( %weight, %width );
     for my $item (@worklist) {
         my $family   = $item->{font}{family};
         my $encoding = $item->{encoding}[1];
@@ -488,13 +487,10 @@ sub main {
 
         push @{$fddata{$family}{$encoding}{$style}{$series}{$shape}},
              [ $minsize, $maxsize, $item->{fontname} ];
-
-        $weight{ $item->{weight} } = 1;
-        $width{ $item->{width} } = 1;
     }
 
     # Decide to which weights and widths we'll map the standard NFSS codes
-    decide_nfss_mappings( %weight, %width );
+    decide_nfss_mappings(@fonts);
 
     create_logfile(@worklist);
 
@@ -644,12 +640,16 @@ sub cleanup {
 # Modify NFSS_WEIGHT and _WIDTH tables: pick one choice for each NFSS code
 #-----------------------------------------------------------------------
 sub decide_nfss_mappings {
-    my %seen = @_;
+    my ( %weight, %width );
+    for my $font (@_) {
+        $weight{ $font->{weight} } = 1;
+        $width{ $font->{width} } = 1;
+    }
 
     NFSSWEIGHT:
     for my $nfssweight (@NFSS_WEIGHT) {
         for my $weight ( @{$NFSS_WEIGHT{$nfssweight}} ) {
-            if ( $seen{$weight} ) {
+            if ( $weight{$weight} ) {
                 $NFSS_WEIGHT{$nfssweight} = [ $weight ];
                 next NFSSWEIGHT;
             }
@@ -659,8 +659,8 @@ sub decide_nfss_mappings {
 
     NFSSWIDTH:
     for my $nfsswidth (@NFSS_WIDTH) {
-        for my $width ( @{$NFSS_Width{$nfsswidth}} ) {
-            if ( $seen{$width} ) {
+        for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
+            if ( $width{$width} ) {
                 $NFSS_WIDTH{$nfsswidth} = [ $width ];
                 next NFSSWIDTH;
             }
@@ -684,15 +684,17 @@ sub create_logfile {
 
     print {$LOG} <<"END_ARGUMENTS";
 
-****************************************************************************
 
-@{[ POSIX::strftime("%F %T", localtime time) ]}  $0
-
-
-    $ARGV{cmdline}
+############################################################################
 
 
-============================================================================
+@{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0
+
+
+    "$ARGV{cmdline}"
+
+
+----------------------------------------------------------------------------
 
 
 I'm using the following options:
@@ -731,26 +733,27 @@ I'm using the following options:
 
 END_ARGUMENTS
 
-    printf {$LOG} "\n\n", '*' x 76, "\n\n\nNFSS mappings:\n\n";
-    for my $weight (@NFSSWEIGHT) {
-        printf "    %-3s =>  %s\n", $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '(none)';
+    printf {$LOG} "\n" . '-' x 76 . "\n\n\nNFSS mappings:\n\n";
+    for my $weight (@NFSS_WEIGHT) {
+        printf {$LOG} "    %-3s =>  %s\n", $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '(none)';
     }
-    printf "\n";
-    for my $width (@NFSSWIDTH) {
-        printf "    %-3s =>  %s\n", $width || 'm', $NFSS_WIDTH{$width}[0] || '(none)';
+    printf {$LOG} "\n";
+    for my $width (@NFSS_WIDTH) {
+        printf {$LOG} "    %-3s =>  %s\n", $width || 'm', $NFSS_WIDTH{$width}[0] || '(none)';
     }
+    printf {$LOG} "\n";
+
+    return if $ARGV{verbose} < 1;
 
     my ($prevfn, $prevsty, $prevenc) = ('') x 3;
+    my @cmds;
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
-            push @cmds, "\n" . '=' x 76;
             print {$LOG} <<"END_FONTINFO";
 
+    ------------------------------------------------------------------------
 
-============================================================================
-
-
-$item->{font}{filename}
+    $item->{font}{filename}
         Name:       $item->{font}{name}
         Family:     $item->{font}{family}
         Subfamily:  $item->{font}{subfamily}
@@ -761,17 +764,16 @@ $item->{font}{filename}
         Features:   @{[ join ', ', sort keys %{$item->{font}{feature}} ]}
 
 
-Generating these encodings, figure styles and shapes:
+        Generating these encodings, figure styles and shapes:
 
-    ENC     STYLE   SHAPE   FEATURES USED
-    --------------------------------------------------------------------
+        ENC     STYLE   SHAPE   FEATURES USED
 END_FONTINFO
         }
         if ($prevenc ne $item->{encoding}[1]
             || $prevsty ne $item->{style}) {
             print {$LOG} "\n";
         }
-        printf {$LOG} "    %-3s     %-4s    %-4s    %s\n",
+        printf {$LOG} "        %-3s     %-4s    %-4s    %s\n",
                             $item->{encoding}[1],
                             $item->{style},
                             $item->{fdshape},
@@ -780,8 +782,13 @@ END_FONTINFO
         $prevfn  = $item->{font}{filename};
         $prevsty = $item->{style};
         $prevenc = $item->{encoding}[1];
+
+        push @cmds, $item->{cmdline};
     }
 
+    return if $ARGV{verbose} < 2;
+    print {$LOG} join "\n\n", @cmds;
+    print {$LOG} "\n";
     close $LOG;
 }
 
@@ -937,7 +944,7 @@ Possible options:
     -help                   Print this text and exit
     -doc                    Print the complete documentation and exit
     -dryrun                 Don't generate fonts, only log what would be done
-
+    -verbose                Print more data to log file (repeat for even higher verbosity)
     font[s]                 The fonts (.otf or .ttf format) to install.
 
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
@@ -971,6 +978,7 @@ END_USAGE
     logfile      => 'autoinst.log',
     figurekern   => '1',     # 0 = no, 1 = yes
     mergewidths  => '0',     # 0 = no, 1 = yes
+    verbose      => 0,
 );
 
 #-----------------------------------------------------------------------
@@ -1010,6 +1018,7 @@ sub parse_options {
         'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
         'mergewidths!'        => \$ARGV{mergewidths},
+        'verbose+'            => \$ARGV{verbose},
     )
     or die "$USAGE";
 
@@ -1428,7 +1437,7 @@ sub get_orn {
 #-----------------------------------------------------------------------
 sub handle_auto_inferiors {
     FONT:
-    for my $font (@fonts) {
+    for my $font (@_) {
         for my $inf (qw(subs sinf dnom)) {
             if (exists $font->{feature}{$inf}) {
                 $ARGV{inferiors} = $inf;
