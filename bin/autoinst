@@ -941,6 +941,9 @@ Possible options:
     -(no)figurekern         Keep or remove kerns between tabular figures
     -(no)mergewidths        Merge Condended/Extended subfamilies with main family
 
+    -nfssweight=xx=yyyy     Map the "xx" NFSS code to the "yyyy" weight
+    -nfsswidth=xx=yyyy      Map the "xx" NFSS code to the "yyyy" width
+
     -help                   Print this text and exit
     -doc                    Print the complete documentation and exit
     -dryrun                 Don't generate fonts, only log what would be done
@@ -1019,6 +1022,16 @@ sub parse_options {
         'figurekern!'         => \$ARGV{figurekern},
         'mergewidths!'        => \$ARGV{mergewidths},
         'verbose+'            => \$ARGV{verbose},
+        'nfssweight=s%'       => sub {
+                                     my ( $ignored, $key, $values ) = @_;
+                                     my @values = split m/,/, lc $values;
+                                     $NFSS_WEIGHT{$key} = [ @values, @{$NFSS_WEIGHT{$key}} ];
+                                 },
+        'nfsswidth=s%'        => sub {
+                                     my ( $ignored, $key, $values ) = @_;
+                                     my @values = split m/,/, lc $values;
+                                     $NFSS_WIDTH{$key} = [ @values, @{$NFSS_WIDTH{$key}} ];
+                                 },
     )
     or die "$USAGE";
 
@@ -2175,10 +2188,10 @@ such as C<\bfseries>, which are built on top of these codes) will "just work".
 To access specific weights or widths, use the C<\fontseries> command with
 the full series name (i.e., C<\fontseries{demibold}\selectfont>).
 
-To see exactly which NFSS codes map to which fonts, please refer to
-the F<autoinst.log> file
+To see exactly which NFSS codes map to which fonts, see the F<autoinst.log> file
 (pro tip: run B<autoinst> with the I<-dryrun> option to check its mappings beforehand).
-
+The I<-nfssweight> and I<-nfsswidth> command-line options can be used to finetune
+the mapping between NFSS codes and fonts.
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -2336,6 +2349,14 @@ Append I<text> as extra options to the command lines for I<otftotfm>.
 To prevent I<text> from accidentily being interpreted as options to B<autoinst>,
 it should be properly quoted.
 
+=item B<-nfssweight>=I<code>=I<weight>
+
+=item B<-nfsswidth>=I<code>=I<width>
+
+Map the NFSS code I<code> to the given weight or width, overriding the built-in tables.
+Both of these options may be given multiple times, to override more than one NFSS code.
+Example: to map the "ul" code to the "Thin" weight, use C<-nfssweight=ul=thin>.
+
 =item B<-manual>
 
 Manual mode; for users who want to post-process the generated files and commands.
@@ -2419,8 +2440,9 @@ Minion Pro, Myriad Pro and Cronos Pro font families.
 
 Marc Penninga (F<marcpenninga@gmail.com>)
 
-When sending a bug report, please give as much relevant information as
-possible.
+When sending a bug report, please give as much relevant information as possible;
+this usually includes (but may not be limited to) the F<autoinst.log> file
+(please add the I<-verbose> command-line option, for extra info).
 If you see any error messages
 (whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl
 or from the OS), include these I<verbatim>; don't paraphrase.
@@ -2459,6 +2481,7 @@ GNU General Public License for more details.
 =item I<2019-04-06>
 
 Tried to make the F<autoinst.log> file more relevant.
+Added the I<-nfssweight> and I<-nfsswidth> options.
 
 =item I<2019-04-01>
 
