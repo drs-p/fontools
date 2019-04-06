@@ -2168,7 +2168,9 @@ To access specific weights or widths, use the C<\fontseries> command with
 the full series name (i.e., C<\fontseries{demibold}\selectfont>).
 
 To see exactly which NFSS codes map to which fonts, please refer to
-the generated F<fd> files.
+the F<autoinst.log> file
+(pro tip: run B<autoinst> with the I<-dryrun> option to check its mappings beforehand).
+
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -2189,6 +2191,11 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 
 Don't generate any output files; only parse the input fonts and create
 F<autoinst.log> showing which fonts would have been generated.
+
+=item B<-verbose>
+
+Add detailed info about which families, styles and shapes B<autoinst> will generate
+to the F<autoinst.log> file. Repeat this option for even more info.
 
 =item B<-encoding>=I<encoding[,encoding]>
 
@@ -2440,6 +2447,10 @@ GNU General Public License for more details.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2019-04-06>
+
+Tried to make the F<autoinst.log> file more relevant.
 
 =item I<2019-04-01>
 
