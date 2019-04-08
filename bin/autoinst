@@ -176,6 +176,7 @@ my @NFSS_WEIGHT = (
 );
 my %NFSS_WEIGHT = @NFSS_WEIGHT;
 @NFSS_WEIGHT = grep { !ref } @NFSS_WEIGHT;
+my @WEIGHTS = map { @{$_} } values %NFSS_WEIGHT;
 
 my @NFSS_WIDTH = (
     uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
@@ -190,6 +191,7 @@ my @NFSS_WIDTH = (
 );
 my %NFSS_WIDTH = @NFSS_WIDTH;
 @NFSS_WIDTH = grep { !ref } @NFSS_WIDTH;
+my @WIDTHS = map { @{$_} } values %NFSS_WIDTH;
 
 =begin Comment
 
@@ -1025,12 +1027,12 @@ sub parse_options {
         'nfssweight=s%'       => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
-                                     $NFSS_WEIGHT{$key} = [ @values, @{$NFSS_WEIGHT{$key}} ];
+                                     $NFSS_WEIGHT{$key} = \@values;
                                  },
         'nfsswidth=s%'        => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
-                                     $NFSS_WIDTH{$key} = [ @values, @{$NFSS_WIDTH{$key}} ];
+                                     $NFSS_WIDTH{$key} = \@values;
                                  },
     )
     or die "$USAGE";
@@ -1201,13 +1203,13 @@ sub parse_basicinfo {
     # 1.  Search for matching widths before matching weights
     #     (as none of the widths is a proper substring of some weight)
     # 2.  Remove any recognised search string from the 'fullinfo'
-    for my $width ( mqrs( map { @{$_} } values %NFSS_WIDTH ) ) {
+    for my $width ( mqrs(@WIDTHS) ) {
         if ($fullinfo =~ s/${width}//gxmsi) {
             $info->{width} = $width;
             last;
         }
     }
-    for my $weight ( mqrs( map { @{$_} } values %NFSS_WEIGHT ) ) {
+    for my $weight ( mqrs(@WEIGHTS) ) {
         if ($fullinfo =~ s/${weight}//gxmsi) {
             $info->{weight} = $weight;
             last;
@@ -1235,7 +1237,7 @@ sub parse_basicinfo {
     # Some font families put condensed or extended widths into separate families;
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
-        my $widths = join '|', mqrs( map { @{$_} } values %NFSS_WIDTH );
+        my $widths = join '|', mqrs(@WIDTHS);
         if ($info->{width} eq 'regular'
             && $info->{family} =~ m/(.+?) [ ]* (${widths})$/xmsi)
         {
@@ -2356,6 +2358,7 @@ it should be properly quoted.
 Map the NFSS code I<code> to the given weight or width, overriding the built-in tables.
 Both of these options may be given multiple times, to override more than one NFSS code.
 Example: to map the "ul" code to the "Thin" weight, use C<-nfssweight=ul=thin>.
+To inhibit the use of the "ul" code completely, use C<-nfssweight=ul=>.
 
 =item B<-manual>
 
@@ -2478,7 +2481,7 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-04-06>
+=item I<2019-04-08>
 
 Tried to make the F<autoinst.log> file more relevant.
 Added the I<-nfssweight> and I<-nfsswidth> options.
