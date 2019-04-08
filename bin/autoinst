@@ -142,8 +142,8 @@ my %UNABBREVIATE = (
         - (especially in newer fonts) an extra step between Regular and Semibold
         I treat it as if it's always the first.
     - Heavy can mean very different things; it's often heavier than Black,
-        but sometimes it's a synonym for Extrabold, and in some families (Futura)
-        it's even lighter than Bold. I treat it here as "very black".
+        but sometimes it's a synonym for Extrabold, and in Futura it's even
+        lighter than Bold. I treat it here as "very black".
     - Font families that have both Condensed and Compressed widths
         seem to define Compressed as narrower than Condensed.
     - In Basic Sans and Input (which are the only families I know with both
