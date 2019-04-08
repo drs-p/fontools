@@ -83,9 +83,9 @@ my %UNABBREVIATE = (
     2.  We add "ssub" rules to the .fd files that map the standard NFSS codes
         to actual fonts.
 
-    In step 1, we follow NFSS in leaving out any occurrence of the word "regular"
-    unless *both* weight and width are Regular; in that case, the series attribute
-    becomes "regular".
+    In step 1, we follow NFSS in leaving out any occurrence of
+    the word "regular" unless *both* weight and width are Regular;
+    in that case, the 'series' attribute becomes "regular".
 
     The two tables NFSS_WEIGHT and NFSS_WIDTH are used to control step 2.
     It contains several entries of the form
@@ -94,12 +94,6 @@ my %UNABBREVIATE = (
 
     This should be read as follows: the NFSS code "sc" is mapped to the *first*
     width on the right hand side that is present in the current font family.
-
-    Given the lack of a standardised font naming scheme, this mapping system
-    will probably leave some fonts without matching NFSS codes and, vice versa,
-    some NFSS codes without matching font. It is, however, probably the best
-    that can be done in an automated way. If you think you can do better,
-    I welcome pull requests :-)
 
     Please note that the tables contain empty keys instead of "m" for
     the regular weight and width. NFSS actually combines weight and width
@@ -113,7 +107,7 @@ my %UNABBREVIATE = (
     to be searched for.
 
     These tables can be extended to teach autoinst about new weights or widths.
-    Suppose your font family contains a "Hemibold" weight. Then simply add the name
+    Suppose your font family contains a "Hemibold" weight. Then add the name
     "hemibold" to the right hand side of the "sb" entry in the NFSS_WEIGHT
     table:
 
@@ -125,11 +119,11 @@ my %UNABBREVIATE = (
     NFSS code).
 
     Note that autoinst converts all metadata to lowercase to avoid inconsistent
-    capitalization; hence all entries in these tables should be *lowercase* as well.
+    capitalization; so all entries in these tables should be *lowercase* as well.
 
     Technical note:
-    We define NFSS_WEIGHT and NFSS_WIDTH first as arrays (@) and only then as hashtables (%);
-    this allows us to use the array-variants as an *ordered* list of keys of the tables.
+    We define NFSS_WEIGHT and NFSS_WIDTH first as arrays and then as hashtables;
+    this allows us to use the array-variants as an *ordered* list of keys.
 
 
     Finally, some random remarks about these tables:
@@ -141,8 +135,8 @@ my %UNABBREVIATE = (
         mostly, however, it is a very light weight below Ultralight.
     - Semilight weights are virtually nonexistent, except for Thesis
         (which contains a Semilight weight) and Arnhem (which has Blond).
-    - Book is usually slightly lighter than Regular (and so could be mapped to "sl"),
-        but sometimes (mainly in fonts from DTL and FontFont/FSI) slightly *heavier*.
+    - Book is usually slightly lighter than Regular, but sometimes
+        (mainly in fonts from DTL and FontFont/FSI) slightly *heavier*.
     - Likewise, Medium can really be two different things:
         - a synonym for Semibold
         - (especially in newer fonts) an extra step between Regular and Semibold
@@ -152,11 +146,12 @@ my %UNABBREVIATE = (
         it's even lighter than Bold. I treat it here as "very black".
     - Font families that have both Condensed and Compressed widths
         seem to define Compressed as narrower than Condensed.
-    - In Basic Sans (which is the only family I know with both Narrow and Condensed
-        fonts) Narrow is a bit wider than Condensed. So I mapped Narrow to "sc".
+    - In Basic Sans and Input (which are the only families I know with both
+        Narrow and Condensed), Narrow is a bit wider than Condensed.
+        So I mapped Narrow to "sc".
     - Extended and Expanded seem to be used interchangeably.
-    - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts in the wild,
-        so the ex and ux entries are currently empty
+    - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts,
+        so the ex and ux entries are currently empty.
 
 =end Comment
 
