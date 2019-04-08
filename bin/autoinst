@@ -681,6 +681,10 @@ sub create_logfile {
                     || $a->{style} cmp $b->{style}
                } @_;
 
+    if (-e $ARGV{logfile}) {
+        print "[INFO]: file '$ARGV{logfile}' already exists;\n" .
+              "        appending new log data to end\n\n";
+    }
     open my $LOG, '>>', $ARGV{logfile}
         or die "$0: cannot create $ARGV{logfile}: $!";
 
@@ -949,7 +953,9 @@ Possible options:
     -help                   Print this text and exit
     -doc                    Print the complete documentation and exit
     -dryrun                 Don't generate fonts, only log what would be done
-    -verbose                Print more data to log file (repeat for even higher verbosity)
+    -logfile="FILE"         Write log data to "FILE" (default: 'autoinst.log')
+    -verbose                Print more data to log file
+                            (repeat for even higher verbosity)
     font[s]                 The fonts (.otf or .ttf format) to install.
 
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
@@ -1023,6 +1029,7 @@ sub parse_options {
         'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
         'mergewidths!'        => \$ARGV{mergewidths},
+        'logfile=s'           => \$ARGV{logfile},
         'verbose+'            => \$ARGV{verbose},
         'nfssweight=s%'       => sub {
                                      my ( $ignored, $key, $values ) = @_;
@@ -1969,10 +1976,12 @@ A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 
 =head2 About the log file
 
-B<autoinst> writes some info about what it thinks it's doing to a log file F<autoinst.log>.
-Note that if that file already exists, B<autoinst> will append to it rather than overwrite it.
-Use the I<-verbose> command-line option (see L</"COMMAND-LINE OPTIONS"> below)
-to ask for more detailed info.
+B<autoinst> writes some info about what it thinks it's doing to a log file
+(by default called F<autoinst.log>, but see the I<-logfile> command-line
+option in L</"COMMAND-LINE OPTIONS"> below.
+If that file already exists, B<autoinst> will append its data to the end
+rather than overwrite it.
+Use the I<-verbose> command-line option to ask for more detailed info.
 
 
 =head2 A note for MiKTeX users
@@ -2214,6 +2223,12 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 
 Don't generate any output files; only parse the input fonts and create
 F<autoinst.log> showing which fonts would have been generated.
+
+=item B<-logfile>=I<filename>
+
+Write log data to F<filename> instead of the default F<autoinst.log>.
+If the file already exist, B<autoinst> appends to it;
+it doesn't overwrite existing data.
 
 =item B<-verbose>
 
@@ -2484,7 +2499,8 @@ GNU General Public License for more details.
 =item I<2019-04-08>
 
 Tried to make the F<autoinst.log> file more relevant.
-Added the I<-nfssweight> and I<-nfsswidth> options.
+Added the I<-nfssweight> and I<-nfsswidth> options,
+and restored the I<-logfile> option.
 
 =item I<2019-04-01>
 
