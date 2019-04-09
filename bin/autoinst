@@ -1995,9 +1995,11 @@ A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 =head2 About the log file
 
 B<autoinst> writes some info about what it thinks it's doing to a log file.
-By default this is called F<< <fontfamily>.log >>,
-but see the I<-logfile> command-line option in L</"COMMAND-LINE OPTIONS"> below.
-If this file already exists, B<autoinst> will append its data to the end
+By default this is called F<< <fontfamily>.log >>
+(based on the FontFamily of the I<first> font file on the command-line),
+but this choice can be overridden by the user;
+see the I<-logfile> command-line option in L</"COMMAND-LINE OPTIONS"> below.
+If this log file already exists, B<autoinst> will append its data to the end
 rather than overwrite it.
 Use the I<-verbose> command-line option to ask for more detailed info.
 
@@ -2197,40 +2199,19 @@ offer more choices or finer granularity than NFSS's codes can handle;
 e.g., Fira Sans contains fifteen(!) different weights,
 including an additional "Medium" weight between Regular and Semibold).
 
-This mapping between NFSS codes and actual fonts is based on a few principles:
-
-=over 4
-
-=item B<Usefulness>. As many of the most commonly used NFSS codes as possible
-should point to actual fonts.
-
-=item B<Exactness>. Exact matches always win: if the font family contains
-a Semibold Condensed font, that's what the "sbc" code will map to.
-
-=item B<Sanity>. A code like "sb" will always map to something semi-boldish.
-If there's no Semibold font it might map to Demibold or Medium,
-but never to Black.
-If there is no close match, the NFSS code will simply not be used.
-
-=item B<Well-ordering>. The mapping respects the ordering that is inherent in
-the NFSS codes, so "sb" will be heavier than "m" and lighter than "b".
-
-=item B<Uniqueness>. No two NFSS codes will map to the same font
-(with the exception of "bx"; since this code is so ubiquitous in Latex,
-B<autoinst> will treat it as a synonym for "b" if there is no BoldExtended font).
-
-=back
-
-These rules should ensure that the standard NFSS codes (and high-level commands
-such as C<\bfseries>, which are built on top of these codes) will "just work".
-To access specific weights or widths, use the C<\fontseries> command with
-the full series name (i.e., C<\fontseries{demibold}\selectfont>).
+B<autoinst> tries hard to ensure that the most common NFSS codes
+(and high-level commands such as C<\bfseries>,
+which are built on top of those codes) will "just work".
 
 To see exactly which NFSS codes map to which fonts, see the log file
 (pro tip: run B<autoinst> with the I<-dryrun> option
-to check the generated mappings beforehand).
+to check the chosen mapping beforehand).
 The I<-nfssweight> and I<-nfsswidth> command-line options can be used
 to finetune the mapping between NFSS codes and fonts.
+
+To access specific weights or widths,
+one can always use the C<\fontseries> command with the full series name
+(i.e., C<\fontseries{demibold}\selectfont>).
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -2535,7 +2516,9 @@ GNU General Public License for more details.
 
 Tried to make the log file more relevant.
 Added the I<-nfssweight> and I<-nfsswidth> options,
-and restored the I<-logfile> option.
+and finetuned the automatic mapping between fonts and NFSS codes.
+Changed the name of the generated log file to F<< <fontfamily>.log >>,
+and revived the I<-logfile> option to allow overriding this choice.
 Made I<-mergewidths> the default (instead of I<-nomergewidths>).
 
 =item I<2019-04-01>
