@@ -653,6 +653,18 @@ sub decide_nfss_mappings {
         }
         $NFSS_WEIGHT{$nfssweight} = [];
     }
+    if ( !$ARGV{el} and !$ARGV{ul} ) {
+        if ( $NFSS_WEIGHT{ul}[0] eq 'thin' and !@{$NFSS_WEIGHT{el}} ) {
+            $NFSS_WEIGHT{ul} = [];
+            $NFSS_WEIGHT{el} = [ 'thin' ];
+        }
+    }
+    if ( !$ARGV{eb} and !$ARGV{ub} ) {
+        if ( $NFSS_WEIGHT{ub}[0] eq 'black' and !@{$NFSS_WEIGHT{eb}} ) {
+            $NFSS_WEIGHT{ub} = [];
+            $NFSS_WEIGHT{eb} = [ 'black' ];
+        }
+    }
 
     NFSSWIDTH:
     for my $nfsswidth (@NFSS_WIDTH) {
@@ -1030,11 +1042,13 @@ sub parse_options {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
                                      $NFSS_WEIGHT{$key} = \@values;
+                                     $ARGV{$key} = 'user';
                                  },
         'nfsswidth=s%'        => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
                                      $NFSS_WIDTH{$key} = \@values;
+                                     $ARGV{$key} = 'user';
                                  },
     )
     or die "$USAGE";
