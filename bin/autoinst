@@ -1270,7 +1270,7 @@ sub parse_basicinfo {
         :                                  $info->{weight} . $info->{width}
         ;
 
-    return $info;
+    return;
 }
 
 #-----------------------------------------------------------------------
@@ -1301,7 +1301,7 @@ sub parse_features {
     $info->{feature}{kern} = 1 if grep { m/\d+ \s+ kern/xms } <$otfinfo>;
     close $otfinfo;
 
-    return $info;
+    return;
 }
 
 #-----------------------------------------------------------------------
@@ -1346,7 +1346,7 @@ sub parse_sizeinfo {
     }
     close $otfinfo;
 
-    return $info;
+    return;
 }
 
 
