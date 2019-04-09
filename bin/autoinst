@@ -221,7 +221,7 @@ my %NFSS_SHAPE = (
     oblique     =>  'sl',
     slanted     =>  'sl',
     slant       =>  'sl',
-    romani      =>  'n',    # Adobe Silentium Pro has two roman shapes, but no italic;
+    romani      =>  'n',    # Silentium Pro has two roman shapes, but no italic;
     romanii     =>  'it',   # so we cheat by mapping the second roman shape to 'it'
 );
 
@@ -752,11 +752,13 @@ END_ARGUMENTS
 
     printf {$LOG} "\n" . '-' x 76 . "\n\n\nNFSS mappings:\n\n";
     for my $weight (@NFSS_WEIGHT) {
-        printf {$LOG} "    %-3s =>  %s\n", $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '(none)';
+        printf {$LOG} "    %-3s =>  %s\n",
+                $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '';
     }
     printf {$LOG} "\n";
     for my $width (@NFSS_WIDTH) {
-        printf {$LOG} "    %-3s =>  %s\n", $width || 'm', $NFSS_WIDTH{$width}[0] || '(none)';
+        printf {$LOG} "    %-3s =>  %s\n",
+                $width || 'm', $NFSS_WIDTH{$width}[0] || '';
     }
     printf {$LOG} "\n";
 
@@ -964,7 +966,7 @@ Possible options:
     -help                   Print this text and exit
     -doc                    Print the complete documentation and exit
     -dryrun                 Don't generate fonts, only log what would be done
-    -logfile="FILE"         Write log data to "FILE" (default: 'autoinst.log')
+    -logfile="FILE"         Write log data to "FILE" (default: <fontfamily>.log)
     -verbose                Print more data to log file
                             (repeat for even higher verbosity)
     font[s]                 The fonts (.otf or .ttf format) to install.
@@ -997,7 +999,7 @@ END_USAGE
     updmap       => '1',     # 0 = no, 1 = yes
     manual       => '0',     # 0 = no, 1 = yes
     dryrun       => '0',     # 0 = no, 1 = yes
-    logfile      => 'autoinst.log',
+    logfile      => '',
     figurekern   => '1',     # 0 = no, 1 = yes
     mergewidths  => '1',     # 0 = no, 1 = yes
     verbose      => 0,
@@ -1046,13 +1048,13 @@ sub parse_options {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
                                      $NFSS_WEIGHT{$key} = \@values;
-                                     $ARGV{$key} = 'user';
+                                     $ARGV{$key} = 'user-defined';
                                  },
         'nfsswidth=s%'        => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
                                      $NFSS_WIDTH{$key} = \@values;
-                                     $ARGV{$key} = 'user';
+                                     $ARGV{$key} = 'user-defined';
                                  },
     )
     or die "$USAGE";
@@ -1254,6 +1256,9 @@ sub parse_basicinfo {
     $info->{family}    = $data{family};
     $info->{subfamily} = $data{subfamily};
 
+    if ( !$ARGV{logfile} ) {
+        $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
+    }
     # Some font families put condensed or extended widths into separate families;
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
@@ -1989,10 +1994,10 @@ A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 
 =head2 About the log file
 
-B<autoinst> writes some info about what it thinks it's doing to a log file
-(by default called F<autoinst.log>, but see the I<-logfile> command-line
-option in L</"COMMAND-LINE OPTIONS"> below.
-If that file already exists, B<autoinst> will append its data to the end
+B<autoinst> writes some info about what it thinks it's doing to a log file.
+By default this is called F<< <fontfamily>.log >>,
+but see the I<-logfile> command-line option in L</"COMMAND-LINE OPTIONS"> below.
+If this file already exists, B<autoinst> will append its data to the end
 rather than overwrite it.
 Use the I<-verbose> command-line option to ask for more detailed info.
 
@@ -2221,11 +2226,11 @@ such as C<\bfseries>, which are built on top of these codes) will "just work".
 To access specific weights or widths, use the C<\fontseries> command with
 the full series name (i.e., C<\fontseries{demibold}\selectfont>).
 
-To see exactly which NFSS codes map to which fonts, see the F<autoinst.log> file
-(pro tip: run B<autoinst> with the I<-dryrun> option to check
-the generated mappings beforehand).
-The I<-nfssweight> and I<-nfsswidth> command-line options can be used to finetune
-the mapping between NFSS codes and fonts.
+To see exactly which NFSS codes map to which fonts, see the log file
+(pro tip: run B<autoinst> with the I<-dryrun> option
+to check the generated mappings beforehand).
+The I<-nfssweight> and I<-nfsswidth> command-line options can be used
+to finetune the mapping between NFSS codes and fonts.
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -2245,18 +2250,18 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 =item B<-dryrun>
 
 Don't generate any output files; only parse the input fonts and create
-F<autoinst.log> showing which fonts would have been generated.
+the log file, showing which fonts would have been generated.
 
 =item B<-logfile>=I<filename>
 
-Write log data to F<filename> instead of the default F<autoinst.log>.
+Write log data to F<filename> instead of the default F<< <fontfamily>.log >>.
 If the file already exist, B<autoinst> appends to it;
 it doesn't overwrite existing data.
 
 =item B<-verbose>
 
 Add detailed info about which families, styles and shapes B<autoinst> will
-generate to the F<autoinst.log> file. Repeat this option for even more info.
+generate to the log file. Repeat this option for even more info.
 
 =item B<-encoding>=I<encoding[,encoding]>
 
@@ -2489,7 +2494,7 @@ Minion Pro, Myriad Pro and Cronos Pro font families.
 Marc Penninga (F<marcpenninga@gmail.com>)
 
 When sending a bug report, please give as much relevant information as possible;
-this usually includes (but may not be limited to) the F<autoinst.log> file
+this usually includes (but may not be limited to) the log file
 (please add the I<-verbose> command-line option, for extra info).
 If you see any error messages
 (whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl
@@ -2528,7 +2533,7 @@ GNU General Public License for more details.
 
 =item I<2019-04-09>
 
-Tried to make the F<autoinst.log> file more relevant.
+Tried to make the log file more relevant.
 Added the I<-nfssweight> and I<-nfsswidth> options,
 and restored the I<-logfile> option.
 Made I<-mergewidths> the default (instead of I<-nomergewidths>).
