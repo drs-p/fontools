@@ -983,7 +983,7 @@ END_USAGE
     dryrun       => '0',     # 0 = no, 1 = yes
     logfile      => 'autoinst.log',
     figurekern   => '1',     # 0 = no, 1 = yes
-    mergewidths  => '0',     # 0 = no, 1 = yes
+    mergewidths  => '1',     # 0 = no, 1 = yes
     verbose      => 0,
 );
 
@@ -2351,9 +2351,11 @@ one hundred I< --ligkern> options), which may cause problems on some systems.
 
 =item B<-mergewidths> / B<-nomergewidths>
 
-Some font families put Condensed, Narrow, Extended etc. fonts in separate families;
-this option tells B<autoinst> to merge those separate families into the main family.
-The default is B<-nomergewidths>.
+Some font families put their Condensed, Narrow, Extended etc. widths
+in separate families;
+this option tells B<autoinst> to merge those separate families into
+the main family.
+The default is B<-mergewidths>.
 
 =item B<-extra>=I<text>
 
@@ -2491,11 +2493,12 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-04-08>
+=item I<2019-04-09>
 
 Tried to make the F<autoinst.log> file more relevant.
 Added the I<-nfssweight> and I<-nfsswidth> options,
 and restored the I<-logfile> option.
+Made I<-mergewidths> the default (instead of I<-nomergewidths>).
 
 =item I<2019-04-01>
 

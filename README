@@ -1,14 +1,14 @@
 
                          -=- FONTOOLS -=-
-                         
+
 
 This package provides tools to simplify using OpenType fonts with LaTeX.
 
 Currently, this bundle contains the following programs:
 
-AUTOINST - a wrapper script around Eddie Kohler's LCDF TypeTools. 
-    Autoinst aims to automate the installation of OpenType fonts in LaTeX 
-    by calling the LCDF TypeTools (with the correct options) for all fonts 
+AUTOINST - a wrapper script around Eddie Kohler's LCDF TypeTools.
+    Autoinst aims to automate the installation of OpenType fonts in LaTeX
+    by calling the LCDF TypeTools (with the correct options) for all fonts
     you wish to install, and by generating the necessary .fd and .sty files.
 
 AFM2AFM - re-encode .afm files
@@ -23,28 +23,28 @@ PREREQUISITES
 Perl
 
     The Fontools are written in Perl; any version since v5.10.1 should work.
-    Perl is usually installed on Linux and Unix systems; 
-    for Windows, try ActivePerl (http://www.activestate.com) 
+    Perl is usually installed on Linux and Unix systems;
+    for Windows, try ActivePerl (http://www.activestate.com)
     or Strawberry Perl (http://strawberryperl.com).
 
 LCDF TypeTools
-    Of course, Autoinst needs the LCDF TypeTools; 
+    Of course, Autoinst needs the LCDF TypeTools;
     they should be installed in a directory on your PATH.
 
 Kpathsea
     Automatically installing the fonts into a suitable TEXMF tree
-    (as Autoinst does by default) requires a TeX-installation that uses 
-    the kpathsea library; with TeX distributions that implement their 
-    own directory searching (such as MiKTeX), Autoinst will complain that 
+    (as Autoinst does by default) requires a TeX-installation that uses
+    the kpathsea library; with TeX distributions that implement their
+    own directory searching (such as MiKTeX), Autoinst will complain that
     it cannot find the kpsewhich program and install all generated files
-    into subdirectories of the current directory. 
-    
-    If you use such a TeX distribution, either move these files to their 
+    into subdirectories of the current directory.
+
+    If you use such a TeX distribution, either move these files to their
     destinations by hand, or use the -target command line option
     (please see the manual for more information).
 
 Other
-    The encoding files in the "share" directory should be installed 
+    The encoding files in the "share" directory should be installed
     in a standard location where otftotfm can find them.
 
 
@@ -53,16 +53,16 @@ DISCLAIMER
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 
 LICENSE & COPYRIGHT
 -------------------
 
-This software is copyright (C) 2005-2019 Marc Penninga. It is released under 
-the terms of the GNU General Public Licence; see the file GPLv2.txt for 
+This software is copyright (C) 2005-2019 Marc Penninga. It is released under
+the terms of the GNU General Public Licence; see the file GPLv2.txt for
 the license conditions.
 
 
-                                                Marc Penninga, 2019/04/08
+                                                Marc Penninga, 2019/04/09
