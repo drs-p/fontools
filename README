@@ -4,21 +4,23 @@
 
 This package provides tools to simplify using OpenType fonts with LaTeX.
 
-Currently, this bundle contains the following programs:
+By far the most important program in this bundle is autoinst:
 
-AUTOINST - a wrapper script around Eddie Kohler's LCDF TypeTools.
-    Autoinst aims to automate the installation of OpenType fonts in LaTeX
-    by calling the LCDF TypeTools (with the correct options) for all fonts
-    you wish to install, and by generating the necessary .fd and .sty files.
+    AUTOINST - a wrapper script around Eddie Kohler's LCDF TypeTools.
+        Autoinst aims to automate the installation of OpenType fonts in LaTeX
+        by calling the LCDF TypeTools (with the correct options) for all fonts
+        you wish to install, and generating the necessary .fd and .sty files.
 
-AFM2AFM - re-encode .afm files
+In addition, this bundle contains a few other, less important utilities:
 
-OT2KPX - extract kerning pairs from OpenType fonts.
+    AFM2AFM - re-encode .afm files
+
+    OT2KPX - extract kerning pairs from OpenType fonts.
 
 
 
 PREREQUISITES
--------------
+=============
 
 Perl
 
@@ -43,13 +45,15 @@ Kpathsea
     destinations by hand, or use the -target command line option
     (please see the manual for more information).
 
-Other
-    The encoding files in the "share" directory should be installed
-    in a standard location where otftotfm can find them.
+
+Installation
+------------
+The encoding files in the "share" directory should be moved
+to a standard location where otftotfm can find them.
 
 
 DISCLAIMER
-----------
+==========
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -58,11 +62,11 @@ See the GNU General Public License for more details.
 
 
 LICENSE & COPYRIGHT
--------------------
+===================
 
 This software is copyright (C) 2005-2019 Marc Penninga. It is released under
 the terms of the GNU General Public Licence; see the file GPLv2.txt for
 the license conditions.
 
 
-                                                Marc Penninga, 2019/04/09
+                                                Marc Penninga, 2019/04/11

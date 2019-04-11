@@ -1995,8 +1995,7 @@ A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 =head2 About the log file
 
 B<autoinst> writes some info about what it thinks it's doing to a log file.
-By default this is called F<< <fontfamily>.log >>
-(based on the FontFamily of the I<first> font file on the command-line),
+By default this is called F<< <fontfamily>.log >>,
 but this choice can be overridden by the user;
 see the I<-logfile> command-line option in L</"COMMAND-LINE OPTIONS"> below.
 If this log file already exists, B<autoinst> will append its data to the end
@@ -2231,7 +2230,7 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 =item B<-dryrun>
 
 Don't generate any output files; only parse the input fonts and create
-the log file, showing which fonts would have been generated.
+a log file.
 
 =item B<-logfile>=I<filename>
 
@@ -2241,16 +2240,15 @@ it doesn't overwrite existing data.
 
 =item B<-verbose>
 
-Add detailed info about which families, styles and shapes B<autoinst> will
-generate to the log file. Repeat this option for even more info.
+Add more details to the log file. Repeat this option for even more info.
 
 =item B<-encoding>=I<encoding[,encoding]>
 
 Generate the specified encoding(s) for the text fonts.
-Multiple text encodings may be specified as a comma-separated list:
+Multiple encodings may be specified as a comma-separated list:
 C<-encoding=OT1,T1,LY1> (without spaces!).
-The style file passes these encodings to F<fontenc> in the specified order,
-so the last one will become the default text encoding for your document.
+The style file passes these to F<fontenc> in the specified order,
+so the I<last> one will become the default text encoding of your document.
 
 The default choice of encodings is "OT1,T1,LY1".
 For each encoding, a file F<< <encoding>.enc >> (in all I<lowercase>!)
@@ -2327,10 +2325,9 @@ Alternatively, the value "auto" tells B<autoinst> to use the first value
 in the list "subs", "sinf" or "dnom" that is supported by the fonts.
 The default value is "none".
 
-I<< Note that if you specify a style of inferiors that isn't
-present in the font, B<autoinst> silently falls back to its default behaviour
-of not creating fonts with inferiors; it doesn't try to substitute one of
-the other features. >>
+I<< If you specify a style of inferiors that isn't present in the font,
+B<autoinst> falls back to its default behaviour of not creating fonts
+with inferiors; it doesn't try to substitute one of the other styles. >>
 
 =item B<-fractions> / B<-nofractions>
 
@@ -2378,13 +2375,11 @@ Append I<text> as extra options to the command lines for I<otftotfm>.
 To prevent I<text> from accidentily being interpreted as options to B<autoinst>,
 it should be properly quoted.
 
-=item B<-nfssweight>=I<code>=I<weight>
-
-=item B<-nfsswidth>=I<code>=I<width>
+=item B<-nfssweight>=I<code>=I<weight>, B<-nfsswidth>=I<code>=I<width>
 
 Map the NFSS code I<code> to the given weight or width,
 overriding the built-in tables.
-Both of these options may be given multiple times,
+Each of these options may be given multiple times,
 to override more than one NFSS code.
 Example: to map the "ul" code to the "Thin" weight, use C<-nfssweight=ul=thin>.
 To inhibit the use of the "ul" code completely, use C<-nfssweight=ul=>.
@@ -2477,9 +2472,8 @@ Marc Penninga (F<marcpenninga@gmail.com>)
 When sending a bug report, please give as much relevant information as possible;
 this usually includes (but may not be limited to) the log file
 (please add the I<-verbose> command-line option, for extra info).
-If you see any error messages
-(whether from B<autoinst> itself, from the I<LCDF TypeTools>, from Perl
-or from the OS), include these I<verbatim>; don't paraphrase.
+If you see any error messages, please include these I<verbatim>;
+don't paraphase.
 
 
 =head1 COPYRIGHT
@@ -2512,7 +2506,7 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-04-09>
+=item I<2019-04-11>
 
 Tried to make the log file more relevant.
 Added the I<-nfssweight> and I<-nfsswidth> options,
