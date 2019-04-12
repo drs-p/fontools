@@ -2391,8 +2391,8 @@ The default is B<-mergewidths>.
 =item B<-mergesmallcaps> / B<-nomergesmallcaps>
 
 Even more annoyingly, some font families put their small caps fonts
-in separate families;
-this option tells B<autoinst> to merge those separate families into
+in a separate family;
+this option tells B<autoinst> to merge the small caps fonts into
 the main family.
 The default is B<-mergesmallcaps>.
 
@@ -2560,7 +2560,9 @@ instead of all over the current working directory.
 Added "auto" value to the I<inferiors> option,
 to tell B<autoinst> to use whatever inferior characters are available.
 
-=item I<2019-03-14> (never released to CTAN)
+=item I<2019-03-14>
+
+(never released to CTAN)
 
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes.
