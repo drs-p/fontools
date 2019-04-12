@@ -2388,12 +2388,6 @@ this option tells B<autoinst> to merge those separate families into
 the main family.
 The default is B<-mergesmallcaps>.
 
-=item B<-extra>=I<text>
-
-Append I<text> as extra options to the command lines for I<otftotfm>.
-To prevent I<text> from accidentily being interpreted as options to B<autoinst>,
-it should be properly quoted.
-
 =item B<-nfssweight>=I<code>=I<weight>, B<-nfsswidth>=I<code>=I<width>
 
 Map the NFSS code I<code> to the given weight or width,
@@ -2402,6 +2396,12 @@ Each of these options may be given multiple times,
 to override more than one NFSS code.
 Example: to map the "ul" code to the "Thin" weight, use C<-nfssweight=ul=thin>.
 To inhibit the use of the "ul" code completely, use C<-nfssweight=ul=>.
+
+=item B<-extra>=I<text>
+
+Append I<text> as extra options to the command lines for I<otftotfm>.
+To prevent I<text> from accidentily being interpreted as options to B<autoinst>,
+it should be properly quoted.
 
 =item B<-manual>
 
