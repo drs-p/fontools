@@ -601,6 +601,13 @@ sub cleanup {
         my ($font, $style, $shape, $encoding)
             = @{$item}{qw(font style shape encoding)};
 
+        # handle fonts that put small caps fonts into separate family
+        if ($ARGV{mergesmallcaps}) {
+            if ($font->{family} =~ s/smallcaps$//xmsi) {
+                $shape = 'smallcaps';
+            }
+        }
+
         # generate unique name for this font
         $item->{fontname} = join '-', grep { $_ } $font->{name},
                                                   lc $style,
@@ -741,8 +748,9 @@ I'm using the following options:
     target:             $ARGV{target}
     extra:              @{[ $ARGV{extra} || '<empty>' ]}
 
-    figurekern:         @{[ $ARGV{figurekern}   ? 'no action' : 'remove' ]}
-    mergewidths:        @{[ $ARGV{mergewidths}  ? 'yes' : 'no' ]}
+    figurekern:         @{[ $ARGV{figurekern}       ? 'no action' : 'remove' ]}
+    mergewidths:        @{[ $ARGV{mergewidths}      ? 'yes' : 'no' ]}
+    mergesmallcaps:     @{[ $ARGV{mergesmallcaps}   ? 'yes' : 'no' ]}
 
 
     font files:
@@ -959,6 +967,7 @@ Possible options:
 
     -(no)figurekern         Keep or remove kerns between tabular figures
     -(no)mergewidths        Merge Condended/Extended subfamilies with main family
+    -(no)mergesmallcaps     Merge small caps subfamilies with main family
 
     -nfssweight=xx=yyyy     Map the "xx" NFSS code to the "yyyy" weight
     -nfsswidth=xx=yyyy      Map the "xx" NFSS code to the "yyyy" width
@@ -976,33 +985,34 @@ END_USAGE
 
 # Default values for the command-line arguments
 %ARGV = (
-    encoding     => 'OT1,T1,LY1',
-    textcomp     => '2',     # 0 = no, 1 = yes, 2 = (enc eq 'T1' ? yes : no)
-    lining       => '1',     # 0 = no, 1 = yes
-    oldstyle     => '1',     # 0 = no, 1 = yes
-    proportional => '1',     # 0 = no, 1 = yes
-    tabular      => '1',     # 0 = no, 1 = yes
-    smallcaps    => '1',     # 0 = no, 1 = yes
-    swash        => '1',     # 0 = no, 1 = yes
-    titling      => '1',     # 0 = no, 1 = yes
-    superiors    => '1',     # 0 = no, 1 = yes
-    inferiors    => 'none',  # possible values: none, auto, subs, sinf, dnom
-    ornaments    => '1',     # 0 = no, 1 = yes
-    fractions    => '0',     # 0 = no, 1 = yes
-    nfss         => 'rm',
-    fig_height   => 'lnum',
-    fig_width    => 'tnum',
-    extra        => '',
-    target       => '',
-    vendor       => 'lcdftools',
-    typeface     => '',
-    updmap       => '1',     # 0 = no, 1 = yes
-    manual       => '0',     # 0 = no, 1 = yes
-    dryrun       => '0',     # 0 = no, 1 = yes
-    logfile      => '',
-    figurekern   => '1',     # 0 = no, 1 = yes
-    mergewidths  => '1',     # 0 = no, 1 = yes
-    verbose      => 0,
+    encoding        => 'OT1,T1,LY1',
+    textcomp        => '2',     # 0 = no, 1 = yes, 2 = (enc eq 'T1' ? yes : no)
+    lining          => '1',     # 0 = no, 1 = yes
+    oldstyle        => '1',     # 0 = no, 1 = yes
+    proportional    => '1',     # 0 = no, 1 = yes
+    tabular         => '1',     # 0 = no, 1 = yes
+    smallcaps       => '1',     # 0 = no, 1 = yes
+    swash           => '1',     # 0 = no, 1 = yes
+    titling         => '1',     # 0 = no, 1 = yes
+    superiors       => '1',     # 0 = no, 1 = yes
+    inferiors       => 'none',  # possible values: none, auto, subs, sinf, dnom
+    ornaments       => '1',     # 0 = no, 1 = yes
+    fractions       => '0',     # 0 = no, 1 = yes
+    nfss            => 'rm',
+    fig_height      => 'lnum',
+    fig_width       => 'tnum',
+    extra           => '',
+    target          => '',
+    vendor          => 'lcdftools',
+    typeface        => '',
+    updmap          => '1',     # 0 = no, 1 = yes
+    manual          => '0',     # 0 = no, 1 = yes
+    dryrun          => '0',     # 0 = no, 1 = yes
+    logfile         => '',
+    figurekern      => '1',     # 0 = no, 1 = yes
+    mergewidths     => '1',     # 0 = no, 1 = yes
+    mergesmallcaps  => '1',     # 0 = no, 1 = yes
+    verbose         => 0,
 );
 
 #-----------------------------------------------------------------------
@@ -1042,6 +1052,7 @@ sub parse_options {
         'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
         'mergewidths!'        => \$ARGV{mergewidths},
+        'mergesmallcaps!'     => \$ARGV{mergesmallcaps},
         'logfile=s'           => \$ARGV{logfile},
         'verbose+'            => \$ARGV{verbose},
         'nfssweight=s%'       => sub {
@@ -2369,6 +2380,14 @@ this option tells B<autoinst> to merge those separate families into
 the main family.
 The default is B<-mergewidths>.
 
+=item B<-mergesmallcaps> / B<-nomergesmallcaps>
+
+Even more annoyingly, some font families put their small caps fonts
+in separate families;
+this option tells B<autoinst> to merge those separate families into
+the main family.
+The default is B<-mergesmallcaps>.
+
 =item B<-extra>=I<text>
 
 Append I<text> as extra options to the command lines for I<otftotfm>.
@@ -2505,6 +2524,11 @@ GNU General Public License for more details.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2019-04-12>
+
+Added the <-mergesmallcaps> option, to handle cases where
+the small caps fonts are in separate font families.
 
 =item I<2019-04-11>
 
