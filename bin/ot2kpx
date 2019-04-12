@@ -65,7 +65,7 @@ sub main {
 
         for my $subtable (@subtables) {
             my $pos_format = unpack 'n', $subtable;
-            if ($pos_format == 1) { 
+            if ($pos_format == 1) {
                 OTF::GPOS::parse_pos_format_1($subtable);
             }
             elsif ($pos_format == 2) {
