@@ -153,13 +153,6 @@ my %UNABBREVIATE = (
     - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts,
         so the ex and ux entries are currently empty.
 
-
-    And a final postscript on the implementation: we define these tables as arrays
-    and assign those to a hash, so that we might use the order of the keys
-    in each array to determine the sorting order when sorting fonts.
-
-    TODO: actually implement the sorting.
-
 =end Comment
 
 =cut
