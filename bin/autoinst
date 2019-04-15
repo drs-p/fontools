@@ -387,8 +387,8 @@ my %STYLE = (
         shapes => [ 'normal' ],
     },
     Titl => {
-        reqd   => [ 'titl', 'case', 'cpsp' ],
-        nice   => [ 'kern', 'liga', 'lnum', 'tnum' ],
+        reqd   => [ 'titl' ],
+        nice   => [ 'kern', 'liga' ],
         extra  => '',
         shapes => [ 'normal' ],
     },
@@ -1922,6 +1922,14 @@ in roman, italic and slanted shapes.
 
 Families with superiors, inferiors, numerators and denominators,
 in roman, italic and slanted shapes.
+
+=item -
+
+Families with "Titling" characters; these "... replace the default glyphs
+with corresponding forms designed specifically for titling.
+These may be all-capital and/or larger on the body,
+and adjusted for viewing at larger sizes"
+(according to OpenType Specification).
 
 =item -
 
