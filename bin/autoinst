@@ -153,13 +153,6 @@ my %UNABBREVIATE = (
     - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts,
         so the ex and ux entries are currently empty.
 
-
-    And a final postscript on the implementation: we define these tables as arrays
-    and assign those to a hash, so that we might use the order of the keys
-    in each array to determine the sorting order when sorting fonts.
-
-    TODO: actually implement the sorting.
-
 =end Comment
 
 =cut
@@ -236,7 +229,7 @@ my %NFSS_SHAPE = @NFSS_SHAPE;
 =begin Comment
 
     The %SHAPE table is used in deciding which font shapes
-    (normal, small caps, swash, titling or textcomp) to generate.
+    (normal, small caps, swash or textcomp) to generate.
 
     Each key in this table names a shape; the corresponding value
     is an anonymous hash with several key/value pairs:
@@ -284,19 +277,10 @@ my %SHAPE = (
     # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
     # comes last in the command line; else 'aalt' might be overridden
     swash => {
-        code  => { n => 'nw', it => 'sw' },
         reqd  => [ 'swsh', 'dlig', 'hlig' ],
         nice  => [ 'kern', 'liga' ],
         extra => '--include-alternates="*.swash" --feature=aalt',
         name  => 'swash',
-    },
-    titling => {
-        code  => { n => 'tl', it => 'tlit', sl => 'tlsl' },
-        reqd  => [ 'titl' ],
-        nice  => [ 'kern', 'liga' ],
-        #nice  => [ 'kern', 'liga', 'case', 'cpsp' ],
-        extra => '',
-        name  => 'titling',
     },
     textcomp => {
         code  => { n => 'n', it => 'it', sl => 'sl' },
@@ -319,10 +303,8 @@ my %SHAPE = (
 my %SSUB_SHAPE = (
     sl      =>  'it',
     scsl    =>  'scit',
-    tlsl    =>  'tlit',
     it      =>  'sl',
     scit    =>  'scsl',
-    tlit    =>  'tlsl',
 );
 
 =begin Comment
@@ -359,13 +341,13 @@ my %STYLE = (
         reqd   => [ ],
         nice   => [ ],
         extra  => '',
-        shapes => [ 'normal', 'smallcaps', 'swash', 'titling', 'textcomp' ],
+        shapes => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     LF => {
         reqd   => [ ],
         nice   => [ ],
         extra  => '',
-        shapes => [ 'normal', 'smallcaps', 'swash', 'titling', 'textcomp' ],
+        shapes => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     TOsF => {
         reqd   => [ ],
@@ -401,6 +383,12 @@ my %STYLE = (
         reqd   => [ 'dnom' ],
         nice   => [ ],
         extra  => '--ligkern="* {KL} *"',
+        shapes => [ 'normal' ],
+    },
+    Titl => {
+        reqd   => [ 'titl' ],
+        nice   => [ 'kern', 'liga' ],
+        extra  => '',
         shapes => [ 'normal' ],
     },
     Orn => {
@@ -1083,8 +1071,8 @@ sub parse_options {
 
     delete $SHAPE{smallcaps}     unless $ARGV{smallcaps};
     delete $SHAPE{swash}         unless $ARGV{swash};
-    delete $SHAPE{titling}       unless $ARGV{titling};
 
+    delete $STYLE{Titl}          unless $ARGV{titling};
     delete $STYLE{Sup}           unless $ARGV{superiors};
     delete $STYLE{Orn}           unless $ARGV{ornaments};
     delete @STYLE{qw(Numr Dnom)} unless $ARGV{fractions};
@@ -1553,25 +1541,11 @@ END_STY_HEADER
     \RequirePackage{fontaxes}
 END_STY_FONTAXES_START
 
-        if ($seen{tl} or $seen{tlit}) {
-        print {$STY} <<'END_STY_FONTAXES_TL';
-    \providecommand{\tldefault}{tl}
-    \DeclareRobustCommand\tlshape{\not@math@alphabet\tlshape\relax
-        \fontsecondaryshape\tldefault\selectfont}
-    \DeclareTextFontCommand{\texttl}{\tlshape}
-    \let\texttitling\texttl
-    \fa@naming@exception{shape}{{n}{tl}}{tl}
-    \fa@naming@exception{shape}{{it}{tl}}{tlit}
-    \fa@naming@exception{shape}{{sl}{tl}}{tlsl}
 
-END_STY_FONTAXES_TL
-    }
-
-    if ($seen{nw} or $seen{sw}) {
+    if ($seen{sw}) {
         print {$STY} <<'END_STY_FONTAXES_SW';
     \DeclareRobustCommand\swshape{\not@math@alphabet\swshape\relax
         \fontprimaryshape\itdefault\fontsecondaryshape\swdefault\selectfont}
-    \fa@naming@exception{shape}{{n}{sw}}{nw}
     \fa@naming@exception{shape}{{it}{sw}}{sw}
 
 END_STY_FONTAXES_SW
@@ -1599,6 +1573,18 @@ END_STY_FONTAXES_SUP
     \let\textinferior\textin
 
 END_STY_FONTAXES_INF
+    }
+
+    if ($seen{Titl}) {
+        print {$STY} <<'END_STY_FONTAXES_TITL';
+    \fa@naming@exception{figures}{{titlingshape}{proportional}}{Titl}
+    \fa@naming@exception{figures}{{titlingshape}{tabular}}{Titl}
+    \def\tlshape{\@nomath\tlshape
+        \fontfigurestyle{titlingshape}\selectfont}
+    \DeclareTextFontCommand{\texttl}{\tlshape}
+    \let\texttitling\texttl
+
+END_STY_FONTAXES_TITL
     }
 
     if ($seen{Orn}) {
@@ -1912,25 +1898,9 @@ Small caps
 
 Swash
 
-=item I<tl>
-
-Titling shape; this "... replaces the default glyphs with corresponding forms
-designed specifically for titling.
-These may be all-capital and/or larger on the body,
-and adjusted for viewing at larger sizes".
-
 =item I<scit>, I<scsl>
 
 Italic and slanted small caps
-
-=item I<nw>
-
-"Upright swash"; usually roman text with a few "oldstyle" ligatures
-like ct, sp and st.
-
-=item I<tlit>, I<tlsl>
-
-Italic and slanted titling text
 
 =back
 
@@ -1945,6 +1915,14 @@ in roman, italic and slanted shapes.
 
 Families with superiors, inferiors, numerators and denominators,
 in roman, italic and slanted shapes.
+
+=item -
+
+Families with "Titling" characters; these "... replace the default glyphs
+with corresponding forms designed specifically for titling.
+These may be all-capital and/or larger on the body,
+and adjusted for viewing at larger sizes"
+(according to OpenType Specification).
 
 =item -
 
@@ -1991,6 +1969,11 @@ normal forms are used for other characters)
 inferior characters; usually only digits and some punctuation,
 normal forms for other characters
 
+=item I<Titl>
+
+Titling shape. Meant for all-caps text; letterspacing and the positioning of
+punctuation characters have been adjusted to suit all-caps text.
+
 =item I<Orn>
 
 ornaments
@@ -2007,7 +1990,7 @@ denominators
 
 The individual fonts are named I<< <FontName>-<suffix>-<shape>-<enc> >>,
 where I<< <suffix> >> is the same as above (but in lowercase),
-I<< <shape> >> is either empty, "sc", "swash" or "titling",
+I<< <shape> >> is either empty, "sc" or "swash",
 and I<< <enc> >> is the encoding (also in lowercase).
 A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 
@@ -2327,7 +2310,7 @@ Control the creation of swash fonts. The default is B<-swash>.
 
 =item B<-titling> / B<-notitling>
 
-Control the creation of titling fonts. The default is B<-titling>.
+Control the creation of titling families. The default is B<-titling>.
 
 =item B<-superiors> / B<-nosuperiors>
 
@@ -2538,8 +2521,8 @@ GNU General Public License for more details.
 
 Added the <-mergesmallcaps> option, to handle cases where
 the small caps fonts are in separate font families.
-Only generate the Titling shape for fonts with the 'titl' feature,
-i.e. that contain alternate titling characters.
+Titling shape is now treated as a separate family instead of a distinct shape;
+it is generated only for fonts with the 'titl' feature.
 
 =item I<2019-04-11>
 
