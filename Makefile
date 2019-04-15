@@ -1,11 +1,11 @@
 .PHONY: dist
 
 dist:
-	if [ "xx$(shell git branch | grep '* master')" == "xx" ]; then \
+	if [ "x$(shell git branch | grep '* master')" != 'x* master' ]; then \
 		echo >&2 "ERROR: not on 'master' branch"; \
 		exit 1; \
 	fi
-	if [ "xx$(shell git status --short)" != "xx" ]; then \
+	if [ "x$(shell git status --short)" != "x" ]; then \
 		echo >&2 "ERROR: git not up-to-date"; \
 		exit 1; \
 	fi
