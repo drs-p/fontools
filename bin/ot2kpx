@@ -4,7 +4,7 @@
 
 ----------------------------------------------------------------------------
 
-    Copyright (C) 2005-2013 Marc Penninga.
+    Copyright (C) 2005-2019 Marc Penninga.
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -50,7 +50,7 @@ sub main {
         'doc'       =>  sub { pod2usage(-verbose => 2); },
         'afm'       =>  sub { $ARGV{print_func} = \&print_kpx; },
         'kpx'       =>  sub { $ARGV{print_func} = \&print_kpx; },
-        'fea'       =>  sub { $ARGV{print_func} = \&print_fea; },
+        'kern'      =>  sub { $ARGV{print_func} = \&print_fea; },
         'lua'       =>  sub { $ARGV{print_func} = \&print_fea; },
     ) or pod2usage(-verbose => 0);
     pod2usage(-verbose => 0) if @ARGV != 1;
@@ -731,28 +731,33 @@ ot2kpx - extract kerning information from OpenType fonts
 
 =head1 SYNOPSIS
 
-=over 8
-
-=item B<ot2kpx>
-
-B<fontfile>
-
-=back
+B<ot2kpx> [ I<-afm> | I<-kpx> | I<-kern> | I<-lua> ] B<fontfile>
 
 
 =head1 DESCRIPTION
 
-B<ot2kpx> extract the kerning data from OpenType fonts (both F<otf>
-and F<ttf> formats) and prints it (in F<afm> format) to C<stdout>.
+B<ot2kpx> extract the kerning data from OpenType fonts and prints it
+to C<stdout>, either in Adobe's KPX format (suitable for adding to
+an F<afm> file) or as a Luatex custom feature, suitable for use with
+C<\directlua>.
 
 
 =head1 OPTIONS AND ARGUMENTS
 
 =over 4
 
+=item B<-afm>, B<-kpx>
+
+Output the kerning data in Adobe's KPX format, as used in F<afm> files.
+
+=item B<-kern>, B<-lua>
+
+Output the kerning data as a Luatex custom font feature,
+to be included in a C<\directlua> command.
+
 =item B<fontfile>
 
-The OpenType font (in either F<otf> or F<ttf> format).
+The OpenType font (both F<otf> or F<ttf> format are supported).
 
 =back
 
@@ -814,7 +819,7 @@ Marc Penninga <marcpenninga@gmail.com>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005-2013 Marc Penninga.
+Copyright (C) 2005-2019 Marc Penninga.
 
 
 =head1 LICENSE
@@ -840,6 +845,11 @@ See the GNU General Public License for more details.
 (See the source code for the rest of the story.)
 
 =over 12
+
+=item I<2019-04-15>
+
+Added the -fea command-line option to get output in Luatex's
+custom feature format.
 
 =item I<2013-08-07>
 
