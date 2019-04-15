@@ -50,7 +50,6 @@ sub main {
         'doc'       =>  sub { pod2usage(-verbose => 2); },
         'afm'       =>  sub { $ARGV{print_func} = \&print_kpx; },
         'kpx'       =>  sub { $ARGV{print_func} = \&print_kpx; },
-        'kern'      =>  sub { $ARGV{print_func} = \&print_fea; },
         'lua'       =>  sub { $ARGV{print_func} = \&print_fea; },
     ) or pod2usage(-verbose => 0);
     pod2usage(-verbose => 0) if @ARGV != 1;
@@ -731,15 +730,14 @@ ot2kpx - extract kerning information from OpenType fonts
 
 =head1 SYNOPSIS
 
-B<ot2kpx> [ I<-afm> | I<-kpx> | I<-kern> | I<-lua> ] B<fontfile>
+B<ot2kpx> [ I<-afm> | I<-kpx> | I<-lua> ] B<fontfile>
 
 
 =head1 DESCRIPTION
 
 B<ot2kpx> extract the kerning data from OpenType fonts and prints it
-to C<stdout>, either in Adobe's KPX format (suitable for adding to
-an F<afm> file) or as a Luatex custom feature, suitable for use with
-C<\directlua>.
+to C<stdout>, either in Adobe's KPX format (for adding to an F<afm> file)
+or as a Luatex custom feature, for use with the C<\directlua> command.
 
 
 =head1 OPTIONS AND ARGUMENTS
@@ -750,14 +748,14 @@ C<\directlua>.
 
 Output the kerning data in Adobe's KPX format, as used in F<afm> files.
 
-=item B<-kern>, B<-lua>
+=item B<-lua>
 
 Output the kerning data as a Luatex custom font feature,
 to be included in a C<\directlua> command.
 
 =item B<fontfile>
 
-The OpenType font (both F<otf> or F<ttf> format are supported).
+The OpenType font (both F<otf> and F<ttf> format are supported).
 
 =back
 
@@ -848,7 +846,7 @@ See the GNU General Public License for more details.
 
 =item I<2019-04-15>
 
-Added the -fea command-line option to get output in Luatex's
+Added the -lua command-line option to get output in Luatex's
 custom feature format.
 
 =item I<2013-08-07>
