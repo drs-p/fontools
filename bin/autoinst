@@ -1971,8 +1971,7 @@ normal forms for other characters
 
 =item I<Titl>
 
-Titling shape. Meant for all-caps text; letterspacing and the positioning of
-punctuation characters have been adjusted to suit all-caps text.
+Titling shape; see above.
 
 =item I<Orn>
 
