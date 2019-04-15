@@ -277,7 +277,7 @@ my %SHAPE = (
     # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
     # comes last in the command line; else 'aalt' might be overridden
     swash => {
-        reqd  => [ 'swsh', 'dlig', 'hlig' ],
+        reqd  => [ 'swsh', 'dlig' ],
         nice  => [ 'kern', 'liga' ],
         extra => '--include-alternates="*.swash" --feature=aalt',
         name  => 'swash',
