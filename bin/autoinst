@@ -285,15 +285,16 @@ my %SHAPE = (
     # comes last in the command line; else 'aalt' might be overridden
     swash => {
         code  => { n => 'nw', it => 'sw' },
-        reqd  => [ 'swsh', 'dlig' ],
+        reqd  => [ 'swsh', 'dlig', 'hlig' ],
         nice  => [ 'kern', 'liga' ],
         extra => '--include-alternates="*.swash" --feature=aalt',
         name  => 'swash',
     },
     titling => {
         code  => { n => 'tl', it => 'tlit', sl => 'tlsl' },
-        reqd  => [ 'titl', 'case', 'cpsp' ],
+        reqd  => [ 'titl' ],
         nice  => [ 'kern', 'liga' ],
+        #nice  => [ 'kern', 'liga', 'case', 'cpsp' ],
         extra => '',
         name  => 'titling',
     },
@@ -1913,10 +1914,10 @@ Swash
 
 =item I<tl>
 
-Titling shape. Meant for all-caps text; letterspacing and the positioning of
-punctuation characters have been adjusted to suit all-caps text.
-(This shape is only generated for the families with lining digits,
-since old-style digits make no sense with all-caps text.)
+Titling shape; this "... replaces the default glyphs with corresponding forms
+designed specifically for titling.
+These may be all-capital and/or larger on the body,
+and adjusted for viewing at larger sizes".
 
 =item I<scit>, I<scsl>
 
@@ -2533,10 +2534,12 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-04-12>
+=item I<2019-04-15>
 
 Added the <-mergesmallcaps> option, to handle cases where
 the small caps fonts are in separate font families.
+Only generate the Titling shape for fonts with the 'titl' feature,
+i.e. that contain alternate titling characters.
 
 =item I<2019-04-11>
 
