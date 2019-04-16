@@ -2176,13 +2176,13 @@ The mapping of shapes to NFSS codes is done using the following table:
     Oblique, Slant(ed), Incline(d)      sl
 
 (I<Exception:> Adobe Silentium Pro contains two Roman shapes;
-we map the first of these to "n", for the second one we [ab]use the "it" code
+we map the first of these to "n", for the second one we (ab)use the "it" code
 as this family doesn't contain an Italic shape.)
 
 The mapping of weights and widths to NFSS codes is a more complex,
 two-step proces.
 In the first step, all fonts are assigned a "series" name that is simply
-the concatenation of its full weight and width
+the concatenation of its weight and width
 (after expanding any abbreviations and converting to lowercase).
 A font with "Cond" width and "Ultra" weight will then be known
 as "ultrablackcondensed".
@@ -2229,14 +2229,14 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 
 =item B<-dryrun>
 
-Don't generate any output files; only parse the input fonts and create
-a log file.
+Don't generate output; just parse input fonts and write
+a log file saying what it would have done.
 
 =item B<-logfile>=I<filename>
 
 Write log data to F<filename> instead of the default F<< <fontfamily>.log >>.
 If the file already exist, B<autoinst> appends to it;
-it doesn't overwrite existing data.
+it doesn't overwrite an existing file.
 
 =item B<-verbose>
 
@@ -2319,6 +2319,10 @@ should use for the inferior characters.
 Alternatively, the value "auto" tells B<autoinst> to use the first value
 in the list "subs", "sinf" or "dnom" that is supported by the fonts.
 The default value is "none".
+
+I<< If you specify a style of inferiors that isn't present in the font,
+B<autoinst> will fall back to its default behaviour of not creating fonts
+with inferiors at all; it won't try to substitute one of the other styles. >>
 
 =item B<-fractions> / B<-nofractions>
 
