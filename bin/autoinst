@@ -67,7 +67,7 @@ my %UNABBREVIATE = (
 
 =begin Comment
 
-    Latex's NFSS contains a limited number of standard codes for weight and width:
+    LaTeX's NFSS contains a limited number of standard codes for weight and width:
     - weight: ul, el, l, sl, m, sb, b, eb, ub
     - width:  uc, ec, c, sc, m, sx, x, ex, ux
 
@@ -1513,7 +1513,7 @@ sub handle_auto_inferiors {
 package LaTeX;
 
 #-----------------------------------------------------------------------
-# Create a Latex style file
+# Create a LaTeX style file
 #-----------------------------------------------------------------------
 sub write_stylefile {
     my ($fam, $data) = @_;
@@ -1853,7 +1853,7 @@ __END__
 =head1 NAME
 
 autoinst - wrapper around the F<LCDF TypeTools>,
-for installing and using OpenType fonts in (La)TeX.
+for installing and using OpenType fonts in LaTeX.
 
 
 =head1 SYNOPSIS
@@ -1899,13 +1899,13 @@ Italic and slanted (sometimes called oblique) text
 
 Small caps
 
-=item I<sw>
-
-Swash
-
 =item I<scit>, I<scsl>
 
 Italic and slanted small caps
+
+=item I<sw>
+
+Swash
 
 =back
 
@@ -1927,7 +1927,7 @@ Families with "Titling" characters; these "... replace the default glyphs
 with corresponding forms designed specifically for titling.
 These may be all-capital and/or larger on the body,
 and adjusted for viewing at larger sizes"
-(according to OpenType Specification).
+(according to the OpenType Specification).
 
 =item -
 
@@ -2273,7 +2273,7 @@ B<-nots1> otherwise.
 =item B<-serif>, B<-sanserif>, B<-typewriter>
 
 Install the font as a serif, sanserif or typewriter font, respectively.
-This changes how you access the font in Latex: with C<\rmfamily>/C<\textrm>,
+This changes how you access the font in LaTeX: with C<\rmfamily>/C<\textrm>,
 C<\sffamily>/C<\textsf> or C<\ttfamily>/C<\texttt>.
 The generated style file redefines C<\familydefault>,
 so including it will still make this font the default text font.
@@ -2601,7 +2601,7 @@ and "lslash" glyphs (thanks to Bob Tennent).
 
 =item I<2015-11-22>
 
-Bugfix: Latex doesn't like command names with dashes in it.
+Bugfix: LaTeX doesn't like command names with dashes in it.
 
 =item I<2015-05-13>
 
