@@ -739,6 +739,7 @@ I'm using the following options:
     inferiors:          $ARGV{inferiors}
     ornaments:          @{[ $ARGV{ornaments}    ? 'yes' : 'no' ]}
     fractions:          @{[ $ARGV{fractions}    ? 'yes' : 'no' ]}
+    ligatures:          @{[ $ARGV{ligatures}    ? 'yes' : 'no' ]}
 
     dry run/real:       @{[ $ARGV{dryrun}       ? 'dry run'   : 'real'   ]}
     auto/manual:        @{[ $ARGV{manual}       ? 'manual'    : 'auto'   ]}
@@ -872,13 +873,13 @@ sub make_cmdline {
                         ? qq(--coding-scheme="$SCHEME{$item->{encoding}[0]}")
                         : ''),
                      (map { "--feature=$_" } @{$item->{features}}),
-                     ((grep { $_ eq 'liga' } @{$item->{features}})
-                        ? ''
-                        : ( '--ligkern="f i =: fi"',
+                     ($ARGV{ligatures}
+                        ? ( '--ligkern="f i =: fi"',
                             '--ligkern="f l =: fl"',
                             '--ligkern="f f =: ff"',
                             '--ligkern="ff i =: ffi"',
-                            '--ligkern="ff l =: ffl"' )),
+                            '--ligkern="ff l =: ffl"' )
+                        : ''),
                      $STYLE{$item->{style}}{extra},
                      $SHAPE{$item->{shape}}{extra},
                      $ARGV{extra},
@@ -946,7 +947,9 @@ Possible options:
                             Use this style for subscripts (see docs)
     -(no)ornaments          Toggle creation of ornament fonts
     -(no)fractions          Toggle creation of fonts with digits for fractions
+    -(no)ligatures          Toggle manual addition of f-ligatures to font
 
+    -serif                  Install font as serif font
     -sanserif               Install font as sanserif font
     -typewriter             Install font as typewriter font
 
@@ -995,6 +998,7 @@ END_USAGE
     inferiors       => 'none',  # possible values: none, auto, subs, sinf, dnom
     ornaments       => '1',     # 0 = no, 1 = yes
     fractions       => '0',     # 0 = no, 1 = yes
+    ligatures       => '0',     # 0 = no, 1 = yes
     nfss            => 'rm',
     fig_height      => 'lnum',
     fig_width       => 'tnum',
@@ -1034,6 +1038,8 @@ sub parse_options {
         'inferiors=s'         => \$ARGV{inferiors},
         'ornaments!'          => \$ARGV{ornaments},
         'fractions!'          => \$ARGV{fractions},
+        'ligatures!'          => \$ARGV{ligatures},
+        'serif'               =>  sub { $ARGV{nfss} = 'rm' },
         'sanserif'            =>  sub { $ARGV{nfss} = 'sf' },
         'typewriter'          =>  sub { $ARGV{nfss} = 'tt' },
         'defaultlining'       =>  sub { $ARGV{fig_height} = 'lnum' },
@@ -1656,8 +1662,7 @@ END_STY_XKEYVAL
         :               die "[ERROR] Internal bug, please report!";
 
     my $default_bold;
-    for my $series (qw(heavy black extrabold demibold semibold bold))
-    {
+    for my $series (qw(heavy black extrabold demibold semibold bold)) {
         if ( $seen{$series} ) {
             print {$STY}
                 "\\DeclareOptionX{$series}{\\edef\\bfseries\@$ARGV{nfss}",
@@ -1771,7 +1776,7 @@ END_SSUB_SHAPE
 
     print {$FD} <<"END_COMMENT";
 %
-%   ====  Extra 'ssub' rules to map the standard NFSS codes to our fancy names  ====
+%  Extra 'ssub' rules to map the standard NFSS codes to our fancy names
 %
 END_COMMENT
     my %seen;
@@ -2265,16 +2270,11 @@ Control the creation of TS1-encoded fonts. The default is B<-ts1>
 if the text encodings (see I<-encoding> above) include T1,
 B<-nots1> otherwise.
 
-=item B<-sanserif>
+=item B<-serif>, B<-sanserif>, B<-typewriter>
 
-Install the font as a sanserif font, accessed via C<\sffamily> and C<\textsf>.
-The generated style file redefines C<\familydefault>,
-so including it will still make this font the default text font.
-
-=item B<-typewriter>
-
-Install the font as a typewriter font, accessed via C<\ttfamily> and
-C<\texttt>.
+Install the font as a serif, sanserif or typewriter font, respectively.
+This changes how you access the font in Latex: with C<\rmfamily>/C<\textrm>,
+C<\sffamily>/C<\textsf> or C<\ttfamily>/C<\texttt>.
 The generated style file redefines C<\familydefault>,
 so including it will still make this font the default text font.
 
@@ -2327,18 +2327,20 @@ Alternatively, the value "auto" tells B<autoinst> to use the first value
 in the list "subs", "sinf" or "dnom" that is supported by the fonts.
 The default value is "none".
 
-I<< If you specify a style of inferiors that isn't present in the font,
-B<autoinst> falls back to its default behaviour of not creating fonts
-with inferiors; it doesn't try to substitute one of the other styles. >>
-
 =item B<-fractions> / B<-nofractions>
 
 Control the creation of fonts with numerators and denominators.
 The default is B<-nofractions>.
 
-=item B<-ornaments> / B<-noornaments>
+=item B<-ligatures> / B<-noligatures>
 
-Control the creation of ornament fonts. The default is B<-ornaments>.
+Some fonts create glyphs for the standard f-ligatures (ff, fi, fl, ffi, ffl),
+but don't provide a "liga" feature to access these.
+This option tells B<autoinst> to add extra C<LIGKERN> rules to
+the generated fonts to enable the use of these ligatures.
+Since this option is rarely necessary
+(most fonts with f-ligatures do provide the matching "liga" feature),
+the default is B<-noligatures>.
 
 =item B<-defaultlining> / B<-defaultoldstyle>
 
@@ -2516,12 +2518,13 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-04-15>
+=item I<2019-04-16>
 
 Added the <-mergesmallcaps> option, to handle cases where
 the small caps fonts are in separate font families.
 Titling shape is now treated as a separate family instead of a distinct shape;
 it is generated only for fonts with the 'titl' feature.
+Only add f-ligatures to fonts when explicitly asked to (<-fligatures>).
 
 =item I<2019-04-11>
 
