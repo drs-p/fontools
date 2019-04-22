@@ -14,11 +14,11 @@
 /.notdef
 /.notdef
 /cwm
-/.notdef    % was /ff
-/.notdef    % was /fi
-/.notdef    % was /fl
-/.notdef    % was /ffi
-/.notdef    % was /ffl
+/ff
+/fi
+/fl
+/ffi
+/ffl
 % 0x10
 /dotlessi
 /dotlessj
@@ -302,4 +302,5 @@
 % LIGKERN greater greater =: guillemotright;
 %
 % LIGKERN || = 32;
-
+%
+% UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;

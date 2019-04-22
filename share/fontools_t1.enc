@@ -32,11 +32,11 @@
 /perthousandzero
 /dotlessi
 /dotlessj
-/.notdef    % was /ff
-/.notdef    % was /fi
-/.notdef    % was /fl
-/.notdef    % was /ffi
-/.notdef    % was /ffl
+/ff
+/fi
+/fl
+/ffi
+/ffl
 % 0x20
 /space
 /exclam
@@ -302,4 +302,5 @@
 % LIGKERN greater greater =: guillemotright;
 %
 % LIGKERN || = 32 ;
-
+%
+% UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;

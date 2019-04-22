@@ -14,11 +14,11 @@
 /Phi
 /Psi
 /Omega
-/.notdef    % was /ff
-/.notdef    % was /fi
-/.notdef    % was /fl
-/.notdef    % was /ffi
-/.notdef    % was /ffl
+/ff
+/fi
+/fl
+/ffi
+/ffl
 % 0x10
 /dotlessi
 /dotlessj
@@ -299,4 +299,5 @@
 % LIGKERN quoteright quoteright =: quotedblright;
 %
 % LIGKERN || = 32;
-
+%
+% UNICODING ff =: ; fi =: ; fl =: ; ffi =: ; ffl =: ;
