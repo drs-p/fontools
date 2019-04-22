@@ -277,8 +277,9 @@ my %SHAPE = (
     # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
     # comes last in the command line; else 'aalt' might be overridden
     swash => {
-        reqd  => [ 'swsh', 'dlig' ],
-        nice  => [ 'kern', 'liga' ],
+        code  => { n => 'nw', it => 'sw' },
+        reqd  => [ 'swsh' ],
+        nice  => [ 'kern', 'liga', 'dlig' ],
         extra => '--include-alternates="*.swash" --feature=aalt',
         name  => 'swash',
     },
@@ -1554,10 +1555,11 @@ END_STY_HEADER
 END_STY_FONTAXES_START
 
 
-    if ($seen{sw}) {
+    if ($seen{nw} or $seen{sw}) {
         print {$STY} <<'END_STY_FONTAXES_SW';
     \DeclareRobustCommand\swshape{\not@math@alphabet\swshape\relax
         \fontprimaryshape\itdefault\fontsecondaryshape\swdefault\selectfont}
+    \fa@naming@exception{shape}{{n}{sw}}{nw}
     \fa@naming@exception{shape}{{it}{sw}}{sw}
 
 END_STY_FONTAXES_SW
@@ -1912,6 +1914,10 @@ Italic and slanted small caps
 =item I<sw>
 
 Swash
+
+=item I<nw>
+
+"Upright swash"
 
 =back
 
@@ -2527,6 +2533,10 @@ GNU General Public License for more details.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2019-04-22>
+
+Fixed a bug in the generation of swash shapes.
 
 =item I<2019-04-19>
 
