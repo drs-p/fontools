@@ -22,5 +22,6 @@ dist:
 		bin/autoinst - | groff -Tps -man - | ps2pdf - fontools/doc/autoinst.pdf
 	pod2man --center="Marc Penninga" --release="fontools" --section=1 \
 		bin/ot2kpx - | groff -Tps -man - | ps2pdf - fontools/doc/ot2kpx.pdf
+	chmod -R go+rX fontools/
 	zip -r fontools-$(VERSION) fontools
 	rm -rf fontools/
