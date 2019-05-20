@@ -40,6 +40,8 @@ use Getopt::Long ();
 use Pod::Usage ();
 use POSIX ();
 
+my $VERSION = '__VERSION__';
+
 my ($d, $m, $y) = (localtime time)[3 .. 5];
 my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 
@@ -716,7 +718,7 @@ sub create_logfile {
 ############################################################################
 
 
-@{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0
+@{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0, version $VERSION
 
 
     "$ARGV{cmdline}"
@@ -988,6 +990,7 @@ Possible options:
     -logfile="FILE"         Write log data to "FILE" (default: <fontfamily>.log)
     -verbose                Print more data to log file
                             (repeat for even higher verbosity)
+    -version                Print version number and exit
     font[s]                 The fonts (.otf or .ttf format) to install.
 
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
@@ -1034,6 +1037,7 @@ sub parse_options {
 
     Getopt::Long::GetOptions(
         'help|?'              =>  sub { print $USAGE; exit; },
+        'version'             =>  sub { print "$VERSION\n"; exit; },
         'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2); },
         'encoding=s'          => \$ARGV{encoding},
         'ts1!'                => \$ARGV{textcomp},
@@ -2543,6 +2547,12 @@ GNU General Public License for more details.
 
 =over 12
 
+=item I<2019-05-20>
+
+(not released to CTAN)
+
+Added the I<-version> option.
+
 =item I<2019-05-17>
 
 Changed the way the F<-ligatures> option works:
@@ -2594,7 +2604,7 @@ to tell B<autoinst> to use whatever inferior characters are available.
 
 =item I<2019-03-14>
 
-(never released to CTAN)
+(not released to CTAN)
 
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes.
