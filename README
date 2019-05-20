@@ -48,8 +48,19 @@ Kpathsea
 
 Installation
 ------------
-The encoding files in the "share" directory should be moved
-to a standard location where otftotfm can find them.
+When installing manually, the encoding files in the "share/" directory
+should be moved to a "standard" location where otftotfm can find them.
+What this location is depends on your TeX installation;
+in TeXLive, it should be $TEXMFLOCAL/fonts/enc/dvips/fontools/ or,
+if you don't have write permissions in $TEXMFLOCAL, in
+$TEXMFHOME/fonts/enc/dvips/fontools/.
+
+The scripts in the "bin/" directory should be placed in a directory
+on your PATH (or else you have to call them with their full path name).
+
+Of course, when using a package manager (such as tlmgr) to do
+the installation, all files will automatically be put in the right
+location.
 
 
 DISCLAIMER
@@ -64,9 +75,6 @@ See the GNU General Public License for more details.
 LICENSE & COPYRIGHT
 ===================
 
-This software is copyright (C) 2005-2019 Marc Penninga. It is released under
-the terms of the GNU General Public Licence; see the file GPLv2.txt for
-the license conditions.
-
-
-                                                Marc Penninga, 2019/05/11
+This software is copyright (C) 2005-2019 Marc Penninga.
+It is released under the terms of the GNU General Public Licence;
+see the file GPLv2.txt for the license conditions.
