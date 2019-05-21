@@ -1710,7 +1710,6 @@ END_STY_XKEYVAL
 \\renewcommand*
     {\\$ARGV{nfss}default}
     {$fam-\\$fam\@figurealign\\$fam\@figurestyle}
-\\renewcommand*{\\familydefault}{\\$ARGV{nfss}default}
 
 \\endinput
 END_STYLE_REST
@@ -1760,7 +1759,9 @@ sub write_fdfile {
     \\edef\\${fam}\@\@scale{s*[\\csname ${fam}\@scale\\endcsname]}%
 \\fi
 
-\\DeclareFontFamily{${enc}}{${fam}-${sty}}{}
+\\DeclareFontFamily{${enc}}{${fam}-${sty}}{@{[
+    $ARGV{nfss} eq 'tt' ? '\hyphenchar\font=-1' : ""
+]}}
 
 END_FD_HEADER
 
@@ -2297,10 +2298,16 @@ B<-nots1> otherwise.
 =item B<-serif>, B<-sanserif>, B<-typewriter>
 
 Install the font as a serif, sanserif or typewriter font, respectively.
-This changes how you access the font in LaTeX: with C<\rmfamily>/C<\textrm>,
-C<\sffamily>/C<\textsf> or C<\ttfamily>/C<\texttt>.
-The generated style file redefines C<\familydefault>,
-so including it will still make this font the default text font.
+This changes how you should access the font in LaTeX:
+with C<\rmfamily>/C<\textrm>, C<\sffamily>/C<\textsf>
+or C<\ttfamily>/C<\texttt>.
+
+Installing the font as a typewriter font will cause two further changes:
+it will - by default - turn off the use of f-ligatures
+(though this can be overridden with the I<-ligatures> option)
+and it will disable hyphenation for this font.
+This latter effect cannot be disabled in B<autoinst>;
+if you want typewriter text to be hyphenated, use the F<hyphenat> package.
 
 =item B<-lining> / B<-nolining>
 
@@ -2547,10 +2554,10 @@ GNU General Public License for more details.
 
 =over 12
 
-=item I<2019-05-20>
+=item I<2019-05-22>
 
-(not released to CTAN)
-
+Prevented hyphenation for typewriter fonts
+(added C<\hyphenchar\font=-1> to the C<\DeclareFontFamily> declarations).
 Added the I<-version> option.
 
 =item I<2019-05-17>
@@ -2604,8 +2611,6 @@ to tell B<autoinst> to use whatever inferior characters are available.
 
 =item I<2019-03-14>
 
-(not released to CTAN)
-
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes.
 Instead of inventing our own codes to deal with every possible weight
@@ -2615,6 +2620,13 @@ Then we add "ssub" rules to the F<fd> files to map the standard NFSS codes
 to our fancy names (see the section B<NFSS codes>;
 based on discussions with Frank Mittelbach and Bob Tennent).
 
+=back
+
+
+=begin Really_old_history
+
+=over 12
+
 =item I<2018-08-10>
 
 Added encoding files for LGR and T2A/B/C to I<fontools>.
@@ -2622,13 +2634,6 @@ Added encoding files for LGR and T2A/B/C to I<fontools>.
 =item I<2018-03-26>
 
 Added the I<-(no)mergewidths> option; tried to improve the documentation.
-
-=back
-
-
-=begin Really_old_history
-
-=over 12
 
 =item I<2018-03-26>
 

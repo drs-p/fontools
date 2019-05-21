@@ -52,7 +52,7 @@ When installing manually, the encoding files in the "share/" directory
 should be moved to a "standard" location where otftotfm can find them.
 What this location is depends on your TeX installation;
 in TeXLive, it should be $TEXMFLOCAL/fonts/enc/dvips/fontools/ or,
-if you don't have write permissions in $TEXMFLOCAL, in
+if you don't have write permissions in $TEXMFLOCAL,
 $TEXMFHOME/fonts/enc/dvips/fontools/.
 
 The scripts in the "bin/" directory should be placed in a directory
