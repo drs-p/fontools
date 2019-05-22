@@ -1674,6 +1674,12 @@ END_STY_XKEYVAL
             "\\DeclareOptionX{proportional}{\\edef\\$fam\@figurealign{}}\n";
     }
 
+    print {$STY} <<"END_STY_MAINFONT";
+\\DeclareOptionX{mainfont}{
+    \\renewcommand{\\familydefault}{\\$ARGV{nfss}default}
+}
+END_STY_MAINFONT
+
     my $defaults
         = $seen{OsF}  ? 'oldstyle,proportional'
         : $seen{TOsF} ? 'oldstyle,tabular'
@@ -2079,6 +2085,15 @@ to the preamble of your document.
 This style file defines a number of options:
 
 =over 4
+
+=item C<mainfont>
+
+Redefine C<\familydefault> so that this font becomes the 'main' font
+for the document.
+This is a no-op if this font is installed as a serif font,
+but if the font was installed as a sanserif or typewriter font
+this option saves you from having to redefine C<\familydefault>
+yourself.
 
 =item C<lining>, C<oldstyle>, C<tabular>, C<proportional>
 
@@ -2556,6 +2571,7 @@ GNU General Public License for more details.
 
 =item I<2019-05-22>
 
+Added the I<mainfont> option to the generated F<sty> files.
 Prevented hyphenation for typewriter fonts
 (added C<\hyphenchar\font=-1> to the C<\DeclareFontFamily> declarations).
 Added the I<-version> option.
