@@ -2548,6 +2548,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 
+=head1 VERSION
+
+This document describes B<autoinst> version __VERSION__.
+
 
 =head1 RECENT CHANGES
 

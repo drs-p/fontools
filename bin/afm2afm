@@ -419,6 +419,11 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 
+=head1 VERSION
+
+This document describes B<afm2afm> version __VERSION__.
+
+
 =head1 RECENT CHANGES
 
 (See the source code for the rest of the story.)
