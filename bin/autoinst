@@ -2260,6 +2260,14 @@ but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 
 =over 4
 
+=item B<-version>
+
+Print B<autoinst>'s version number and exit.
+
+=item B<-help>
+
+Print a (relatively) short help text and exit.
+
 =item B<-dryrun>
 
 Don't generate output; just parse input fonts and write
@@ -2271,7 +2279,7 @@ Write log data to F<filename> instead of the default F<< <fontfamily>.log >>.
 If the file already exists, B<autoinst> appends to it;
 it doesn't overwrite an existing file.
 
-=item B<-Verbose> I<(note: uppercase 'V'!)
+=item B<-Verbose> (I<note:> uppercase 'V'!)
 
 Add more details to the log file. Repeat this option for even more info.
 
@@ -2296,7 +2304,7 @@ Control the creation of TS1-encoded fonts. The default is B<-ts1>
 if the text encodings (see I<-encoding> above) include T1,
 B<-nots1> otherwise.
 
-=item B<-serif>, B<-sanserif>, B<-typewriter>
+=item B<-serif> / B<-sanserif> / B<-typewriter>
 
 Install the font as a serif, sanserif or typewriter font, respectively.
 This changes how you access the font in LaTeX:
