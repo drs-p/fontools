@@ -2088,10 +2088,10 @@ This style file defines a number of options:
 
 =item C<mainfont>
 
-Redefine C<\familydefault> so that this font becomes the 'main' font
+Redefine C<\familydefault> to make this font the main font
 for the document.
-This is a no-op if this font is installed as a serif font,
-but if the font was installed as a sanserif or typewriter font
+This is a no-op if the font is installed as a serif font;
+but if the font is installed as a sanserif or typewriter font,
 this option saves you from having to redefine C<\familydefault>
 yourself.
 
@@ -2181,20 +2181,6 @@ Other encodings can be chosen using the I<-encoding> option
 
 
 =head2 NFSS codes
-
-I<< B<CAVEAT>: this functionality was almost completely rewritten
-in release 2019-03-14.
-Older versions tried to map all fonts directly to short NFSS codes,
-but often had to invent non-standard codes in order to deal with the
-many different weights and widths that occur in the wild.
-Such non-standard NFSS codes will no longer
-work for fonts installed with newer versions; for those you'll have to either
-use the long names or stick to the standard NFSS codes.
-(This change mainly concerns very light or very heavy weights
-and very condensed widths;
-for more moderate weights and widths,
-existing code will very probably continue to work.)
->>
 
 LaTeX's New Font Selection System (NFSS)
 identifies fonts by a combination of family,
@@ -2313,13 +2299,13 @@ B<-nots1> otherwise.
 =item B<-serif>, B<-sanserif>, B<-typewriter>
 
 Install the font as a serif, sanserif or typewriter font, respectively.
-This changes how you should access the font in LaTeX:
+This changes how you access the font in LaTeX:
 with C<\rmfamily>/C<\textrm>, C<\sffamily>/C<\textsf>
 or C<\ttfamily>/C<\texttt>.
 
 Installing the font as a typewriter font will cause two further changes:
 it will - by default - turn off the use of f-ligatures
-(though this can be overridden with the I<-ligatures> option)
+(though this can be overridden with the I<-ligatures> option),
 and it will disable hyphenation for this font.
 This latter effect cannot be disabled in B<autoinst>;
 if you want typewriter text to be hyphenated, use the F<hyphenat> package.
@@ -2370,7 +2356,7 @@ as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
 This option allows the user to determine which of these styles B<autoinst>
 should use for the inferior characters.
 Alternatively, the value "auto" tells B<autoinst> to use the first value
-in the list "subs", "sinf" or "dnom" that is supported by the fonts.
+in "subs", "sinf" or "dnom" that is supported by the font.
 The default value is "none".
 
 I<< If you specify a style of inferiors that isn't present in the font,
