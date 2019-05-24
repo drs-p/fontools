@@ -126,16 +126,20 @@ my %UNABBREVIATE = (
     Note that autoinst converts all metadata to lowercase to avoid inconsistent
     capitalization; so all entries in these tables should be *lowercase* as well.
 
-    Technical note:
-    We define NFSS_WEIGHT and NFSS_WIDTH first as arrays and then as hashtables;
-    this allows us to use the array-variants as an *ordered* list of keys.
+    Technical notes:
+    -   We define NFSS_WEIGHT and NFSS_WIDTH first as arrays
+        and then as hashtables; this allows us to use the array-variants
+        as an *ordered* list of keys.
+    -   We exclude the Medium and Regular weights and widths
+        from the @WEIGHTS and @WIDTHS arrays to avoid false positives;
+        see the comments in the parse_basicinfo() function.
 
 
     Finally, some random remarks about these tables:
     - Poster and Super aren't just "very heavy" weights; in most cases, they're
         more like separate designs. The same holds for the Compact width.
         I added them for completeness.
-    - Two, Four and Eight are (experimental) weights that only occur in Fira Sans.
+    - Two, Four and Eight are (experimental) weights from Fira Sans.
     - Some families (Univers) treat Thin as a synonym for Extralight;
         mostly, however, it is a very light weight below Ultralight.
     - Semilight weights are virtually nonexistent, except for Thesis
@@ -155,7 +159,7 @@ my %UNABBREVIATE = (
         Narrow and Condensed), Narrow is a bit wider than Condensed.
         So I mapped Narrow to "sc".
     - Extended and Expanded seem to be used interchangeably.
-    - I have never seen any (Extra-,Ultra)(Extended,Expanded,Wide) fonts,
+    - I have never seen any (Extra-,Ultra-)(Extended,Expanded) fonts,
         so the ex and ux entries are currently empty.
 
 =end Comment
