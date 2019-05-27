@@ -1403,13 +1403,26 @@ sub parse_basicinfo {
     $info->{family}    = $data{family};
     $info->{subfamily} = $data{subfamily};
 
+    # Take care to unabbreviate weight and width; CondensedUltra fonts
+    # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
+    if (exists $UNABBREVIATE{ $info->{width} }) {
+        $info->{width} = $UNABBREVIATE{ $info->{width} };
+    }
+    if (exists $UNABBREVIATE{ $info->{weight} }) {
+        $info->{weight} = $UNABBREVIATE{ $info->{weight} };
+    }
+    if (exists $UNABBREVIATE{ $info->{shape} }) {
+        $info->{shape} = $UNABBREVIATE{ $info->{shape} };
+    }
+
     # Some font families put different widths into separate families;
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
         my $widths = join '|', mqrs(@WIDTHS);
         if ( $info->{family} =~ m/(.+?) (${widths}) \z/xmsi
-                and ( $UNABBREVIATE{ lc($2) } // lc($2) )
-                 eq ( $UNABBREVIATE{ $info->{width} }  // $info->{width} )
+                and ( $info->{width} eq 'regular'
+                   or $info->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+                )
         ) {
             $info->{family} = $1;
             $info->{width}  = lc $2;
@@ -1442,18 +1455,6 @@ sub parse_basicinfo {
 
     if ( !$ARGV{logfile} ) {
         $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
-    }
-
-    # Take care to unabbreviate weight and width; CondensedUltra fonts
-    # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
-    if (exists $UNABBREVIATE{ $info->{width} }) {
-        $info->{width} = $UNABBREVIATE{ $info->{width} };
-    }
-    if (exists $UNABBREVIATE{ $info->{weight} }) {
-        $info->{weight} = $UNABBREVIATE{ $info->{weight} };
-    }
-    if (exists $UNABBREVIATE{ $info->{shape} }) {
-        $info->{shape} = $UNABBREVIATE{ $info->{shape} };
     }
 
     $info->{basicshape} = $NFSS_SHAPE{$info->{shape}};
