@@ -786,6 +786,29 @@ I'm using the following options:
 
 END_ARGUMENTS
 
+    my %fontfamilies = map { ( $_->{family} => 1 ) } @fonts;
+    my @fontfamilies = keys %fontfamilies;
+    if (scalar @fontfamilies > 1) {
+        warn <<"END_WARNING_MULTIPLE_FAMILIES";
+[WARNING] Your fonts seem to belong to multiple families:
+
+          @{[ join( "\n" . q{ } x 10, sort @fontfamilies ) ]}
+
+          "autoinst" performs best when installing one family at a time.
+          If you think your fonts should all be in the same family,
+          you might have found a bug in autoinst's font info parsing.
+
+          Please see the log file $ARGV{logfile} for details on how
+          the fonts' families, weights, widths and shapes were parsed.
+
+END_WARNING_MULTIPLE_FAMILIES
+
+        # increase verbosity if necessary, to log all relevant info
+        if ($ARGV{verbose} < 1) {
+            $ARGV{verbose} = 1;
+        }
+    }
+
     $ARGV{logfile} = $LOG;
 
     return if $ARGV{verbose} < 1;
@@ -798,7 +821,6 @@ END_ARGUMENTS
     $font->{filename}
         Name:       $font->{name}
         Family:     $font->{family}
-        Subfamily:  $font->{subfamily}
         Weight:     $font->{weight} ($font->{weightclass})
         Width:      $font->{width}
         Shape:      $font->{shape}
@@ -1297,6 +1319,7 @@ sub parse_basicinfo {
     # clean up family name (it's used in LaTeX command names)
     $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
+    $data{family}    =~ s/ Std \z//xms;
     $data{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data{family}    =~ s/[^A-Za-z]+//xmsg;
 
@@ -1346,22 +1369,18 @@ sub parse_basicinfo {
     $data{subfamily} =~ s/$info->{weight}//xmsi;
     $data{subfamily} =~ s/$info->{shape}//xmsi;
 
-
     $info->{name}      = $data{postscriptname};
     $info->{family}    = $data{family};
     $info->{subfamily} = $data{subfamily};
-
-    if ( !$ARGV{logfile} ) {
-        $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
-    }
 
     # Some font families put different widths into separate families;
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
         my $widths = join '|', mqrs(@WIDTHS);
-        if ($info->{width} eq 'regular'
-            && $info->{family} =~ m/(.+?) [ ]* (${widths})$/xmsi)
-        {
+        if ( $info->{family} =~ m/(.+?) [ ]* (${widths}) \z/xmsi
+                and ( $UNABBREVIATE{ lc($2) }  // lc($2) )
+                 eq ( $UNABBREVIATE{ $info->{width} }  // $info->{width} )
+        ) {
             $info->{family} = $1;
             $info->{width}  = lc $2;
         }
@@ -1377,6 +1396,10 @@ sub parse_basicinfo {
             $info->{family} = $1;
             $info->{weight}  = lc $2;
         }
+    }
+
+    if ( !$ARGV{logfile} ) {
+        $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
     }
 
     # Take care to unabbreviate weight and width; CondensedUltra fonts
@@ -1418,7 +1441,8 @@ sub parse_basicinfo {
 #-----------------------------------------------------------------------
 # Re-order argument list so that longer strings come before shorter ones
 #
-# This is needed when matching a string against a list of patterns;
+# This is needed when matching a string against a list of patterns
+# where some of the patterns may be substrings of other patterns;
 # then we want the *longest* matching pattern, so we test the patterns
 # in descending order of length.
 #-----------------------------------------------------------------------
@@ -2671,7 +2695,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-05-24>
+=item I<2019-05-27>
 
 =over 2
 
@@ -2683,6 +2707,10 @@ Added the I<-mergeweights> option.
 
 Improved parsing of fonts' width and weight,
 and the mapping of widths and weights to NFSS codes.
+
+=item B<->
+
+Added a warning when installing fonts from multiple families.
 
 =item B<->
 
