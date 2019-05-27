@@ -1155,13 +1155,17 @@ sub parse_options {
         'nfssweight=s%'       => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
-                                     $NFSS_WEIGHT{$key} = \@values;
+                                     $key = q{} if $key eq 'm';
+                                     $NFSS_WEIGHT{$key}
+                                         = [ @values, @{$NFSS_WEIGHT{$key}} ];
                                      $ARGV{$key} = 'user-defined';
                                  },
         'nfsswidth=s%'        => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
-                                     $NFSS_WIDTH{$key} = \@values;
+                                     $key = q{} if $key eq 'm';
+                                     $NFSS_WIDTH{$key}
+                                         = [ @values, @{$NFSS_WIDTH{$key}} ];
                                      $ARGV{$key} = 'user-defined';
                                  },
     )
