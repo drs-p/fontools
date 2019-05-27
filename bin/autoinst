@@ -663,8 +663,8 @@ sub cleanup {
 sub decide_nfss_mappings {
     my ( %weight, %width );
     for my $font (@_) {
-        $weight{ $font->{weight} } //= $font->{weightclass};
-        $width{ $font->{width} } //= $font->{widthclass};
+        $weight{ $font->{weight} } //= $font->{weight_class};
+        $width{ $font->{width} } //= $font->{width_class};
     }
 
     NFSSWEIGHT:
@@ -821,7 +821,7 @@ END_WARNING_MULTIPLE_FAMILIES
     $font->{filename}
         Name:       $font->{name}
         Family:     $font->{family}
-        Weight:     $font->{weight} ($font->{weightclass})
+        Weight:     $font->{weight} ($font->{weight_class})
         Width:      $font->{width}
         Shape:      $font->{shape}
         Size:       $font->{minsize}-$font->{maxsize}
@@ -1081,7 +1081,7 @@ END_USAGE
     ornaments       => '1',     # 0 = no, 1 = yes
     fractions       => '0',     # 0 = no, 1 = yes
     ligatures       => '2',     # 0 = no, 1 = yes, 2 = ('tt' ? no : yes)
-    nfss            => 'rm',
+    nfss            => '',
     fig_height      => 'lnum',
     fig_width       => 'tnum',
     extra           => '',
@@ -1189,6 +1189,25 @@ sub parse_options {
              or $ARGV{textcomp} == 1 )
     {
         delete $SHAPE{textcomp};
+    }
+
+    # Determine NFSS classification of this family, if the user
+    # didn't explicitly specify it
+    if ( !$ARGV{nfss} ) {
+        # EXPERIMENTAL: parse "post" table to see if font is fixed-width
+        open my $otfinfo, '-|:raw', qq(otfinfo --dump-table 'post' "$ARGV[0]")
+            or die "[ERROR] could not fork(): $!";
+        my $post_table = do { local $/; <$otfinfo> };
+        close $otfinfo
+            or die "[ERROR] 'otfinfo --dump-table post $ARGV[0]' failed";
+
+        my $is_fixed_pitch = unpack '@12N', $post_table;
+
+        $ARGV{nfss} = $is_fixed_pitch                 ? 'tt'
+                    : $ARGV[0] =~ m/mono(?!type)/xmsi ? 'tt'
+                    : $ARGV[0] =~ m/sans/xmsi         ? 'sf'
+                    :                                   'rm'
+                    ;
     }
 
     # If the user didn't explicitly say anything about ligatures,
@@ -1419,12 +1438,12 @@ sub parse_basicinfo {
     # We define 'series' as 'weight + width'. This matches NFSS,
     # but contradicts how most fonts are named (which is 'width + weight').
     $info->{series}
-        = ($info->{width} eq 'regular')  ? $info->{weight}
+        = ($info->{width}  eq 'regular') ? $info->{weight}
         : ($info->{weight} eq 'regular') ? $info->{width}
         :                                  $info->{weight} . $info->{width}
         ;
 
-    # Experimental: we extract the usWeightClass and usWidthClass
+    # EXPERIMENTAL: we extract the usWeightClass and usWidthClass
     # properties from the font's OS/2 table
     open $otfinfo,
          '-|:raw',
@@ -1433,7 +1452,7 @@ sub parse_basicinfo {
     my $os2_table = do { local $/; <$otfinfo>; };
     close $otfinfo
         or die "[ERROR] 'otfinfo --dump-table $info->{filename}' failed";
-    @{$info}{qw(weightclass widthclass)} = unpack '@4n @6n', $os2_table;
+    @{$info}{qw(weight_class width_class)} = unpack '@4n @6n', $os2_table;
 
     return;
 }
@@ -2433,6 +2452,12 @@ and it will disable hyphenation for this font.
 This latter effect cannot be disabled in B<autoinst>;
 if you want typewriter text to be hyphenated, use the F<hyphenat> package.
 
+If none of these options is specified, B<autoinst> tries to guess:
+if the font's filename contains the string "sans" it selects B<-sanserif>;
+if the filename contains "mono", or the field C<isFixedPitch> in
+the font's "post" table is True, it will select B<-typewriter>;
+and otherwise it will opt for B<-serif>.
+
 =item B<-lining> / B<-nolining>
 
 Control the creation of fonts with lining figures. The default is
@@ -2716,6 +2741,10 @@ Added a warning when installing fonts from multiple families.
 
 Changed logging code so that that results of font info parsing
 are always logged, even (especially!) when parsing fails.
+
+=item B<->
+
+Try to automatically set I<-serif>, I<-sanserif> or I<-typewriter>.
 
 =item B<->
 
