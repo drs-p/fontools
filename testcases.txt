@@ -1,0 +1,20 @@
+|----------------|---------------------------------------------------------|
+| font           | test case                                               |
+|----------------|---------------------------------------------------------|
+| agenda         | Medium maps to m (no Regular weight)                    |
+| alegreyasans   | one of Bob's fonts; 'sans' in name                      |
+| avenirnext     | Ultralight, Demibold and Heavy map to ul, sb and eb     |
+| clearsans      | Thin, Light and Medium are separate families            |
+| fedrasans      | Condensed and all weights in separate families          |
+| firasans       | one of Bob's; Book maps to sl                           |
+| franklingothic | many widths; should test with -nfssweight=m=medium      |
+| gillsans       | weights and widths in separate families                 |
+| go             | small caps in separate family                           |
+| helveticaneue  | Heavy maps to eb (since Heavy < Black); Thin not mapped |
+| ibmplexsans    | Condensed fonts not merged                              |
+| notosans       | one of Bob's; many weights and widths                   |
+| notosansmono   | one of Bob's; monospaced but isFixedPitch is False      |
+| opensans       | one of Bob's                                            |
+| sourcecodepro  | one of Bob's; monospaced but no 'mono' in name          |
+| thesansmono    | Semilight weight; 'sans' and 'mono' in name             |
+|----------------|---------------------------------------------------------|
