@@ -705,6 +705,14 @@ sub decide_nfss_mappings {
         }
     }
 
+    # Special case: if we don't have Regular but we *do* have Medium,
+    # move Medium from the "sb" list to the "m" (i.e., Regular) one.
+    if ( !@{$NFSS_WEIGHT{''}} and $weight{medium} ) {
+        $NFSS_WEIGHT{''} = [ 'medium' ];
+        $NFSS_WEIGHT{sb}
+            = [ grep { $_ ne 'medium' } @{$NFSS_WEIGHT{medium}} ];
+    }
+
     # Some more trickery to map the sl code to Book or Text (but of course
     # only if sl is empty and Book/Text is lighter than Regular)
     if ( !@{$NFSS_WEIGHT{sl}} ) {
