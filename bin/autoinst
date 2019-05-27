@@ -607,20 +607,20 @@ sub expand_encodings {
 sub cleanup {
     my @worklist = @_;
 
+    WORKITEM:
     for my $item (@worklist) {
         my ($font, $style, $shape, $encoding)
             = @{$item}{qw(font style shape encoding)};
 
-        # make unique copy of fontdata, since we're modifying it;
-        # otherwise, the mergesmallcaps option only works for
-        # the first encoding in the list
-        my %font = %$font;
-        $font = $item->{font} = \%font;
-
-        # handle fonts that put small caps fonts into separate family
-        if ($ARGV{mergesmallcaps}) {
-            if ($font->{family} =~ s/(?: smallcaps | sc )$//xmsi) {
-                $shape = $item->{shape} = 'smallcaps';
+        # don't generate smallcaps version of TS1-encoded fonts,
+        # as these contain the same glyphs as the regular version
+        if ($font->{is_smallcaps}) {
+            if ($shape eq 'textcomp') {
+                $item = 0;
+                next WORKITEM;
+            }
+            else {
+                $shape = 'smallcaps';
             }
         }
 
@@ -654,7 +654,7 @@ sub cleanup {
         $item->{cmdline} = make_cmdline($item);
     }
 
-    return @worklist;
+    return grep { $_ } @worklist;
 }
 
 #-----------------------------------------------------------------------
@@ -831,7 +831,8 @@ END_WARNING_MULTIPLE_FAMILIES
         Family:     $font->{family}
         Weight:     $font->{weight} ($font->{weight_class})
         Width:      $font->{width}
-        Shape:      $font->{shape}
+        Shape:      $font->{shape} @{[ $font->{is_smallcaps}
+                                            ? '(smallcaps)' : '' ]}
         Size:       $font->{minsize}-$font->{maxsize}
         Features:   @{[ join ', ', sort keys %{$font->{feature}} ]}
 END_PARSE_FONT
@@ -1303,12 +1304,13 @@ sub parse_fontinfo {
     my ($filename) = @_;
 
     my $info = {
-        filename  => $filename,
-        width     => 'regular',
-        weight    => 'regular',
-        shape     => 'roman',
-        minsize   => 0,
-        maxsize   => 0,
+        filename     => $filename,
+        width        => 'regular',
+        weight       => 'regular',
+        shape        => 'roman',
+        minsize      => 0,
+        maxsize      => 0,
+        is_smallcaps => 0,
     };
 
     parse_basicinfo($info);
@@ -1405,12 +1407,24 @@ sub parse_basicinfo {
     # we provide an option to merge these with the 'main' font family.
     if ($ARGV{mergewidths}) {
         my $widths = join '|', mqrs(@WIDTHS);
-        if ( $info->{family} =~ m/(.+?) [ ]* (${widths}) \z/xmsi
-                and ( $UNABBREVIATE{ lc($2) }  // lc($2) )
+        if ( $info->{family} =~ m/(.+?) (${widths}) \z/xmsi
+                and ( $UNABBREVIATE{ lc($2) } // lc($2) )
                  eq ( $UNABBREVIATE{ $info->{width} }  // $info->{width} )
         ) {
             $info->{family} = $1;
             $info->{width}  = lc $2;
+        }
+    }
+
+    # Some families even put small caps into separate families;
+    # we have an option to merge these with the 'main' family as well.
+    if ( $ARGV{mergesmallcaps} ) {
+        if ( $info->{family} =~ m/(.+?) ( smallcaps | sc ) \z/xmsi ) {
+            $info->{family}       = $1;
+            $info->{is_smallcaps} = 1;
+        }
+        elsif ( $data{fullname} =~ m/(?: smallcaps | sc ) \z/xmsi ) {
+            $info->{is_smallcaps} = 1;
         }
     }
 
@@ -1422,7 +1436,7 @@ sub parse_basicinfo {
             && $info->{family} =~ m/(.+?) [ ]* (${weights})$/xmsi)
         {
             $info->{family} = $1;
-            $info->{weight}  = lc $2;
+            $info->{weight} = lc $2;
         }
     }
 
@@ -1583,7 +1597,8 @@ sub assert_unique {
     my @fonts = @_;
 
     # These attributes should uniquely identify each font
-    my @attributes = qw(family weight width shape minsize maxsize);
+    my @attributes
+        = qw(family weight width shape minsize maxsize is_smallcaps);
 
     my (%seen, $err_details);
     for my $font (@fonts) {
