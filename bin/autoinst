@@ -2102,8 +2102,9 @@ B<autoinst> will create several LaTeX font families:
 
 =item -
 
-Four text families (with lining and oldstyle digits, each in both tabular
-and proportional variants), all with the following shapes:
+Four text families (with lining and oldstyle digits,
+each in both tabular and proportional variants),
+all with the following shapes:
 
 =over 2
 
@@ -2139,8 +2140,8 @@ Swash
 
 =item -
 
-For each T1-encoded text family: a family of TS1-encoded symbol fonts,
-in roman, italic and slanted shapes.
+For each T1-encoded text family:
+a family of TS1-encoded symbol fonts, in roman, italic and slanted shapes.
 
 =item -
 
@@ -2149,7 +2150,8 @@ in roman, italic and slanted shapes.
 
 =item -
 
-Families with "Titling" characters; these "... replace the default glyphs
+Families with "Titling" characters;
+these "... replace the default glyphs
 with corresponding forms designed specifically for titling.
 These may be all-capital and/or larger on the body,
 and adjusted for viewing at larger sizes"
@@ -2493,13 +2495,13 @@ for OT1, T1/TS1, LY1, LGR and T2A/B/C come with B<autoinst>.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
 with other packages; the "fontools_" prefix may be omitted.)
 
-=item B<-ts1> / B<-nots1>
+=item B<-ts1>/B<-nots1>
 
 Control the creation of TS1-encoded fonts. The default is B<-ts1>
 if the text encodings (see I<-encoding> above) include T1,
 B<-nots1> otherwise.
 
-=item B<-serif> / B<-sanserif> / B<-typewriter>
+=item B<-serif>/B<-sanserif>/B<-typewriter>
 
 Install the font as a serif, sanserif or typewriter font, respectively.
 This changes how you access the font in LaTeX:
@@ -2519,40 +2521,40 @@ if the filename contains "mono", or the field C<isFixedPitch> in
 the font's "post" table is True, it will select B<-typewriter>;
 and otherwise it will opt for B<-serif>.
 
-=item B<-lining> / B<-nolining>
+=item B<-lining>/B<-nolining>
 
 Control the creation of fonts with lining figures. The default is
 B<-lining>.
 
-=item B<-oldstyle> / B<-nooldstyle>
+=item B<-oldstyle>/B<-nooldstyle>
 
 Control the creation of fonts with oldstyle figures. The default is
 B<-oldstyle>.
 
-=item B<-proportional> / B<-noproportional>
+=item B<-proportional>/B<-noproportional>
 
 Control the creation of fonts with proportional figures. The default is
 B<-proportional>.
 
-=item B<-tabular> / B<-notabular>
+=item B<-tabular>/B<-notabular>
 
 Control the creation of fonts with tabular figures. The default is
 B<-tabular>.
 
-=item B<-smallcaps> / B<-nosmallcaps>
+=item B<-smallcaps>/B<-nosmallcaps>
 
 Control the creation of small caps fonts. The default is
 B<-smallcaps>.
 
-=item B<-swash> / B<-noswash>
+=item B<-swash>/B<-noswash>
 
 Control the creation of swash fonts. The default is B<-swash>.
 
-=item B<-titling> / B<-notitling>
+=item B<-titling>/B<-notitling>
 
 Control the creation of titling families. The default is B<-titling>.
 
-=item B<-superiors> / B<-nosuperiors>
+=item B<-superiors>/B<-nosuperiors>
 
 Control the creation of fonts with superior characters.
 The default is B<-superiors>.
@@ -2572,12 +2574,12 @@ I<< If you specify a style of inferiors that isn't present in the font,
 B<autoinst> will fall back to its default behaviour of not creating fonts
 with inferiors at all; it won't try to substitute one of the other styles. >>
 
-=item B<-fractions> / B<-nofractions>
+=item B<-fractions>/B<-nofractions>
 
 Control the creation of fonts with numerators and denominators.
 The default is B<-nofractions>.
 
-=item B<-ligatures> / B<-noligatures>
+=item B<-ligatures>/B<-noligatures>
 
 Some fonts create glyphs for the standard f-ligatures (ff, fi, fl, ffi, ffl),
 but don't provide a "liga" feature to access these.
@@ -2589,9 +2591,9 @@ unless the user specified the I<ligatures> option.
 Specify B<-noligatures> to disable the generation of ligatures even for fonts
 that do contain a "liga" feature.
 
-=item B<-defaultlining> / B<-defaultoldstyle>
+=item B<-defaultlining>/B<-defaultoldstyle>
 
-=item B<-defaulttabular> / B<-defaultproportional>
+=item B<-defaulttabular>/B<-defaultproportional>
 
 Tell B<autoinst> which figure style is the current font family's default
 (i.e., which figures you get when you don't specify any OpenType features).
@@ -2612,9 +2614,9 @@ to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
 
-=item B<-mergewidths> / B<-nomergewidths>,
-B<-mergeweights> / B<-nomergeweights>,
-B<-mergeshapes> / B<-nomergeshapes>
+=item B<-mergewidths>/B<-nomergewidths>,
+B<-mergeweights>/B<-nomergeweights>,
+B<-mergeshapes>/B<-nomergeshapes>
 
 Some font put different widths, weights or shapes (e.g., small caps)
 in separate families.
@@ -2658,13 +2660,13 @@ B<autoinst> has finished:
 
 =over 2
 
-=item B<-> run F<pltotf> and F<vptovf> on the generated F<pl> and F<vf> files,
+=item - run F<pltotf> and F<vptovf> on the generated F<pl> and F<vf> files,
 to convert them to F<tfm/vf> format;
 
-=item B<-> move all generated files to a proper TEXMF tree,
+=item - move all generated files to a proper TEXMF tree,
 and, if necessary, update the filename database;
 
-=item B<-> tell TeX about the new F<map> file
+=item - tell TeX about the new F<map> file
 (usually by running C<updmap> or similar).
 
 =back
@@ -2698,7 +2700,7 @@ The default values are "lcdftools" and the font's FontFamily name.
 Note that these options change I<only> directory names,
 not the names of any generated files.
 
-=item B<-updmap> / B<-noupdmap>
+=item B<-updmap>/B<-noupdmap>
 
 Control whether or not F<updmap> is called after the last call to F<otftotfm>.
 The default is B<-updmap>.
@@ -2772,35 +2774,41 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2019-05-28>
 
-=over 2
+=over 3
 
-=item B<->
+=item -
 
-Added the I<-mergeweights> and I<-mergeshapes> options.
+Added the I<-mergeweights> and I<-mergeshapes> options,
+and improved the I<-mergewidths> option.
 
-=item B<->
+=item -
 
-Improved parsing of fonts' width and weight,
-and the mapping of widths and weights to NFSS codes.
+Improved the parsing of fonts' widths and weights.
 
-=item B<->
+=item -
 
-Added a warning when installing fonts from multiple families.
+Improved the mapping of widths and weights to NFSS codes.
 
-=item B<->
+=item -
 
 Changed logging code so that that results of font info parsing
 are always logged, even (especially!) when parsing fails.
 
-=item B<->
+=item -
+
+Added a warning when installing fonts from multiple families.
+
+=item -
 
 Try to automatically set I<-serif>, I<-sanserif> or I<-typewriter>.
 
-=item B<->
+=item -
 
 Fixed error checking after calls to F<otfinfo>
 (B<autoinst> previously only checked whether C<fork()> was successful,
 not whether the actual call to F<otfinfo> worked).
+
+=back
 
 =item I<2019-05-22>
 
