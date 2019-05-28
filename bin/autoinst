@@ -50,25 +50,37 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
     Some fontnames contain abbreviated words for width, weight and/or shape;
     we unabbreviate these using the following table.
 
+    To avoid having to have this information in multiple places,
+    we also build a reversed table %ABBREV that maps 'full' forms
+    to all known abbreviations; we then inject these abbreviations into
+    the %NFSS_WEIGHT, %NFSS_WIDTH and %NFSS_SHAPE tables below,
+    so that they recognise the abbreviated forms as well as the full ones.
+
 =end Comment
 
 =cut
 
 my %UNABBREVIATE = (
-    demi    =>  'demibold',
-    hair    =>  'hairline',
-    ultra   =>  'ultrablack',
     cmp     =>  'compressed',
     comp    =>  'compressed',
-    cn      =>  'condensed',
     cond    =>  'condensed',
+    demi    =>  'demibold',
     extcond =>  'extracondensed',
+    hair    =>  'hairline',
+    incline =>  'inclined',
     it      =>  'italic',
     ita     =>  'italic',
+    md      =>  'medium',
     slant   =>  'slanted',
-    incline =>  'inclined',
-    xlight  =>  'extralight',
+    ultra   =>  'ultrablack',
 );
+my %ABBREV;
+while ( my ($k, $v) = each %UNABBREVIATE ) {
+    push @{$ABBREV{$v}}, $k;
+}
+for my $full (keys %ABBREV) {
+    push @{$ABBREV{$full}}, $full;
+}
 
 =begin Comment
 
@@ -167,26 +179,30 @@ my %UNABBREVIATE = (
 =cut
 
 my @NFSS_WEIGHT = (
-    ul  =>  [ qw( ultralight thin hair hairline eight four two ) ],
-    el  =>  [ qw( extralight xlight ) ],
+    ul  =>  [ qw( ultralight thin hairline eight four two ) ],
+    el  =>  [ qw( extralight ) ],
     l   =>  [ qw( light ) ],
     sl  =>  [ qw( semilight blond ) ],
     ''  =>  [ qw( regular text book ) ],
-    sb  =>  [ qw( semibold demi demibold medium ) ],
+    sb  =>  [ qw( semibold demibold medium ) ],
     b   =>  [ qw( bold ) ],
     eb  =>  [ qw( extrabold ) ],
-    ub  =>  [ qw( ultrabold black heavy extrablack ultra ultrablack
+    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack
                   ultraheavy poster super ) ],
 );
 my %NFSS_WEIGHT = @NFSS_WEIGHT;
 @NFSS_WEIGHT = grep { !ref } @NFSS_WEIGHT;
+for my $code (@NFSS_WEIGHT) {
+    $NFSS_WEIGHT{$code}
+        = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WEIGHT{$code}} ];
+}
 my @WEIGHTS = grep { $_ !~ m/ regular | medium /xms }
                    map { @{$_} } values %NFSS_WEIGHT;
 
 my @NFSS_WIDTH = (
-    uc  =>  [ qw( ultracondensed ultracn extracompressed ultracompressed ) ],
-    ec  =>  [ qw( extracondensed extcond cmp comp compressed compact ) ],
-    c   =>  [ qw( cond condensed ) ],
+    uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
+    ec  =>  [ qw( extracondensed compressed compact ) ],
+    c   =>  [ qw( condensed ) ],
     sc  =>  [ qw( semicondensed narrow ) ],
     ''  =>  [ qw( regular ) ],
     sx  =>  [ qw( semiextended semiexpanded ) ],
@@ -196,6 +212,10 @@ my @NFSS_WIDTH = (
 );
 my %NFSS_WIDTH = @NFSS_WIDTH;
 @NFSS_WIDTH = grep { !ref } @NFSS_WIDTH;
+for my $code (@NFSS_WIDTH) {
+    $NFSS_WIDTH{$code}
+        = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WIDTH{$code}} ];
+}
 my @WIDTHS = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
 
 =begin Comment
@@ -222,19 +242,22 @@ my @NFSS_SHAPE = (
     roman       =>  'n',
     upright     =>  'n',
     italic      =>  'it',
-    ita         =>  'it',
-    it          =>  'it',
     cursive     =>  'it',
     kursiv      =>  'it',
     inclined    =>  'sl',
-    incline     =>  'sl',
     oblique     =>  'sl',
     slanted     =>  'sl',
-    slant       =>  'sl',
     romani      =>  'n',    # Silentium has two roman shapes, but no italic;
     romanii     =>  'it',   # so we cheat by mapping the second roman to 'it'
 );
 my %NFSS_SHAPE = @NFSS_SHAPE;
+for my $full (keys %ABBREV) {
+    if (defined $NFSS_SHAPE{$full}) {
+        for my $abbrev ( @{$ABBREV{$full}} ) {
+            $NFSS_SHAPE{$abbrev} = $NFSS_SHAPE{$full};
+        }
+    }
+}
 
 =begin Comment
 
@@ -1352,8 +1375,8 @@ sub parse_basicinfo {
     # clean up family name (it's used in LaTeX command names)
     $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
-    $data{family}    =~ s/(?<=Kievit)OT//xms;
-    $data{family}    =~ s/Std\z//xms;
+    $data{family}    =~ s/(?<= Kievit ) OT//xms;
+    $data{family}    =~ s/ Std \z//xms;
     $data{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data{family}    =~ s/[^A-Za-z]+//xmsg;
 
