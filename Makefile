@@ -1,13 +1,16 @@
 .PHONY: dist
 
 VERSION=$(shell git describe master)
+
 dist:
-	if [ "x$(shell git branch | grep '* master')" != 'x* master' ]; then \
-		echo >&2 "ERROR: not on 'master' branch"; \
-		exit 1; \
+	if [ "x$(shell git branch | grep '* master')" != "x* master" ]; then \
+		echo -e >&2 "\e[31m[WARNING] not on 'master' branch\e[0m"; \
+	fi
+	if [ "x$(shell git describe | grep '-')" != "x" ]; then \
+		echo -e >&2 "\e[31m[WARNING] release not tagged\e[0m"; \
 	fi
 	if [ "x$(shell git status --short)" != "x" ]; then \
-		echo >&2 "ERROR: git not up-to-date"; \
+		echo -e >&2 "\e[31m[ERROR] git repository not up-to-date\e[0m"; \
 		exit 1; \
 	fi
 	rm -rf fontools/
