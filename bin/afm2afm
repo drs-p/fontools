@@ -75,7 +75,7 @@ print_mapentry($afm->{fontinfo}, , $enc->{scheme})
 sub parse_commandline {
     Getopt::Long::GetOptions(
         'help|?'     =>  sub { pod2usage(-verbose => 1) },
-        'version'    =>  sub { print "$VERSION\n"; exit; },
+        'version'    =>  sub { print "$VERSION\n"; exit },
         'encoding=s' => \$ARGV{encoding},
         'kpx=s'      => \$ARGV{kpx},
         'output=s'   => \$ARGV{output},

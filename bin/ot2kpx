@@ -48,12 +48,12 @@ sub main {
     );
 
     Getopt::Long::GetOptions(
-        'help|?'    =>  sub { pod2usage(-verbose => 0); },
-        'version'   =>  sub { print "$VERSION\n"; exit; },
-        'doc'       =>  sub { pod2usage(-verbose => 2); },
-        'afm'       =>  sub { $ARGV{print_func} = \&print_kpx; },
-        'kpx'       =>  sub { $ARGV{print_func} = \&print_kpx; },
-        'lua'       =>  sub { $ARGV{print_func} = \&print_lua; },
+        'help|?'    =>  sub { pod2usage(-verbose => 0) },
+        'version'   =>  sub { print "$VERSION\n"; exit },
+        'doc'       =>  sub { pod2usage(-verbose => 2) },
+        'afm'       =>  sub { $ARGV{print_func} = \&print_kpx },
+        'kpx'       =>  sub { $ARGV{print_func} = \&print_kpx },
+        'lua'       =>  sub { $ARGV{print_func} = \&print_lua },
     ) or pod2usage(-verbose => 0);
     pod2usage(-verbose => 0) if @ARGV != 1;
 
@@ -100,8 +100,8 @@ sub main {
 # Print kerning data in Adobe's KPX format
 # ------------------------------------------------------------------------
 sub print_kpx {
-    my %kern = %{ shift @_; };
-    my @glyph = @{ shift @_; };
+    my %kern = %{ shift @_ };
+    my @glyph = @{ shift @_ };
 
     my $num_kernpairs = sum map { scalar keys %{$kern{$_}} } keys %kern;
     print "StartKernData\nStartKernPairs $num_kernpairs\n";
@@ -119,8 +119,8 @@ sub print_kpx {
 # Print kerning data as a Luatex custom font feature
 # ------------------------------------------------------------------------
 sub print_lua {
-    my %kern = %{ shift @_; };
-    my @glyph = @{ shift @_; };
+    my %kern = %{ shift @_ };
+    my @glyph = @{ shift @_ };
 
     print <<'END_FEATURE_PREFIX';
 fonts.handlers.otf.addfeature {

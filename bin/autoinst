@@ -1138,9 +1138,9 @@ sub parse_options {
     $ARGV{cmdline} = join ' ', ($0, @ARGV);
 
     Getopt::Long::GetOptions(
-        'help|?'              =>  sub { print $USAGE; exit; },
-        'version'             =>  sub { print "$VERSION\n"; exit; },
-        'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2); },
+        'help|?'              =>  sub { print $USAGE; exit },
+        'version'             =>  sub { print "$VERSION\n"; exit },
+        'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2) },
         'encoding=s'          => \$ARGV{encoding},
         'ts1!'                => \$ARGV{textcomp},
         'lining!'             => \$ARGV{lining},
@@ -1509,7 +1509,7 @@ sub parse_basicinfo {
          '-|:raw',
          qq(otfinfo --dump-table 'OS/2' "$info->{filename}")
         or die "[ERROR] could not fork(): $!";
-    my $os2_table = do { local $/; <$otfinfo>; };
+    my $os2_table = do { local $/; <$otfinfo> };
     close $otfinfo
         or die "[ERROR] 'otfinfo --dump-table $info->{filename}' failed";
     @{$info}{qw(weight_class width_class)} = unpack '@4n @6n', $os2_table;
