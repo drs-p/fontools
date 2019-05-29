@@ -24,5 +24,4 @@ cd test/output
 for dirname in ../testfiles/*; do
     ../../bin/autoinst -man -verbose -noorn "$dirname"/*.[ot]tf
 done
-rm franklingothic.log
 ../../bin/autoinst -man -verbose -noorn -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
