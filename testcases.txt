@@ -19,6 +19,7 @@
 | thesansmono    | Semilight weight; both 'sans' and 'mono' in name          |
 |----------------|-----------------------------------------------------------|
 
+rm -rf test/output
 mkdir -p test/output
 cd test/output
 for dirname in ../testfiles/*; do
