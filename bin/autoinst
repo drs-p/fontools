@@ -815,6 +815,9 @@ I'm using the following options:
     mergeweights:       @{[ $ARGV{mergeweights} ? 'yes' : 'no' ]}
     mergeshapes:        @{[ $ARGV{mergeshapes}  ? 'yes' : 'no' ]}
 
+    nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} or '-' ]}
+    nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  or '-' ]}
+
 END_ARGUMENTS
 
     my %fontfamilies = map { ( $_->{family} => 1 ) } @fonts;
@@ -1129,6 +1132,8 @@ END_USAGE
     mergeweights    => '1',     # 0 = no, 1 = yes
     mergeshapes     => '1',     # 0 = no, 1 = yes
     verbose         => 0,
+    nfsswidth       => [],
+    nfssweight      => [],
 );
 
 #-----------------------------------------------------------------------
@@ -1178,6 +1183,8 @@ sub parse_options {
         'verbose+'            => \$ARGV{verbose},
         'nfssweight=s%'       => sub {
                                      my ( $ignored, $key, $values ) = @_;
+                                     push @{$ARGV{nfssweight}},
+                                          "$key=$values";
                                      my @values = split m/,/, lc $values;
                                      $key = q{} if $key eq 'm';
                                      $NFSS_WEIGHT{$key}
@@ -1187,6 +1194,8 @@ sub parse_options {
         'nfsswidth=s%'        => sub {
                                      my ( $ignored, $key, $values ) = @_;
                                      my @values = split m/,/, lc $values;
+                                     push @{$ARGV{nfsswidth}},
+                                          "$key=$values";
                                      $key = q{} if $key eq 'm';
                                      $NFSS_WIDTH{$key}
                                          = [ @values, @{$NFSS_WIDTH{$key}} ];
