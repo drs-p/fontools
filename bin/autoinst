@@ -2800,7 +2800,7 @@ Added a warning when installing fonts from multiple families.
 
 =item -
 
-Try to automatically set I<-serif>, I<-sanserif> or I<-typewriter>.
+Added simple recognition for sanserif and typewriter fonts.
 
 =item -
 

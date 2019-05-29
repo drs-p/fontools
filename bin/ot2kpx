@@ -739,7 +739,7 @@ ot2kpx - extract kerning information from OpenType fonts
 
 =head1 SYNOPSIS
 
-B<ot2kpx> [ I<-afm> | I<-kpx> | I<-lua> ] B<fontfile>
+B<ot2kpx> [ I<-afm> | I<-kpx> | I<-lua> ] B<< <fontfile> >>
 
 
 =head1 DESCRIPTION
@@ -771,7 +771,7 @@ This is the default output format.
 Output the kerning data as a Luatex custom font feature,
 to be included in a C<\directlua> command.
 
-=item B<fontfile>
+=item B<< <fontfile> >>
 
 The OpenType font (both F<otf> and F<ttf> format are supported).
 

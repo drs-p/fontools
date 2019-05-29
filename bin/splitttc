@@ -168,7 +168,7 @@ splitttc - split an OpenType Collection F<ttc> or F<otc> file
 [B<-help>]
 [B<-version>]
 [B<-output-prefix>=I<< <prefix> >>]
-B<ttc-or-otc-file>
+B<< <ttc-or-otc.file> >>
 
 =back
 
@@ -206,7 +206,7 @@ Write the individual fonts to files named I<< <prefix> >>1.ttf,
 I<< <prefix> >>2.ttf etc.
 The default is take the prefix from the filename of the input file.
 
-=item B<ttc-or-otc-file>
+=item B<< <ttc-or-otc.file> >>
 
 The F<ttc> or F<otc> file to be split.
 
