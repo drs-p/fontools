@@ -15,7 +15,10 @@ In addition, this bundle contains a few other, less important utilities:
 
     AFM2AFM - re-encode .afm files
 
-    OT2KPX - extract kerning pairs from OpenType fonts.
+    OT2KPX - extract kerning pairs from OpenType fonts
+
+    SPLITTTC - split an OpenType Collection file (ttc or otc) into
+               individual fonts
 
 
 
@@ -24,7 +27,7 @@ PREREQUISITES
 
 Perl
 
-    The Fontools are written in Perl; any version since v5.10.1 should work.
+    The Fontools are written in Perl; any remotely recent version should work.
     Perl is usually installed on Linux and Unix systems;
     for Windows, try ActivePerl (http://www.activestate.com)
     or Strawberry Perl (http://strawberryperl.com).

@@ -13,10 +13,8 @@ dist:
 	rm -rf fontools/
 	mkdir -p fontools/doc
 	cp -r bin/ share/ GPLv2.txt README fontools/
-	sed -i "s:__VERSION__:$(VERSION):g" fontools/bin/afm2afm
-	sed -i "s:__VERSION__:$(VERSION):g" fontools/bin/autoinst
-	sed -i "s:__VERSION__:$(VERSION):g" fontools/bin/ot2kpx
-	for name in afm2afm autoinst ot2kpx; do \
+	for name in afm2afm autoinst ot2kpx splitttc; do \
+		sed -i "s:__VERSION__:$(VERSION):g" fontools/bin/"$${name}"; \
 		pod2man --center="Marc Penninga" --release="fontools" --section=1 \
 			fontools/bin/$${name} - \
 		| groff -Tps -man - \
