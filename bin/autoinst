@@ -2525,9 +2525,10 @@ This latter effect cannot be disabled in B<autoinst>;
 if you want typewriter text to be hyphenated, use the F<hyphenat> package.
 
 If none of these options is specified, B<autoinst> tries to guess:
-if the font's filename contains the string "sans" it selects B<-sanserif>;
-if the filename contains "mono", or the field C<isFixedPitch> in
-the font's "post" table is True, it will select B<-typewriter>;
+if the font's filename contains the string "mono"
+or if the field C<isFixedPitch> in the font's I<post> table is True,
+it will select B<-typewriter>;
+else if the filename contains "sans" it selects B<-sanserif>;
 and otherwise it will opt for B<-serif>.
 
 =item B<-lining>/B<-nolining>
@@ -2781,7 +2782,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-05-28>
+=item I<2019-05-29>
 
 =over 3
 
