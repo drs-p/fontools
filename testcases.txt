@@ -13,6 +13,7 @@
 | helveticaneue  | Heavy maps to eb (since Heavy < Black); Thin not mapped   |
 | ibmplexsans    | also one of Bob's; was broken by changes in -mergewidths  |
 | lato           | Hairline, Thin and Heavy map to ul, el and eb             |
+| marcellus      | one of Bob's; broken by changes in -mergesmallcaps        |
 | notosansmono   | many weights/widths; monospaced but isFixedPitch is False |
 | opensans       | one of Bob's                                              |
 | sourcecodepro  | one of Bob's; monospaced but no 'mono' in name            |
