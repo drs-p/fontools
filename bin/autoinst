@@ -948,7 +948,14 @@ sub make_commands {
     }
     else {
         if (grep { system $_ } @commands) {
-            warn "[WARNING] call to 'otftotfm' failed\n";
+            warn <<"END_OTFTOTFM_WARNING";
+[WARNING] one or more calls to 'otftotfm' failed;
+          please see the messages above.
+
+          Note that you can safely ignore any warnings
+              "bad UNICODING (‘germandbls’ has no encoding)"
+          or  "bad ligature (‘ff’ has no encoding)"
+END_OTFTOTFM_WARNING
         }
     }
 
@@ -2782,7 +2789,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-05-29>
+=item I<2019-06-11>
 
 =over 3
 
