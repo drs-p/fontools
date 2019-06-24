@@ -1065,6 +1065,7 @@ Possible options:
     -(no)swash              Toggle creation of swash shape
     -(no)titling            Toggle creation of titling shape
     -(no)superiors          Toggle creation of fonts with superior characters
+    -noinferiors
     -inferiors=[none|auto|subs|sinf|dnom]
                             Use this style for subscripts (see docs)
     -(no)ornaments          Toggle creation of ornament fonts
@@ -1163,7 +1164,8 @@ sub parse_options {
         'swash!'              => \$ARGV{swash},
         'titling!'            => \$ARGV{titling},
         'superiors!'          => \$ARGV{superiors},
-        'inferiors=s'         => \$ARGV{inferiors},
+        'noinferiors'         =>  sub { $ARGV{inferiors} = 'none' },
+        'inferiors:s'         => \$ARGV{inferiors},
         'ornaments!'          => \$ARGV{ornaments},
         'fractions!'          => \$ARGV{fractions},
         'ligatures!'          => \$ARGV{ligatures},
@@ -1220,6 +1222,7 @@ sub parse_options {
     delete $STYLE{Sup}           unless $ARGV{superiors};
     delete $STYLE{Orn}           unless $ARGV{ornaments};
     delete @STYLE{qw(Numr Dnom)} unless $ARGV{fractions};
+    $ARGV{inferiors} ||= 'auto';
     if    ($ARGV{inferiors} eq 'auto') { $STYLE{Inf}{reqd} = ['auto'] }
     elsif ($ARGV{inferiors} eq 'subs') { $STYLE{Inf}{reqd} = ['subs'] }
     elsif ($ARGV{inferiors} eq 'sinf') { $STYLE{Inf}{reqd} = ['sinf'] }
@@ -2576,7 +2579,9 @@ Control the creation of titling families. The default is B<-titling>.
 Control the creation of fonts with superior characters.
 The default is B<-superiors>.
 
-=item B<-inferiors>=[ B<none> | B<auto> | B<subs> | B<sinf> | B<dnom> ]
+=item B<-noinferiors>
+
+=item B<-inferiors> [= B<none> | B<auto> | B<subs> | B<sinf> | B<dnom> ]
 
 The OpenType standard defines several kinds of digits that might be used
 as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
@@ -2585,7 +2590,8 @@ This option allows the user to determine which of these styles B<autoinst>
 should use for the inferior characters.
 Alternatively, the value "auto" tells B<autoinst> to use the first value
 in "subs", "sinf" or "dnom" that is supported by the font.
-The default value is "none".
+Saying just B<-inferiors> is equivalent to B<-inferiors=auto>;
+otherwise the default is B<-noinferiors>.
 
 I<< If you specify a style of inferiors that isn't present in the font,
 B<autoinst> will fall back to its default behaviour of not creating fonts
@@ -2789,7 +2795,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-06-11>
+=item I<2019-06-24>
 
 =over 3
 
@@ -2824,6 +2830,12 @@ Added simple recognition for sanserif and typewriter fonts.
 Fixed error checking after calls to F<otfinfo>
 (B<autoinst> previously only checked whether C<fork()> was successful,
 not whether the actual call to F<otfinfo> worked).
+
+=item -
+
+Fixed a bug in the I<-inferiors> option;
+when used without a (supposedly optional) value,
+it would silently gobble the next option instead.
 
 =back
 
