@@ -2510,7 +2510,7 @@ so the I<last> one will become the default text encoding of your document.
 The default choice of encodings is "OT1,T1,LY1".
 For each encoding, a file F<< <encoding>.enc >> (in all I<lowercase>!)
 should be somewhere where F<otftotfm> can find it. Suitable encoding files
-for OT1, T1/TS1, LY1, LGR and T2A/B/C come with B<autoinst>.
+for OT1, T1/TS1, LY1, LGR, T2A/B/C and T3/TS3 come with B<autoinst>.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
 with other packages; the "fontools_" prefix may be omitted.)
 
