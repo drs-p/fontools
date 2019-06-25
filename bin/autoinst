@@ -88,9 +88,9 @@ for my $full (keys %ABBREV) {
     - weight: ul, el, l, sl, m, sb, b, eb, ub
     - width:  uc, ec, c, sc, m, sx, x, ex, ux
 
-    These codes are not always a good match with the weights and widths
-    actually present in a font family; some families (especially sanserif
-    ones) contain too many weights and widths, and the naming of those
+    These codes are not always a perfect match with the weights and widths
+    present in a font family; some families (especially sanserif ones)
+    contain more or different weights and widths, and the naming of those
     weights and widths isn't always consistent between font families.
     To handle this situation, we use a two-tiered approach:
     1.  We install all fonts using a "series" name that is the concatenation
@@ -140,39 +140,10 @@ for my $full (keys %ABBREV) {
     Technical notes:
     -   We define NFSS_WEIGHT and NFSS_WIDTH first as arrays
         and then as hashtables; this allows us to use the array-variants
-        as an *ordered* list of keys.
+        as an *ordered* (by weight/width) list of values.
     -   We exclude the Medium and Regular weights and widths
         from the @WEIGHTS and @WIDTHS arrays to avoid false positives;
         see the comments in the parse_basicinfo() function.
-
-
-    Finally, some random remarks about these tables:
-    - Poster and Super aren't just "very heavy" weights; in most cases,
-        they're more like separate designs. The same holds for the Compact
-        width.  I added them for completeness.
-    - Two, Four and Eight are (experimental) weights from Fira Sans.
-    - Some families (Univers) treat Thin as a synonym for Extralight;
-        mostly, however, it is a very light weight below Ultralight.
-    - Semilight weights are virtually nonexistent, except for Thesis
-        (which contains a Semilight weight) and Arnhem (which has Blond).
-    - Book can mean three things: a synonym for Regular, a slightly lighter
-        than Regular weight, or (especially in fonts from DTF and FontFont)
-        a slightly *heavier* than Regular weight.
-    - Likewise, Medium can really be two different things:
-        - a synonym for Semibold
-        - an extra step between Regular and Semibold
-        I treat it as if it's always the first.
-    - Heavy can mean very different things; it's often heavier than Black,
-        but sometimes it's a synonym for Extrabold, and in Futura it's even
-        lighter than Bold. I treat it here as "very black".
-    - Font families that have both Condensed and Compressed widths
-        seem to define Compressed as narrower than Condensed.
-    - In Basic Sans and Input (which are the only families I know with both
-        Narrow and Condensed), Narrow is a bit wider than Condensed.
-        So I mapped Narrow to "sc".
-    - Extended and Expanded seem to be used interchangeably.
-    - I have never seen any (Extra-,Ultra-)(Extended,Expanded) fonts,
-        so the ex and ux entries are currently empty.
 
 =end Comment
 
@@ -192,10 +163,13 @@ my @NFSS_WEIGHT = (
 );
 my %NFSS_WEIGHT = @NFSS_WEIGHT;
 @NFSS_WEIGHT = grep { !ref } @NFSS_WEIGHT;
+
+# Add abbreviated forms, using the %ABBREV table constructed earlier
 for my $code (@NFSS_WEIGHT) {
     $NFSS_WEIGHT{$code}
         = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WEIGHT{$code}} ];
 }
+
 my @WEIGHTS = grep { $_ !~ m/ regular | medium /xms }
                    map { @{$_} } values %NFSS_WEIGHT;
 
@@ -212,10 +186,13 @@ my @NFSS_WIDTH = (
 );
 my %NFSS_WIDTH = @NFSS_WIDTH;
 @NFSS_WIDTH = grep { !ref } @NFSS_WIDTH;
+
+# Add abbreviated forms, using the %ABBREV table constructed earlier
 for my $code (@NFSS_WIDTH) {
     $NFSS_WIDTH{$code}
         = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WIDTH{$code}} ];
 }
+
 my @WIDTHS = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
 
 =begin Comment
@@ -2808,7 +2785,7 @@ This document describes B<autoinst> version __VERSION__.
 =item -
 
 Added the I<-mergeweights> and I<-mergeshapes> options,
-and improved the I<-mergewidths> option.
+and improved I<-mergewidths>.
 
 =item -
 
