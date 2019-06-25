@@ -671,7 +671,7 @@ sub cleanup {
 
         # add finishing touches to name and NFSS code of encoding
         $item->{encoding}[0]
-            =~ s/\A (ot1|t1|ly1|lgr|t2[abc]) \z/fontools_$1/xms;
+            =~ s/\A (ot1|t1|ly1|lgr|t2[abc]|t3|ts3) \z/fontools_$1/xms;
         $item->{encoding}[1] = uc $item->{encoding}[1];
 
         $item->{cmdline} = make_cmdline($item);
@@ -972,6 +972,8 @@ my %SCHEME = (
     fontools_t2a => 'TEX CYRILLIC FONT ENCODING - T2A',
     fontools_t2b => 'TEX CYRILLIC FONT ENCODING - T2B',
     fontools_t2c => 'TEX CYRILLIC FONT ENCODING - T2C',
+    fontools_t3  => 'TEX IPA ENCODING',
+    fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
 );
 
 #-----------------------------------------------------------------------
