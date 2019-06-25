@@ -12,8 +12,9 @@
 | gillsans          | weights and widths in separate families                   |
 | go                | one of Bob's; small caps in separate family               |
 | helveticaneue     | Heavy maps to eb (since Heavy < Black); Thin not mapped   |
-| ibmplexsans       | also one of Bob's; was broken by changes in -mergewidths  |
+| ibmplexsans       | one of Bob's; broken by -mergewidths; Text weight         |
 | lato              | Hairline, Thin and Heavy map to ul, el and eb             |
+| librecaslon       | one of Bob's; Family LibreCaslon vs LibreCaslonText       |
 | marcellus         | one of Bob's; broken by changes in -mergesmallcaps        |
 | notosansmono      | many weights/widths; monospaced but isFixedPitch is False |
 | opensans          | one of Bob's                                              |
