@@ -1508,6 +1508,10 @@ sub parse_basicinfo {
         }
     }
 
+    # Fix confusion about "Text": weight vs part of familyname.
+    # In the latter case, we strip it off anyway.
+    $info->{family} =~ s/text \z//xmsi;
+
     if ( !$ARGV{logfile} ) {
         $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
     }
@@ -2795,7 +2799,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-06-24>
+=item I<2019-06-25>
 
 =over 3
 
