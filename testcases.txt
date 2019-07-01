@@ -30,3 +30,5 @@ for dirname in ../testfiles/*; do
 done
 ../../bin/autoinst -man -verbose -noorn -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
 ../../bin/autoinst -man -verbose -noorn -inferiors -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
+cd ../..
+
