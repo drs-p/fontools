@@ -782,8 +782,8 @@ I'm using the following options:
     fractions:          @{[ $ARGV{fractions}    ? 'yes' : 'no' ]}
     ligatures:          @{[ $ARGV{ligatures}    ? 'yes' : 'no' ]}
 
-    dry run/real:       @{[ $ARGV{dryrun}       ? 'dry run'   : 'real'   ]}
-    auto/manual:        @{[ $ARGV{manual}       ? 'manual'    : 'auto'   ]}
+    dry run/real:       @{[ $ARGV{dryrun}       ? 'dry run' : 'real' ]}
+    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto' ]}
     target:             $ARGV{target}
     extra:              @{[ $ARGV{extra} || '<empty>' ]}
 
