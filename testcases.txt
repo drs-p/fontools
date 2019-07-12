@@ -28,7 +28,7 @@ cd test/output
 for dirname in ../testfiles/*; do
     ../../bin/autoinst -man -verbose -noorn "$dirname"/*.[ot]tf
 done
-../../bin/autoinst -man -verbose -noorn -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
 ../../bin/autoinst -man -verbose -noorn -inferiors -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
+../../bin/autoinst -man -verbose -noorn -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
 cd ../..
 

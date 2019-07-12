@@ -1231,7 +1231,7 @@ sub parse_options {
     eval {
         if ( !$ARGV{nfss} ) {
             # EXPERIMENTAL: parse "post" table to see if font is fixed-width
-            my $cmd = qq(otfinfo --dump-table 'post' "$ARGV[0]");
+            my $cmd = qq(otfinfo --dump-table "post" "$ARGV[0]");
             open my $otfinfo, '-|:raw', $cmd
                 or die "could not fork(): $!";
             my $post_table = do { local $/; <$otfinfo> };
@@ -1514,7 +1514,7 @@ sub parse_basicinfo {
     # EXPERIMENTAL: we extract the usWeightClass and usWidthClass
     # properties from the font's OS/2 table
     eval {
-        my $cmd = qq(otfinfo --dump-table 'OS/2' "$info->{filename}");
+        my $cmd = qq(otfinfo --dump-table "OS/2" "$info->{filename}");
         open $otfinfo, '-|:raw', $cmd
             or die "could not fork(): $!";
         my $os2_table = do { local $/; <$otfinfo> };
@@ -2791,10 +2791,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-07-01>
+=item I<2019-07-12>
 
-Wrapped the optional calls to F<otfinfo> inside C<eval>,
-so that any problems with these calls won't be fatal.
+Replaced single quotes in calls to F<otfinfo> with double quotes,
+as they caused problems on Windows 10.
 
 =item I<2019-06-25>
 
