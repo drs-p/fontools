@@ -2605,7 +2605,7 @@ but don't provide a "liga" feature to access these.
 This option tells B<autoinst> to add extra C<LIGKERN> rules to
 the generated fonts to enable the use of these ligatures.
 The default is B<-ligatures>,
-unless the user specified the I<ligatures> option.
+unless the user specified the I<-typewriter> option.
 
 Specify B<-noligatures> to disable the generation of ligatures even for fonts
 that do contain a "liga" feature.
