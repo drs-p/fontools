@@ -22,13 +22,13 @@
 | thesansmono       | Semilight weight; both 'sans' and 'mono' in name          |
 |-------------------|-----------------------------------------------------------|
 
-rm -rf test/output
-mkdir -p test/output
-cd test/output
+rm -rf test/output\ dir
+mkdir -p test/output\ dir
+cd test/output\ dir
 for dirname in ../testfiles/*; do
-    ../../bin/autoinst -man -verbose -noorn "$dirname"/*.[ot]tf
+    ../../bin/autoinst -verbose -target="$PWD" -noupdmap "$dirname"/*.[ot]tf
 done
-../../bin/autoinst -man -verbose -noorn -inferiors -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
-../../bin/autoinst -man -verbose -noorn -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
+../../bin/autoinst -verbose -target="$PWD" -noupdmap -inferiors -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
+../../bin/autoinst -verbose -target="$PWD" -noupdmap -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
 cd ../..
 
