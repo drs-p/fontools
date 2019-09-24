@@ -2820,7 +2820,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-09-24>
+=item I<2019-10-01>
 
 Handle I<-target> directories with spaces in their path names.
 Tweaked messages and logs to make them more useful to the user.
