@@ -40,6 +40,7 @@ use Getopt::Long ();
 use IPC::Open3 ();
 use Pod::Usage ();
 use POSIX ();
+use Scalar::Util ();
 
 my $VERSION = '__VERSION__';
 
@@ -938,7 +939,11 @@ sub make_commands {
             waitpid($pid, 0);
 
             if ($?) {
-                my $msg = "$command\n" . do { local $/; <$child_err> } . "\n";
+                $child_out = Scalar::Util::openhandle($child_out);
+                my $out = $child_out ? do { local $/; <$child_out> } : "";
+                $child_err = Scalar::Util::openhandle($child_err);
+                my $err = $child_err ? do { local $/; <$child_err> } : "";
+                my $msg = "\n$command\n\n$out\n$err\n";
                 warn $msg;
                 print {$ARGV{logfile}} $msg;
                 $oops = 1;
@@ -948,8 +953,8 @@ sub make_commands {
         $| = 0;
         if ($oops) {
             warn <<"END_OTFTOTFM_WARNING";
-[ERROR]     One or more calls to 'otftotfm' failed;
-            please see the error messages in the log file.
+[ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
+            please check the messages above and in the log file.
 END_OTFTOTFM_WARNING
         }
     }
@@ -1331,7 +1336,7 @@ END_WARNING_DUMPING_FILES
                 "$ARGV{target}"
 
             I'll do my best to work around this. Fingers crossed!
-            If you do experience any problems, try to re-run autoinst
+            If you do experience any problems, try re-running autoinst
             with a target directory without spaces in its name.
 END_WARNING_SPACES_IN_PATHS
     }
