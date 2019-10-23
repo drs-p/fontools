@@ -2010,8 +2010,8 @@ sub write_fdfile {
 \\ifcsname s\@fct\@alias\\endcsname\\else
 \\gdef\\s\@fct\@alias{\\sub\@sfcnt\\\@font\@aliasinfo}
 \\gdef\\\@font\@aliasinfo#1{%
-   \\\@font\@info{Font\\space shape\\space `\\curr\@fontshape'\\space
-               aliased\\space to\\MessageBreak `\\mandatory\@arg'}%
+    \\\@font\@info{Font\\space shape\\space `\\curr\@fontshape'\\space will
+        \\space be\\space aliased\\MessageBreak to\\space `\\mandatory\@arg'}%
 }
 \\fi
 
