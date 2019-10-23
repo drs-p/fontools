@@ -1412,7 +1412,6 @@ sub parse_basicinfo {
     # clean up family name (it's used in LaTeX command names)
     $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
-    $data{family}    =~ s/(?<= Kievit ) OT//xms;
     $data{family}    =~ s/ Std \z//xms;
     $data{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data{family}    =~ s/[^A-Za-z]+//xmsg;
