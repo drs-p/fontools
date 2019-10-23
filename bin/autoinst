@@ -1493,8 +1493,12 @@ sub parse_basicinfo {
         }
 
         $shapes = join '|', mqrs( qw(sc smallcaps) );
-        if ( $info->{family} =~ m/(.+?) (${shapes}) \z/xmsi ) {
+        if ( $info->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
             $info->{family}       = $1;
+            $info->{is_smallcaps} = 1;
+        }
+        if ( $info->{name} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
+            $info->{name}         = $1;
             $info->{is_smallcaps} = 1;
         }
     }
