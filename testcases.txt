@@ -6,6 +6,7 @@
 | almendra           | separate SC family                                        |
 | clearsans          | Thin, Light and Medium are separate families              |
 | cormorantgaramond  | Roman shapes have no -pnum; tripped over -inferiors bug   |
+| dolly              | SC font has SmallCaps in name, but not in family          |
 | ebgaramondinitials | Results in non-zero return code from otftotfm             |
 | fedrasans          | Condensed and all weights in separate families            |
 | firasans           | one of Bob's; Book maps to sl                             |
