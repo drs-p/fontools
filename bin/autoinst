@@ -1057,7 +1057,7 @@ my $USAGE =<<'END_USAGE';
 Usage: autoinst [options] font[s]
 
 Possible options:
-    -encoding=ENC[,ENC]*    Specify text encoding(s) (default: OT1,LY1,T1)
+    -encoding=ENC[,ENC]*    Specify text encoding(s) (default: OT1,T1,LY1)
 
     -(no)lining             Toggle creation of lining digits
     -(no)oldstyle           Toggle creation of oldstyle digits
@@ -1113,7 +1113,7 @@ END_USAGE
 
 # Default values for the command-line arguments
 %ARGV = (
-    encoding        => 'OT1,LY1,T1',
+    encoding        => 'OT1,T1,LY1',
     textcomp        => '2',     # 0 = no, 1 = yes, 2 = ('T1' ? yes : no)
     lining          => '1',     # 0 = no, 1 = yes
     oldstyle        => '1',     # 0 = no, 1 = yes
@@ -1334,9 +1334,7 @@ END_WARNING_DUMPING_FILES
         warn <<"END_WARNING_SPACES_IN_PATHS";
 [WARNING]   The pathname of your target directory contains spaces:
                 "$ARGV{target}"
-
-            I'll do my best to work around this. Fingers crossed!
-            If you do experience any problems, try re-running autoinst
+            If you experience any problems, try re-running autoinst
             on a target directory without spaces in its name.
 END_WARNING_SPACES_IN_PATHS
     }
@@ -1424,7 +1422,7 @@ sub parse_basicinfo {
     my $fullinfo = lc "$data{subfamily} | $data{fullname}";
 
     # We need to be careful when parsing the font info; in particular
-    # we must parse 'UltraCondensed' as 'Regular' weight
+    # we must parse strings like 'UltraCondensed' as 'Regular' weight
     # and 'UltraCondensed' width, not as 'Ultra' weight and 'Condensed' width.
     # The following rules should prevent accidents:
     # 1.  Search for matching widths before matching weights
@@ -1804,7 +1802,7 @@ END_STY_HEADER
 
     my $enc = join ',', grep { $_ ne 'OT1' } @{$ARGV{encoding}};
 
-    print {$STY} "\\RequirePackage[$enc]{fontenc}\n" if $enc;
+    print {$STY} "\\RequirePackage{fontenc}\n" if $enc;
     print {$STY} "\\RequirePackage{textcomp}\n" if $seen{TS1};
 
     print {$STY} <<'END_STY_FONTAXES_START';
@@ -2427,9 +2425,12 @@ Also these commands are built on top of F<fontaxes>, so if that package
 cannot be found, you're limited to using the lower-level commands from
 standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 
+Since version 2019-10-23, the generated style file no longer explicitly
+chooses a text encoding, so LaTeX will by default use OT1.
+Use the F<fontenc> package to change the text encoding.
+
 By default, B<autoinst> generates text fonts with OT1, LY1 and T1
-encodings, and the generated style files use T1 as the default text encoding.
-Other encodings can be chosen using the I<-encoding> option
+encodings; other encodings can be chosen using the I<-encoding> option
 (see L</"COMMAND-LINE OPTIONS"> below).
 
 
@@ -2540,11 +2541,9 @@ Add more details to the log file. Repeat this option for even more info.
 
 Generate the specified encoding(s) for the text fonts.
 Multiple encodings may be specified as a comma-separated list:
-C<-encoding=OT1,LY1,T1> (without spaces!).
-The style file passes these to F<fontenc> in the specified order,
-so the I<last> one will become the default text encoding of your document.
+C<-encoding=OT1,T1,LY1> (without spaces!).
 
-The default choice of encodings is "OT1,LY1,T1".
+The default choice of encodings is "OT1,T1,LY1".
 For each encoding, a file F<< <encoding>.enc >> (in all I<lowercase>!)
 should be somewhere where F<otftotfm> can find it. Suitable encoding files
 for OT1, T1/TS1, LY1, LGR, T2A/B/C and T3/TS3 come with B<autoinst>.
@@ -2836,11 +2835,8 @@ This document describes B<autoinst> version __VERSION__.
 
 The mapping in F<fd> files between font series and standard NFSS attributes
 now uses the new I<alias> function instead of I<ssub> (based on code by
-Frank Mittelbach).
-
-=item I<2019-10-21>
-
-The generated F<sty> files now use T1 encoding by default.
+Frank Mittelbach). The generated F<sty> files no longer change
+the default text encoding.
 
 =item I<2019-10-01>
 
