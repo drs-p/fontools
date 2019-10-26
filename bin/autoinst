@@ -37,10 +37,8 @@ use Cwd ();
 use File::Path ();
 use File::Spec ();
 use Getopt::Long ();
-use IPC::Open3 ();
 use Pod::Usage ();
 use POSIX ();
-use Scalar::Util ();
 
 my $VERSION = '__VERSION__';
 
@@ -931,23 +929,15 @@ sub make_commands {
         print "[INFO]      Generating fonts ";
         for my $command (@commands) {
             print '.';
-            my ($child_in, $child_out, $child_err);
-            my $pid = IPC::Open3::open3(
-                $child_in, $child_out, $child_err, $command
-            );
-            close $child_in;
-            waitpid($pid, 0);
-
-            if ($?) {
-                $child_out = Scalar::Util::openhandle($child_out);
-                my $out = $child_out ? do { local $/; <$child_out> } : "";
-                $child_err = Scalar::Util::openhandle($child_err);
-                my $err = $child_err ? do { local $/; <$child_err> } : "";
-                my $msg = "\n$command\n\n$out\n$err\n";
-                warn $msg;
-                print {$ARGV{logfile}} $msg;
-                $oops = 1;
-            }
+            open my $otftotfm, '-|', "$command 2>&1"
+                or die "could not fork(): $!";
+            my $msgs = do { local $/; <$otftotfm> };
+            close $otftotfm
+                or do {
+                    warn "\n$command\n\n$msgs\n";
+                    print {$ARGV{logfile}} "\n$command\n\n$msgs\n";
+                    $oops = 1;
+                };
         }
         print "\n";
         $| = 0;
@@ -2424,7 +2414,7 @@ Also these commands are built on top of F<fontaxes>, so if that package
 cannot be found, you're limited to using the lower-level commands from
 standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 
-Since version 2019-10-23, the generated style file no longer explicitly
+Since version 2019-10-26, the generated style file no longer explicitly
 chooses a text encoding, so LaTeX will by default use OT1.
 Use the F<fontenc> package to change the text encoding.
 
@@ -2830,12 +2820,14 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-10-23>
+=item I<2019-10-26>
 
 The mapping in F<fd> files between font series and standard NFSS attributes
 now uses the new I<alias> function instead of I<ssub> (based on code by
 Frank Mittelbach). The generated F<sty> files no longer change
 the default text encoding.
+The way F<otftotfm> is called was changed to work around a Perl/Windows bug;
+the old way might cause the process to hang.
 
 =item I<2019-10-01>
 
