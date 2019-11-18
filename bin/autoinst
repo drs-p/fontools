@@ -150,16 +150,16 @@ for my $full (keys %ABBREV) {
 =cut
 
 my @NFSS_WEIGHT = (
-    ul  =>  [ qw( ultralight thin hairline eight four two ) ],
-    el  =>  [ qw( extralight ) ],
-    l   =>  [ qw( light ) ],
+    ul  =>  [ qw( ultralight thin 100 hairline eight four two ) ],
+    el  =>  [ qw( extralight 200 ) ],
+    l   =>  [ qw( light 300 ) ],
     sl  =>  [ qw( semilight blond ) ],
-    ''  =>  [ qw( regular text book ) ],
-    sb  =>  [ qw( semibold demibold medium ) ],
-    b   =>  [ qw( bold ) ],
-    eb  =>  [ qw( extrabold ) ],
-    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack
-                  ultraheavy poster super ) ],
+    ''  =>  [ qw( regular text book 400 ) ],
+    sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
+    b   =>  [ qw( bold 700 ) ],
+    eb  =>  [ qw( extrabold 800 ) ],
+    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack 900
+                  ultraheavy poster super 1000 ) ],
 );
 my %NFSS_WEIGHT = @NFSS_WEIGHT;
 @NFSS_WEIGHT = grep { !ref } @NFSS_WEIGHT;
@@ -709,10 +709,13 @@ sub decide_nfss_mappings {
 
     # Special case: if we don't have Regular but we *do* have Medium,
     # move Medium from the "sb" list to the "m" (i.e., Regular) one.
-    if ( !@{$NFSS_WEIGHT{''}} and $weight{medium} ) {
-        $NFSS_WEIGHT{''} = [ 'medium' ];
-        $NFSS_WEIGHT{sb}
-            = [ grep { $_ ne 'medium' } @{$NFSS_WEIGHT{medium}} ];
+    if ( !@{$NFSS_WEIGHT{''}} ) {
+        my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
+        if ($alternate) {
+            $NFSS_WEIGHT{''} = [ $alternate ];
+            $NFSS_WEIGHT{sb}
+                = [ grep { $_ ne $alternate } @{$NFSS_WEIGHT{sb}} ];
+        }
     }
 
     # Some more trickery to map the sl code to Book or Text (but of course
@@ -2839,9 +2842,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2019-11-04>
+=item I<2019-11-18>
 
 Fine-tuned calling of F<kpsewhich> on Windows (patch by Akira Kakuto).
+The font info parsing now also recognises numerical weights, e.g. in Museo.
 
 =item I<2019-10-29>
 
