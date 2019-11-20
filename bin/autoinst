@@ -983,7 +983,7 @@ sub make_cmdline {
                      "--encoding=$item->{encoding}[0]",
                      set_targetdirs($item->{font}{family}),
                      '--no-updmap',
-                     ($item->{font}{filename} =~ m/[.]ttf\z/xms
+                     ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
                         ? '--no-type1'
                         : ''),
                      ($SCHEME{$item->{encoding}[0]}
