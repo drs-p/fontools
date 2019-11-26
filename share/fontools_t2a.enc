@@ -297,7 +297,7 @@
 % LIGKERN quoteright quoteright =: quotedblright;
 % LIGKERN comma comma =: quotedblbase;
 % LIGKERN less less =: guillemotleft;
-% LIGKERN greater greater =: guillemotright4;
+% LIGKERN greater greater =: guillemotright;
 %
 % LIGKERN || = 32 ;
 %
