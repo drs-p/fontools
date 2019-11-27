@@ -836,6 +836,7 @@ END_WARNING_MULTIPLE_FAMILIES
     $font->{filename}
         Name:       $font->{name}
         Family:     $font->{family}
+        Subfamily:  $font->{subfamily}
         Weight:     $font->{weight} ($font->{weight_class})
         Width:      $font->{width} ($font->{width_class})
         Shape:      $font->{shape} @{[ $font->{is_smallcaps}
