@@ -1414,6 +1414,13 @@ sub parse_basicinfo {
     $data{fullname}  =~ s/\A$data{family}//xms;
     $data{fullname}  =  lc $data{fullname};
 
+    # Recursive Sans and Mono have 'Casual' and 'Linear' variants;
+    # these are separate subfamilies, for NFSS we make them separate
+    # families instead.
+    if ( $data{subfamily} =~ s/(casual|linear)//xmsi ) {
+        $data{family} .= $1;
+    }
+
     # clean up family name (it's used in LaTeX command names)
     $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
