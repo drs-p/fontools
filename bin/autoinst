@@ -1461,7 +1461,6 @@ sub parse_basicinfo {
 
     # In many font families, each font is in a subfamily of its own;
     # so we remove width, weight and shape from the 'subfamily' value.
-    my $subst;
     $data{subfamily} =~ s/$info->{width}//xmsi;
     $data{subfamily} =~ s/$info->{weight}//xmsi;
     $data{subfamily} =~ s/$info->{shape}//xmsi;
