@@ -1520,8 +1520,13 @@ sub parse_basicinfo {
 
     # Some font families put extreme weights into separate families;
     # we provide an option to merge these with the 'main' font family.
+    # Note that if the font's family name includes the word "Text"
+    # (as in Libre Caslon Text) this should not be mistaken for a weight.
     if ($ARGV{mergeweights}) {
         my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+        if ( $info->{family} =~ m/text \z/xmsi ) {
+            $weights =~ s/text[|]?//xms;
+        }
         if ( $info->{family} =~ m/(.+?) (${weights}) \z/xmsi
                 and ( $info->{weight} eq 'regular'
                    or $info->{weight} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
@@ -1532,8 +1537,9 @@ sub parse_basicinfo {
         }
     }
 
-    # Fix confusion about "Text": weight vs part of familyname.
-    # In the latter case, we strip it off anyway.
+    # Strip off the "Text" from family names that contain this string.
+    # This was a crude way to fix a bug in the previous paragraph;
+    # it's unnecessary now, but we don't want to break the old behaviour.
     $info->{family} =~ s/text \z//xmsi;
 
     if ( !$ARGV{logfile} ) {
