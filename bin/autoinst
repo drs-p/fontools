@@ -982,7 +982,7 @@ sub make_cmdline {
     return join ' ', 'otftotfm',
                      ($ARGV{manual} ? '--pl' : '--automatic'),
                      "--encoding=$item->{encoding}[0]",
-                     set_targetdirs($item->{font}{family}),
+                     set_targetdirs($item->{font}),
                      '--no-updmap',
                      ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
                         ? '--no-type1'
@@ -1012,7 +1012,9 @@ sub make_cmdline {
 my @FILETYPES = qw(tfm vf type1 truetype);
 
 sub set_targetdirs {
-    my $family = shift;
+    my $font = shift;
+
+    my $family = $font->{family};
 
     my %dir = map { ($_ => File::Spec->catdir(
                         $ARGV{target},
