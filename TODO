@@ -1,6 +1,4 @@
 autoinst:
--   sort list of fonts by family before creating cmdlines
--   create texmf-dirs only once per family
 -   math fonts?
 
 testcases:
