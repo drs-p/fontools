@@ -454,6 +454,8 @@ my %STYLE_DEFAULTS = (
 
 
 sub main {
+    print "autoinst, version $VERSION\n";
+
     ARGV::parse_options();
 
     my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
@@ -509,6 +511,7 @@ sub main {
     }
 
     close $ARGV{logfile};
+    print "\n";
 
     return;
 }
@@ -875,6 +878,7 @@ END_FONTINFO
     }
 
     return if $ARGV{verbose} < 2;
+    print {$LOG} "\n\n";
     print {$LOG} join "\n\n", @cmds;
     print {$LOG} "\n";
 }
