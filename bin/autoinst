@@ -89,7 +89,7 @@ for my $full (keys %ABBREV) {
     - width:  uc, ec, c, sc, m, sx, x, ex, ux
 
     These codes are not always a perfect match with the weights and widths
-    present in a font family; some families (especially sanserif ones)
+    present in a font family; some families (especially many sans serif ones)
     contain more or different weights and widths, and the naming of those
     weights and widths isn't always consistent between font families.
     To handle this situation, we use a two-tiered approach:
@@ -199,15 +199,6 @@ my @WIDTHS = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
 
     The NFSS_SHAPE table maps various shape names to NFSS codes.
 
-    Note that this table works the other way around compared to
-    the two previous tables; it directly maps shape names to NFSS codes.
-    The reason the other tables are a bit contorted is that there,
-    we might have multiple weighs or widths mapping to the same code,
-    and we need a way to prioritise some weights/widths over others.
-
-    For shapes, that's not the case; font families don't have both Slanted
-    and Oblique shapes, since these are different names for the same thing.
-
     Like in the other NFSS_* tables, entries may be added to teach autoinst
     about new shapes.
 
@@ -304,7 +295,7 @@ my %SHAPE = (
 
 =begin Comment
 
-    The next table is used to generate extra ssub rules in the .fd files
+    The SSUB_SHAPE table is used to generate extra ssub rules in .fd files
     to map missing Slanted shapes to Italic and vice versa.
 
 =end Comment
@@ -467,11 +458,12 @@ sub main {
 
     my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
 
+    $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
     create_logfile(@fonts);
     Fontinfo::assert_unique(@fonts);
 
     # We can only handle the '-inferiors=auto' option now,
-    # since this requires knowing which inferior figures this font supports;
+    # since we need to know which inferior figures this font supports;
     # so we have to do the font info parsing first.
     if ($ARGV{inferiors} eq 'auto') {
         Fontinfo::handle_auto_inferiors(@fonts);
@@ -751,6 +743,7 @@ sub create_logfile {
     }
     open my $LOG, '>>', $ARGV{logfile}
         or die "$0: cannot create $ARGV{logfile}: $!";
+    $ARGV{logfile} = $LOG;
 
     print {$LOG} <<"END_ARGUMENTS";
 
@@ -801,30 +794,6 @@ I'm using the following options:
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  or '-' ]}
 
 END_ARGUMENTS
-
-    my %fontfamilies = map { ( $_->{family} => 1 ) } @fonts;
-    my @fontfamilies = keys %fontfamilies;
-    if (scalar @fontfamilies > 1) {
-        warn <<"END_WARNING_MULTIPLE_FAMILIES";
-[WARNING]   Your fonts seem to belong to multiple families:
-
-            @{[ join( "\n" . q{ } x 12, sort @fontfamilies ) ]}
-
-            "autoinst" performs best when installing one family at a time.
-            If you think your fonts should all be in the same family,
-            you might have found a bug in autoinst's font info parsing.
-
-            Please see the log file $ARGV{logfile} for details on how
-            the fonts' families, weights, widths and shapes were parsed.
-END_WARNING_MULTIPLE_FAMILIES
-
-        # increase verbosity if necessary, to log all relevant info
-        if ($ARGV{verbose} < 1) {
-            $ARGV{verbose} = 1;
-        }
-    }
-
-    $ARGV{logfile} = $LOG;
 
     return if $ARGV{verbose} < 1;
 
@@ -1009,25 +978,34 @@ sub make_cmdline {
 #-----------------------------------------------------------------------
 # Return a string with all "directory" options for otftotfm set
 #-----------------------------------------------------------------------
-my @FILETYPES = qw(tfm vf type1 truetype);
-
 sub set_targetdirs {
     my $font = shift;
 
     my $family = $font->{family};
+    my ($fonttype) = map { lc $_ } $font->{filename} =~ m/[.]([ot]tf)\z/xmsi;
 
-    my %dir = map { ($_ => File::Spec->catdir(
-                        $ARGV{target},
-                        'fonts',
-                        $_,
-                        $ARGV{vendor},
-                        $ARGV{typeface} || $family))
+    my @FILETYPES = qw(tfm vf);
+    push @FILETYPES, $fonttype eq 'otf' ? qw(type1)
+                   : $fonttype eq 'ttf' ? qw(truetype)
+                   :                      qw(type1 truetype)
+                   ;
+
+    my %dir = map { (
+                        $_ => File::Spec->catdir(
+                            $ARGV{target},
+                            'fonts',
+                            $_,
+                            $ARGV{vendor},
+                            $ARGV{typeface} || $family
+                        )
+                    )
                   }
                   @FILETYPES;
 
-    $dir{$_} = File::Spec->catdir(
-            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
-        for qw(enc map);
+    $dir{$_}
+        = File::Spec->catdir(
+            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family
+        ) for qw(enc map);
 
     File::Path::make_path(values %dir) unless $ARGV{dryrun};
 
@@ -1088,7 +1066,7 @@ Possible options:
     -manual                 Manual mode (see documentation)
 
     -(no)figurekern         Keep or remove kerns between tabular figures
-    -(no)mergewidths        Merge Condended/Extended subfamilies with main
+    -(no)mergewidths        Merge condended/extended subfamilies with main
     -(no)mergeweights       Merge separate weights with main family
     -(no)mergeshapes        Merge separate shapes with main family
 
@@ -1551,10 +1529,6 @@ sub parse_basicinfo {
     # it's unnecessary now, but we don't want to break the old behaviour.
     $info->{family} =~ s/text \z//xmsi;
 
-    if ( !$ARGV{logfile} ) {
-        $ARGV{logfile} = sprintf "%s.log", lc $info->{family}
-    }
-
     $info->{basicshape} = $NFSS_SHAPE{$info->{shape}};
 
     # We define 'series' as 'weight + width'. This matches NFSS,
@@ -1721,6 +1695,28 @@ sub assert_unique {
     if ($err_details) {
         print {$ARGV{logfile}} $err_details, $ERR_PARSE;
         die $err_details, $ERR_PARSE;
+    }
+
+    my %fontfamilies = map { ( $_->{family} => 1 ) } @fonts;
+    my @fontfamilies = keys %fontfamilies;
+    if (scalar @fontfamilies > 1) {
+        warn <<"END_WARNING_MULTIPLE_FAMILIES";
+[WARNING]   Your fonts seem to belong to multiple families:
+
+            @{[ join( "\n" . q{ } x 12, sort @fontfamilies ) ]}
+
+            "autoinst" performs best when installing one family at a time.
+            If you think your fonts should all be in the same family,
+            you might have found a bug in autoinst's font info parsing.
+
+            Please see the log file for details on how the fonts' families,
+            weights, widths and shapes were parsed.
+END_WARNING_MULTIPLE_FAMILIES
+
+        # increase verbosity if necessary, to log all relevant info
+        if ($ARGV{verbose} < 1) {
+            $ARGV{verbose} = 1;
+        }
     }
 
     return 1;
@@ -2856,6 +2852,10 @@ This document describes B<autoinst> version __VERSION__.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2020-01-28>
+
+Don't create empty subdirectories in the target TEXMF tree.
 
 =item I<2019-11-18>
 
