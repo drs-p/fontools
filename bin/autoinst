@@ -811,7 +811,7 @@ END_ARGUMENTS
         Weight:     $font->{weight} ($font->{weight_class})
         Width:      $font->{width} ($font->{width_class})
         Shape:      $font->{shape} @{[ $font->{is_smallcaps}
-                                            ? '(smallcaps)' : '' ]}
+                                            ? 'smallcaps' : '' ]}
         Size:       $font->{minsize}-$font->{maxsize}
         Features:   @{[ join ', ', sort keys %{$font->{feature}} ]}
 END_PARSE_FONT
