@@ -4,4 +4,3 @@ autoinst:
 testcases:
 -   open source fonts only
 -   more widths (esp compressed, extended, narrow, wide)
--   test some families (eg alegreya) without Regular fonts
