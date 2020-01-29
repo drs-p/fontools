@@ -17,5 +17,6 @@
 | marcellus           | one of Bob's; broken by changes in -mergesmallcaps        |
 | museo               | numerical weights: 100, 300, 500, 700, 900                |
 | notosansmono        | many weights/widths; monospaced but isFixedPitch is False |
+| recursivesans/-mono | Linear and Casual variants; become separate families      |
 | sourcecodepro       | one of Bob's; monospaced but no 'mono' in name            |
 |---------------------|-----------------------------------------------------------|

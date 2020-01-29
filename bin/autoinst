@@ -210,8 +210,6 @@ my @NFSS_SHAPE = (
     roman       =>  'n',
     upright     =>  'n',
     italic      =>  'it',
-    cursive     =>  'it',
-    kursiv      =>  'it',
     inclined    =>  'sl',
     oblique     =>  'sl',
     slanted     =>  'sl',
@@ -2469,7 +2467,7 @@ The mapping of shapes to NFSS codes is done using the following table:
     SHAPE                               CODE
     --------------------------------    ----
     Roman, Upright                      n
-    Italic, Cursive, Kursive            it
+    Italic                              it
     Oblique, Slant(ed), Incline(d)      sl
 
 (I<Exception:> Adobe Silentium Pro contains two Roman shapes;
@@ -2850,7 +2848,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-01-28>
+=item I<2020-01-29>
 
 Don't create empty subdirectories in the target TEXMF tree.
 
