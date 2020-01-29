@@ -781,18 +781,19 @@ I'm using the following options:
     fractions:          @{[ $ARGV{fractions}    ? 'yes' : 'no' ]}
     ligatures:          @{[ $ARGV{ligatures}    ? 'yes' : 'no' ]}
 
-    dry run/real:       @{[ $ARGV{dryrun}       ? 'dry run' : 'real' ]}
     auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto' ]}
     target:             $ARGV{target}
-    extra:              @{[ $ARGV{extra} || '<empty>' ]}
+    extra:              $ARGV{extra}
 
     figurekern:         @{[ $ARGV{figurekern}   ? 'keep' : 'remove' ]}
     mergewidths:        @{[ $ARGV{mergewidths}  ? 'yes' : 'no' ]}
     mergeweights:       @{[ $ARGV{mergeweights} ? 'yes' : 'no' ]}
     mergeshapes:        @{[ $ARGV{mergeshapes}  ? 'yes' : 'no' ]}
 
-    nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} or '-' ]}
-    nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  or '-' ]}
+    nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
+    nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
+
+    @{[ $ARGV{dryrun} ? 'DRY RUN' : '' ]}
 
 END_ARGUMENTS
 
@@ -1698,11 +1699,11 @@ sub assert_unique {
         warn <<"END_WARNING_MULTIPLE_FAMILIES";
 [WARNING]   Your fonts seem to belong to multiple families:
 
-            @{[ join( "\n" . q{ } x 12, sort @fontfamilies ) ]}
+                @{[ join( "\n" . q{ } x 16, sort @fontfamilies ) ]}
 
             "autoinst" performs best when installing one family at a time.
             If you think your fonts should all be in the same family,
-            you might have found a bug in autoinst's font info parsing.
+            you may have found a bug in autoinst's font info parsing.
 
             Please see the log file for details on how the fonts' families,
             weights, widths and shapes were parsed.
