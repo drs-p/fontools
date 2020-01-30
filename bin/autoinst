@@ -1247,6 +1247,9 @@ sub parse_options {
                         :                                   'rm'
                         ;
         }
+
+        # return 'Success' to avoid empty warning
+        1;
     } or warn "[WARNING]   $@";
 
     # If the user didn't explicitly say anything about ligatures,
