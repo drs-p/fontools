@@ -1484,7 +1484,7 @@ sub parse_basicinfo {
             $info->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
         }
 
-        $shapes = join '|', mqrs( qw(sc smallcaps) );
+        $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
         if ( $info->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
             $info->{family}       = $1;
             $info->{is_smallcaps} = 1;
