@@ -15,8 +15,10 @@
 | lato                | Hairline, Thin and Heavy map to ul, el and eb             |
 | librecaslon         | family LibreCaslon vs LibreCaslonText                     |
 | marcellus           | broken by changes in -mergesmallcaps                      |
+| metapro             | Normal should map to m                                    |
 | museo               | numerical weights: 100, 300, 500, 700, 900                |
 | notosansmono        | many weights/widths; monospaced but isFixedPitch is False |
+| operatormono        | Book maps to m, Medium maps to sb                         |
 | recursivesans/-mono | Linear and Casual variants; become separate families      |
 | sourcecodepro       | monospaced but no 'mono'; also without Regular/Medium     |
 | victormono          | both Italic and Oblique shapes                            |
