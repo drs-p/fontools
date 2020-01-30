@@ -1,22 +1,23 @@
-|---------------------|--------------------------------------------------------------|
-| font                | test case                                                    |
-|---------------------|--------------------------------------------------------------|
-| agenda              | Medium should map to m (no Regular); unusual widths          |
-| alegreyasans        | 'sans' in name; medium maps to sb                            |
-| almendra            | separate SC family                                           |
-| clearsans           | Thin, Light and Medium are separate families                 |
-| cormorantgaramond   | Roman shapes have no -pnum; tripped over -inferiors bug      |
-| dolly               | SC font has SmallCaps in name, but not in familyname         |
-| ebgaramondinitials  | Results in non-zero return code from otftotfm                |
-| firasans            | Book maps to sl                                              |
-| franklingothic      | many widths; should also test with -nfssweight=m=medium      |
-| go                  | small caps in separate family                                |
-| ibmplexsans         | broken by -mergewidths; Text weight                          |
-| lato                | Hairline, Thin and Heavy map to ul, el and eb                |
-| librecaslon         | family LibreCaslon vs LibreCaslonText                        |
-| marcellus           | broken by changes in -mergesmallcaps                         |
-| museo               | numerical weights: 100, 300, 500, 700, 900                   |
-| notosansmono        | many weights/widths; monospaced but isFixedPitch is False    |
-| recursivesans/-mono | Linear and Casual variants; become separate families         |
-| sourcecodepro       | monospaced but no 'mono'; extra tests without Regular/Medium |
-|---------------------|--------------------------------------------------------------|
+|---------------------|-----------------------------------------------------------|
+| font                | test case                                                 |
+|---------------------|-----------------------------------------------------------|
+| agenda              | Medium should map to m (no Regular); unusual widths       |
+| alegreyasans        | 'sans' in name; medium maps to sb                         |
+| almendra            | separate SC family                                        |
+| clearsans           | Thin, Light and Medium are separate families              |
+| cormorantgaramond   | Roman shapes have no -pnum; tripped over -inferiors bug   |
+| dolly               | SC font has SmallCaps in name, but not in familyname      |
+| ebgaramondinitials  | Results in non-zero return code from otftotfm             |
+| firasans            | Book maps to sl                                           |
+| franklingothic      | many widths; should also test with -nfssweight=m=medium   |
+| go                  | small caps in separate family                             |
+| ibmplexsans         | broken by -mergewidths; Text weight                       |
+| lato                | Hairline, Thin and Heavy map to ul, el and eb             |
+| librecaslon         | family LibreCaslon vs LibreCaslonText                     |
+| marcellus           | broken by changes in -mergesmallcaps                      |
+| museo               | numerical weights: 100, 300, 500, 700, 900                |
+| notosansmono        | many weights/widths; monospaced but isFixedPitch is False |
+| recursivesans/-mono | Linear and Casual variants; become separate families      |
+| sourcecodepro       | monospaced but no 'mono'; also without Regular/Medium     |
+| victormono          | both Italic and Oblique shapes                            |
+|---------------------|-----------------------------------------------------------|
