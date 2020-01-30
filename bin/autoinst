@@ -127,7 +127,7 @@ for my $full (keys %ABBREV) {
     you want mapped to the "sb" code. Then add the name "hemibold" to
     the right hand side of the "sb" entry in the NFSS_WEIGHT table:
 
-        sb  =>  [ qw( semibold demi demibold medium hemibold ) ],
+        sb  =>  [ qw( semibold demibold medium hemibold ) ],
 
     In this case, since it's in last position, it's only mapped to "sb"
     if none of the other fonts are present. Put it earlier in the list
@@ -154,7 +154,7 @@ my @NFSS_WEIGHT = (
     el  =>  [ qw( extralight 200 ) ],
     l   =>  [ qw( light 300 ) ],
     sl  =>  [ qw( semilight blond ) ],
-    ''  =>  [ qw( regular text book 400 ) ],
+    ''  =>  [ qw( regular normal text book 400 ) ],
     sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
     b   =>  [ qw( bold 700 ) ],
     eb  =>  [ qw( extrabold 800 ) ],
