@@ -1132,7 +1132,7 @@ sub parse_options {
 
     Getopt::Long::GetOptions(
         'help|?'              =>  sub { print $USAGE; exit },
-        'version'             =>  sub { print "$VERSION\n"; exit },
+        'version'             =>  sub { exit },
         'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2) },
         'encoding=s'          => \$ARGV{encoding},
         'ts1!'                => \$ARGV{textcomp},
