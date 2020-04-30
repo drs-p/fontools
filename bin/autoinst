@@ -456,17 +456,20 @@ sub main {
 
     ARGV::parse_options();
 
-    my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
+    my @fonts = map { Font::get_fontinfo($_) } @ARGV;
+    # my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
 
     $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
     create_logfile(@fonts);
-    Fontinfo::assert_unique(@fonts);
+    Font::assert_unique(@fonts);
+    # Fontinfo::assert_unique(@fonts);
 
     # We can only handle the '-inferiors=auto' option now,
     # since we need to know which inferior figures this font supports;
     # so we have to do the font info parsing first.
     if ($ARGV{inferiors} eq 'auto') {
-        Fontinfo::handle_auto_inferiors(@fonts);
+        Font::handle_auto_inferiors(@fonts);
+        # Fontinfo::handle_auto_inferiors(@fonts);
     }
 
     # For each font, figure out the styles, shapes and encodings to generate
@@ -1354,298 +1357,27 @@ END_WARNING_SPACES_IN_PATHS
 ############################################################################
 
 
-package Fontinfo;
+package Font;
 
-#-----------------------------------------------------------------------
-# Return ref to hash with all relevant info about this font
-#-----------------------------------------------------------------------
-sub parse_fontinfo {
-    my ($filename) = @_;
+sub get_fontinfo {
+    my $filename = shift;
 
-    my $info = {
-        filename     => $filename,
-        width        => 'regular',
-        weight       => 'regular',
-        shape        => 'roman',
-        minsize      => 0,
-        maxsize      => 0,
-        is_smallcaps => 0,
-        weight_class => 0,
-        width_class  => 0,
-    };
+    my $info = Font::Info->new($filename);
 
-    parse_basicinfo($info);
-    parse_sizeinfo($info);
-    parse_features($info);
+    my $basicdata = Font::Data::get_basicdata($filename);
+    $info->parse_basicdata($basicdata);
+
+    my $os2data = Font::Data::get_os2data($filename);
+    $info->parse_os2data($os2data);
+
+    my $featuredata = Font::Data::get_featuredata($filename);
+    $info->parse_featuredata($featuredata);
+
+    my $sizedata = Font::Data::get_sizedata($filename);
+    $info->parse_sizedata($sizedata);
 
     return $info;
 }
-
-# table for converting digits in font names to text (safer for LaTeX)
-my @DIGITS = qw(Zero One Two Three Four Five Six Seven Eight Nine);
-
-#-----------------------------------------------------------------------
-# Get some basic info (family, weight, width, shape) about this font
-#-----------------------------------------------------------------------
-sub parse_basicinfo {
-    my $info = shift;
-
-    my $cmd = qq(otfinfo --info "$info->{filename}");
-    open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
-    my %data = map { my ($k,$v) = m/\A\s* ([^:]+?) \s*:\s* ([^\r\n]+)/xms;
-                     $k =~ s/\s+//xmsg;
-                     $v =~ s/\s+//xmsg;
-                     (lc $k => $v);
-                   }
-                   grep { m/\A\s* [^:]+? \s*:\s* [^\r\n]+/xms } <$otfinfo>;
-    close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
-
-    $data{family}    =  $data{preferredfamily} || $data{family};
-    $data{subfamily} =  $data{preferredsubfamily} || $data{subfamily};
-    $data{fullname}  =~ s/\A$data{family}//xms;
-    $data{fullname}  =  lc $data{fullname};
-
-    # clean up family name (it's used in LaTeX command names)
-    $data{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
-    $data{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
-    $data{family}    =~ s/ Std \z//xms;
-    $data{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
-    $data{family}    =~ s/[^A-Za-z]+//xmsg;
-
-    # remove Adobe's SmallText size, to avoid mistaking it for Text weight
-    $data{family}    =~ s/(?: SmallText | SmText )\z//xmsi;
-    $data{subfamily} =~ s/(?: SmallText | SmText )\z//xmsi;
-    $data{fullname}  =~ s/(?: SmallText | SmText )\z//xmsi;
-
-    # Sometimes the relevant info is in Fullname, sometimes in Subfamily;
-    # so we need to test against both
-    my $fullinfo = lc "$data{subfamily} | $data{fullname}";
-
-    # We need to be careful when parsing the font info; in particular
-    # we must parse strings like 'UltraCondensed' as 'Regular' weight
-    # and 'UltraCondensed' width, not as 'Ultra' weight and 'Condensed' width.
-    # The following rules should prevent accidents:
-    # 1.  Search for matching widths before matching weights
-    #     (as none of the widths is a proper substring of some weight)
-    # 2.  Remove any recognised search string from the 'fullinfo'
-    # 3.  Test the weights 'medium' and 'regular' *last*, since these strings
-    #     may also occur in Subfamily without indicating the weight;
-    #     so we only take them to mean weight if we find no other hit.
-    for my $width ( mqrs(@WIDTHS) ) {
-        if ($fullinfo =~ m/${width}/xms) {
-            $info->{width} = $width;
-            my $widths = join '|', mqrs(@WIDTHS);
-            $fullinfo =~ s/${widths}//gxmsi;
-            last;
-        }
-    }
-    for my $weight ( mqrs(@WEIGHTS), qw(medium regular) ) {
-        if ($fullinfo =~ m/${weight}/xms) {
-            $info->{weight} = $weight;
-            my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
-            $fullinfo =~ s/${weights}//gxmsi;
-            last;
-        }
-    }
-    for my $shape ( mqrs( keys %NFSS_SHAPE ) ) {
-        if ($fullinfo =~ m/${shape}/xms) {
-            $info->{shape} = $shape;
-            my $shapes = join '|', mqrs( keys %NFSS_SHAPE );
-            $fullinfo =~ s/${shapes}//gxmsi;
-            last;
-        }
-    }
-
-    # In many font families, each font is in a subfamily of its own;
-    # so we remove width, weight and shape from the 'subfamily' value.
-    $data{subfamily} =~ s/$info->{width}//xmsi;
-    $data{subfamily} =~ s/$info->{weight}//xmsi;
-    $data{subfamily} =~ s/$info->{shape}//xmsi;
-
-    $info->{name}      = $data{postscriptname};
-    $info->{family}    = $data{family};
-    $info->{subfamily} = $data{subfamily};
-
-    # Take care to unabbreviate weight and width; CondensedUltra fonts
-    # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
-    if (exists $UNABBREVIATE{ $info->{width} }) {
-        $info->{width} = $UNABBREVIATE{ $info->{width} };
-    }
-    if (exists $UNABBREVIATE{ $info->{weight} }) {
-        $info->{weight} = $UNABBREVIATE{ $info->{weight} };
-    }
-    if (exists $UNABBREVIATE{ $info->{shape} }) {
-        $info->{shape} = $UNABBREVIATE{ $info->{shape} };
-    }
-
-    # Some font families put different shapes into separate families;
-    # we merge these into the 'main' family.
-    my $shapes = join '|', mqrs( qw(it italic) );
-    if ( $info->{family} =~ m/(.+?) (${shapes}) \z/xmsi
-            and ( $info->{shape} eq 'regular'
-                or $info->{shape} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-            )
-    ) {
-        $info->{family} = $1;
-        $info->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
-    }
-
-    $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
-    if ( $info->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
-        $info->{family}       = $1;
-        $info->{is_smallcaps} = 1;
-    }
-    if ( $info->{name} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
-        $info->{name}         = $1;
-        $info->{is_smallcaps} = 1;
-    }
-
-    # Some font families put different widths into separate families;
-    # we merge these into the 'main' font family.
-    my $widths = join '|', mqrs(@WIDTHS);
-    if ( $info->{family} =~ m/(.+?) (${widths}) \z/xmsi
-            and ( $info->{width} eq 'regular'
-                or $info->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-            )
-    ) {
-        $info->{family} = $1;
-        $info->{width}  = $UNABBREVIATE{ lc($2) } // lc($2);
-    }
-
-    # Some font families put extreme weights into separate families;
-    # we merge these into the 'main' font family.
-    my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
-    # Be careful with the word 'Text': this might be part of
-    # the font family name (i.e., Libre Caslon Text) and should
-    # not be mistaken for a weight.
-    if ( $info->{family} =~ m/text \z/xmsi ) {
-        $weights =~ s/text[|]?//xms;
-    }
-    if ( $info->{family} =~ m/(.+?) (${weights}) \z/xmsi
-            and ( $info->{weight} eq 'regular'
-                or $info->{weight} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-            )
-    ) {
-        $info->{family} = $1;
-        $info->{weight} = $UNABBREVIATE{ lc($2) } // lc($2);
-    }
-
-    # Strip off the "Text" from family names that contain this string.
-    # This was a crude way to fix a bug in the previous paragraph;
-    # it's unnecessary now, but we don't want to break the old behaviour.
-    $info->{family} =~ s/text \z//xmsi;
-
-    $info->{basicshape} = $NFSS_SHAPE{$info->{shape}};
-
-    # We define 'series' as 'weight + width'. This matches NFSS,
-    # but contradicts how most fonts are named (which is 'width + weight').
-    $info->{series}
-        = ($info->{width}  eq 'regular') ? $info->{weight}
-        : ($info->{weight} eq 'regular') ? $info->{width}
-        :                                  $info->{weight} . $info->{width}
-        ;
-
-    # EXPERIMENTAL: we extract the usWeightClass and usWidthClass
-    # properties from the font's OS/2 table
-    eval {
-        my $cmd = qq(otfinfo --dump-table "OS/2" "$info->{filename}");
-        open $otfinfo, '-|:raw', $cmd
-            or die "could not fork(): $!";
-        my $os2_table = do { local $/; <$otfinfo> };
-        close $otfinfo
-            or die "'$cmd' failed";
-        @{$info}{qw(weight_class width_class)} = unpack '@4n @6n', $os2_table;
-    } or warn "[WARNING]   $@";
-
-    return;
-}
-
-#-----------------------------------------------------------------------
-# Re-order argument list so that longer strings come before shorter ones
-#
-# This is needed when matching a string against a list of patterns
-# where some of the patterns may be substrings of other patterns;
-# then we want the *longest* matching pattern, so we test the patterns
-# in descending order of length.
-#-----------------------------------------------------------------------
-sub mqrs {
-    return map { quotemeta } reverse sort { length($a) <=> length($b) } @_;
-}
-
-#-----------------------------------------------------------------------
-# Fill the 'feature' field in the 'info' struct with a list of
-# all features this font supports
-#-----------------------------------------------------------------------
-sub parse_features {
-    my $info = shift;
-
-    my $cmd = qq(otfinfo --features "$info->{filename}");
-    open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
-    %{$info->{feature}} = map { (substr($_, 0, 4) => 1) } <$otfinfo>;
-    close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
-
-    $cmd = qq(otfinfo --tables "$info->{filename}");
-    open $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
-    $info->{feature}{kern} = 1 if grep { m/\d+ \s+ kern/xms } <$otfinfo>;
-    close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
-
-    return;
-}
-
-#-----------------------------------------------------------------------
-# Fill the 'minsize' and 'maxsize' fields in the 'info' struct
-# with limits of optical design size range of this font
-#-----------------------------------------------------------------------
-sub parse_sizeinfo {
-    my $info = shift;
-
-    my $cmd = qq(otfinfo --optical-size "$info->{filename}");
-    open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
-
-    if (my ($minsize, $maxsize)
-        = <$otfinfo> =~ m/[(] ([\d.]+) \s* pt, \s*
-                              ([\d.]+) \s* pt  \s* []]/xms
-    ) {
-    # fix some known bugs
-        if ($info->{name} eq 'GaramondPremrPro-It'
-            && $minsize == 6 && $maxsize == 8.9)
-        {
-            ($minsize, $maxsize) = (8.9, 14.9);
-        }
-        elsif ($info->{family} eq 'KeplerStd'
-            && $info->{subfamily} =~ m/Caption/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
-            ($minsize, $maxsize) = (6, 8.9);
-        }
-        elsif ($info->{family} eq 'KeplerStd'
-            && $info->{subfamily} =~ m/Subhead/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
-            ($minsize, $maxsize) = (13.9, 23);
-        }
-        elsif ($info->{family} eq 'KeplerStd'
-            && $info->{subfamily} =~ m/Display/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
-            ($minsize, $maxsize) = (23, 72);
-        }
-
-        @{$info}{qw(minsize maxsize)} = ($minsize, $maxsize);
-    }
-    close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
-
-    return;
-}
-
 
 # Error messages, used in assert_unique()
 my $ERR_DETAIL =<<'END_ERR_DETAIL';
@@ -1750,6 +1482,331 @@ sub handle_auto_inferiors {
     delete $STYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
+
+package Font::Info;
+
+#-----------------------------------------------------------------------
+# Re-order argument list so that longer strings come before shorter ones
+#
+# This is needed when matching a string against a list of patterns
+# where some of the patterns may be substrings of other patterns;
+# then we want the *longest* matching pattern, so we test the patterns
+# in descending order of length.
+#-----------------------------------------------------------------------
+sub mqrs {
+    return map { quotemeta } reverse sort { length($a) <=> length($b) } @_;
+}
+
+sub new {
+    my ($cls, $filename) = @_;
+
+    my $self = {
+        filename     => $filename,
+        width        => 'regular',
+        weight       => 'regular',
+        shape        => 'roman',
+        minsize      => 0,
+        maxsize      => 0,
+        is_smallcaps => 0,
+        weight_class => 0,
+        width_class  => 0,
+    };
+
+    return bless $self, $cls;
+}
+
+sub parse_basicdata {
+    my ($self, $data) = @_;
+
+    $data->{family}    =  $data->{preferredfamily} || $data->{family};
+    $data->{subfamily} =  $data->{preferredsubfamily} || $data->{subfamily};
+    $data->{fullname}  =~ s/\A$data->{family}//xms;
+    $data->{fullname}  =  lc $data->{fullname};
+
+    # clean up family name (it's used in LaTeX command names)
+    my @DIGITS = qw(Zero One Two Three Four Five Six Seven Eight Nine);
+    $data->{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
+    $data->{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
+    $data->{family}    =~ s/ Std \z//xms;
+    $data->{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
+    $data->{family}    =~ s/[^A-Za-z]+//xmsg;
+
+    # remove Adobe's SmallText size, to avoid mistaking it for Text weight
+    $data->{family}    =~ s/(?: SmallText | SmText )\z//xmsi;
+    $data->{subfamily} =~ s/(?: SmallText | SmText )\z//xmsi;
+    $data->{fullname}  =~ s/(?: SmallText | SmText )\z//xmsi;
+
+    # Sometimes the relevant info is in Fullname, sometimes in Subfamily;
+    # so we need to test against both
+    my $fullinfo = lc "$data->{subfamily} | $data->{fullname}";
+
+    # We need to be careful when parsing the font info; in particular
+    # we must parse strings like 'UltraCondensed' as 'Regular' weight
+    # and 'UltraCondensed' width, not as 'Ultra' weight and 'Condensed' width.
+    # The following rules should prevent accidents:
+    # 1.  Search for matching widths before matching weights
+    #     (as none of the widths is a proper substring of some weight)
+    # 2.  Remove any recognised search string from the 'fullinfo'
+    # 3.  Test the weights 'medium' and 'regular' *last*, since these strings
+    #     may also occur in Subfamily without indicating the weight;
+    #     so we only take them to mean weight if we find no other hit.
+    for my $width ( mqrs(@WIDTHS) ) {
+        if ($fullinfo =~ m/${width}/xms) {
+            $self->{width} = $width;
+            my $widths = join '|', mqrs(@WIDTHS);
+            $fullinfo =~ s/${widths}//gxmsi;
+            last;
+        }
+    }
+    for my $weight ( mqrs(@WEIGHTS), qw(medium regular) ) {
+        if ($fullinfo =~ m/${weight}/xms) {
+            $self->{weight} = $weight;
+            my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+            $fullinfo =~ s/${weights}//gxmsi;
+            last;
+        }
+    }
+    for my $shape ( mqrs( keys %NFSS_SHAPE ) ) {
+        if ($fullinfo =~ m/${shape}/xms) {
+            $self->{shape} = $shape;
+            my $shapes = join '|', mqrs( keys %NFSS_SHAPE );
+            $fullinfo =~ s/${shapes}//gxmsi;
+            last;
+        }
+    }
+
+    # In many font families, each font is in a subfamily of its own;
+    # so we remove width, weight and shape from the 'subfamily' value.
+    $data->{subfamily} =~ s/$self->{width}//xmsi;
+    $data->{subfamily} =~ s/$self->{weight}//xmsi;
+    $data->{subfamily} =~ s/$self->{shape}//xmsi;
+
+    $self->{name}      = $data->{postscriptname};
+    $self->{family}    = $data->{family};
+    $self->{subfamily} = $data->{subfamily};
+
+    # Take care to unabbreviate weight and width; CondensedUltra fonts
+    # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
+    if (exists $UNABBREVIATE{ $self->{width} }) {
+        $self->{width} = $UNABBREVIATE{ $self->{width} };
+    }
+    if (exists $UNABBREVIATE{ $self->{weight} }) {
+        $self->{weight} = $UNABBREVIATE{ $self->{weight} };
+    }
+    if (exists $UNABBREVIATE{ $self->{shape} }) {
+        $self->{shape} = $UNABBREVIATE{ $self->{shape} };
+    }
+
+    # Some font families put different shapes into separate families;
+    # we merge these into the 'main' family.
+    my $shapes = join '|', mqrs( qw(it italic) );
+    if ( $self->{family} =~ m/(.+?) (${shapes}) \z/xmsi
+            and ( $self->{shape} eq 'regular'
+                or $self->{shape} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $self->{family} = $1;
+        $self->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
+    }
+
+    $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
+    if ( $self->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
+        $self->{family}       = $1;
+        $self->{is_smallcaps} = 1;
+    }
+    if ( $self->{name} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
+        $self->{name}         = $1;
+        $self->{is_smallcaps} = 1;
+    }
+
+    # Some font families put different widths into separate families;
+    # we merge these into the 'main' font family.
+    my $widths = join '|', mqrs(@WIDTHS);
+    if ( $self->{family} =~ m/(.+?) (${widths}) \z/xmsi
+            and ( $self->{width} eq 'regular'
+                or $self->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $self->{family} = $1;
+        $self->{width}  = $UNABBREVIATE{ lc($2) } // lc($2);
+    }
+
+    # Some font families put extreme weights into separate families;
+    # we merge these into the 'main' font family.
+    my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+    # Be careful with the word 'Text': this might be part of
+    # the font family name (i.e., Libre Caslon Text) and should
+    # not be mistaken for a weight.
+    if ( $self->{family} =~ m/text \z/xmsi ) {
+        $weights =~ s/text[|]?//xms;
+    }
+    if ( $self->{family} =~ m/(.+?) (${weights}) \z/xmsi
+            and ( $self->{weight} eq 'regular'
+                or $self->{weight} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $self->{family} = $1;
+        $self->{weight} = $UNABBREVIATE{ lc($2) } // lc($2);
+    }
+
+    # Strip off the "Text" from family names that contain this string.
+    # This was a crude way to fix a bug in the previous paragraph;
+    # it's unnecessary now, but we don't want to break the old behaviour.
+    $self->{family} =~ s/text \z//xmsi;
+
+    $self->{basicshape} = $NFSS_SHAPE{$self->{shape}};
+
+    # We define 'series' as 'weight + width'. This matches NFSS,
+    # but contradicts how most fonts are named (which is 'width + weight').
+    $self->{series}
+        = ($self->{width}  eq 'regular') ? $self->{weight}
+        : ($self->{weight} eq 'regular') ? $self->{width}
+        :                                  $self->{weight} . $self->{width}
+        ;
+
+    return;
+}
+
+sub parse_os2data {
+    my ($self, $data) = @_;
+
+    # EXPERIMENTAL: we extract the usWeightClass and usWidthClass
+    # properties from the font's OS/2 table
+    @{$self}{qw(weight_class width_class)} = unpack '@4n @6n', $data;
+
+    return;
+}
+
+#-----------------------------------------------------------------------
+# Fill the 'feature' field in the 'info' struct with a list of
+# all features this font supports
+#-----------------------------------------------------------------------
+sub parse_featuredata {
+    my ($self, $data) = @_;
+
+    %{$self->{feature}} = map { $_ => 1 } @$data;
+
+    return;
+}
+
+
+#-----------------------------------------------------------------------
+# Fill the 'minsize' and 'maxsize' fields in the 'info' struct
+# with limits of optical design size range of this font
+#-----------------------------------------------------------------------
+sub parse_sizedata {
+    my ($self, $data) = @_;
+
+    if (my ($minsize, $maxsize)
+        = $data =~ m/[(] ([\d.]+) \s* pt, \s*
+                         ([\d.]+) \s* pt  \s* [)]]/xms
+    ) {
+    # fix some known bugs
+        if ($self->{name} eq 'GaramondPremrPro-It'
+            && $minsize == 6 && $maxsize == 8.9)
+        {
+            ($minsize, $maxsize) = (8.9, 14.9);
+        }
+        elsif ($self->{family} eq 'KeplerStd'
+            && $self->{subfamily} =~ m/Caption/xms
+            && $minsize == 8.9 && $maxsize == 13.9)
+        {
+            ($minsize, $maxsize) = (6, 8.9);
+        }
+        elsif ($self->{family} eq 'KeplerStd'
+            && $self->{subfamily} =~ m/Subhead/xms
+            && $minsize == 8.9 && $maxsize == 13.9)
+        {
+            ($minsize, $maxsize) = (13.9, 23);
+        }
+        elsif ($self->{family} eq 'KeplerStd'
+            && $self->{subfamily} =~ m/Display/xms
+            && $minsize == 8.9 && $maxsize == 13.9)
+        {
+            ($minsize, $maxsize) = (23, 72);
+        }
+
+        @{$self}{qw(minsize maxsize)} = ($minsize, $maxsize);
+    }
+
+    return;
+}
+
+
+package Font::Data;
+
+sub get_basicdata {
+    my $filename = shift;
+
+    my $cmd = qq(otfinfo --info "$filename");
+    open my $otfinfo, '-|', $cmd
+        or die "[ERROR]     Could not fork(): $!";
+    my %data = map { my ($k,$v) = m/\A\s* ([^:]+?) \s*:\s* ([^\r\n]+)/xms;
+                     $k =~ s/\s+//xmsg;
+                     $v =~ s/\s+//xmsg;
+                     (lc $k => $v);
+                   }
+                   grep { m/\A\s* [^:]+? \s*:\s* [^\r\n]+/xms } <$otfinfo>;
+    close $otfinfo
+        or die "[ERROR]     '$cmd' failed.";
+
+    return \%data;
+}
+
+sub get_os2data {
+    my $filename = shift;
+
+    eval {
+        my $cmd = qq(otfinfo --dump-table "OS/2" "$filename");
+        open my $otfinfo, '-|:raw', $cmd
+            or die "could not fork(): $!";
+        my $os2_table = do { local $/; <$otfinfo> };
+        close $otfinfo
+            or die "'$cmd' failed";
+
+        return $os2_table;
+    } or warn "[WARNING]   $@";
+}
+
+sub get_featuredata {
+    my $filename = shift;
+
+    my $cmd = qq(otfinfo --features "$filename");
+    open my $otfinfo, '-|', $cmd
+        or die "[ERROR]     Could not fork(): $!";
+    my @data = map { substr $_, 0, 4 } <$otfinfo>;
+    close $otfinfo
+        or die "[ERROR]     '$cmd' failed.";
+
+    $cmd = qq(otfinfo --tables "$filename");
+    open $otfinfo, '-|', $cmd
+        or die "[ERROR]     Could not fork(): $!";
+    my $data = do { local $/; <$otfinfo> };
+    close $otfinfo
+        or die "[ERROR]     '$cmd' failed.";
+
+    if ($data =~ m/\d+ \s+ kern/xms) {
+        push @data, 'kern';
+    }
+
+    return \@data;
+}
+
+sub get_sizedata {
+    my $filename = shift;
+
+    my $cmd = qq(otfinfo --optical-size "$filename");
+    open my $otfinfo, '-|', $cmd
+        or die "[ERROR]     Could not fork(): $!";
+    my $data = do { local $/; <$otfinfo> };
+    close $otfinfo
+        or die "[ERROR]     '$cmd' failed.";
+
+    return $data;
+}
+
+
+package Fontinfo;
 
 ############################################################################
 
