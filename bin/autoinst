@@ -1076,9 +1076,6 @@ Possible options:
     -manual                 Manual mode (see documentation)
 
     -(no)figurekern         Keep or remove kerns between tabular figures
-    -(no)mergewidths        Merge condended/extended subfamilies with main
-    -(no)mergeweights       Merge separate weights with main family
-    -(no)mergeshapes        Merge separate shapes with main family
 
     -nfssweight=xx=yyyy     Map the "xx" NFSS code to the "yyyy" weight
     -nfsswidth=xx=yyyy      Map the "xx" NFSS code to the "yyyy" width
@@ -1123,9 +1120,6 @@ END_USAGE
     dryrun          => '0',     # 0 = no, 1 = yes
     logfile         => '',
     figurekern      => '1',     # 0 = no, 1 = yes
-    mergewidths     => '1',     # 0 = no, 1 = yes
-    mergeweights    => '1',     # 0 = no, 1 = yes
-    mergeshapes     => '1',     # 0 = no, 1 = yes
     verbose         => 0,
     nfsswidth       => [],
     nfssweight      => [],
@@ -1171,10 +1165,6 @@ sub parse_options {
         'dryrun'              => \$ARGV{dryrun},
         'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
-        'mergewidths!'        => \$ARGV{mergewidths},
-        'mergeweights!'       => \$ARGV{mergeweights},
-        'mergeshapes!'        => \$ARGV{mergeshapes},
-        'mergesmallcaps!'     => \$ARGV{mergeshapes},
         'logfile=s'           => \$ARGV{logfile},
         'verbose+'            => \$ARGV{verbose},
         'nfssweight=s%'       => sub {
@@ -1493,59 +1483,56 @@ sub parse_basicinfo {
         $info->{shape} = $UNABBREVIATE{ $info->{shape} };
     }
 
-    if ($ARGV{mergeshapes}) {
-        my $shapes = join '|', mqrs( qw(it italic) );
-        if ( $info->{family} =~ m/(.+?) (${shapes}) \z/xmsi
-                and ( $info->{shape} eq 'regular'
-                   or $info->{shape} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-                )
-        ) {
-            $info->{family} = $1;
-            $info->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
-        }
+    # Some font families put different shapes into separate families;
+    # we merge these into the 'main' family.
+    my $shapes = join '|', mqrs( qw(it italic) );
+    if ( $info->{family} =~ m/(.+?) (${shapes}) \z/xmsi
+            and ( $info->{shape} eq 'regular'
+                or $info->{shape} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $info->{family} = $1;
+        $info->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
+    }
 
-        $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
-        if ( $info->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
-            $info->{family}       = $1;
-            $info->{is_smallcaps} = 1;
-        }
-        if ( $info->{name} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
-            $info->{name}         = $1;
-            $info->{is_smallcaps} = 1;
-        }
+    $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
+    if ( $info->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
+        $info->{family}       = $1;
+        $info->{is_smallcaps} = 1;
+    }
+    if ( $info->{name} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
+        $info->{name}         = $1;
+        $info->{is_smallcaps} = 1;
     }
 
     # Some font families put different widths into separate families;
-    # we provide an option to merge these with the 'main' font family.
-    if ($ARGV{mergewidths}) {
-        my $widths = join '|', mqrs(@WIDTHS);
-        if ( $info->{family} =~ m/(.+?) (${widths}) \z/xmsi
-                and ( $info->{width} eq 'regular'
-                   or $info->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-                )
-        ) {
-            $info->{family} = $1;
-            $info->{width}  = $UNABBREVIATE{ lc($2) } // lc($2);
-        }
+    # we merge these into the 'main' font family.
+    my $widths = join '|', mqrs(@WIDTHS);
+    if ( $info->{family} =~ m/(.+?) (${widths}) \z/xmsi
+            and ( $info->{width} eq 'regular'
+                or $info->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $info->{family} = $1;
+        $info->{width}  = $UNABBREVIATE{ lc($2) } // lc($2);
     }
 
     # Some font families put extreme weights into separate families;
-    # we provide an option to merge these with the 'main' font family.
-    # Note that if the font's family name includes the word "Text"
-    # (as in Libre Caslon Text) this should not be mistaken for a weight.
-    if ($ARGV{mergeweights}) {
-        my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
-        if ( $info->{family} =~ m/text \z/xmsi ) {
-            $weights =~ s/text[|]?//xms;
-        }
-        if ( $info->{family} =~ m/(.+?) (${weights}) \z/xmsi
-                and ( $info->{weight} eq 'regular'
-                   or $info->{weight} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
-                )
-        ) {
-            $info->{family} = $1;
-            $info->{weight} = $UNABBREVIATE{ lc($2) } // lc($2);
-        }
+    # we merge these into the 'main' font family.
+    my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+    # Be careful with the word 'Text': this might be part of
+    # the font family name (i.e., Libre Caslon Text) and should
+    # not be mistaken for a weight.
+    if ( $info->{family} =~ m/text \z/xmsi ) {
+        $weights =~ s/text[|]?//xms;
+    }
+    if ( $info->{family} =~ m/(.+?) (${weights}) \z/xmsi
+            and ( $info->{weight} eq 'regular'
+                or $info->{weight} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
+            )
+    ) {
+        $info->{family} = $1;
+        $info->{weight} = $UNABBREVIATE{ lc($2) } // lc($2);
     }
 
     # Strip off the "Text" from family names that contain this string.
@@ -2713,19 +2700,6 @@ This option adds extra I< --ligkern> options
 to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
-
-=item B<-mergewidths>/B<-nomergewidths>,
-B<-mergeweights>/B<-nomergeweights>,
-B<-mergeshapes>/B<-nomergeshapes>
-
-Some font put different widths, weights or shapes (e.g., small caps)
-in separate families.
-These options tell B<autoinst> to merge those separate families into
-the main family.
-Since this is usually desirable, they are all enabled by default.
-
-In earlier versions, B<-mergeshapes> was called B<-mergesmallcaps>;
-for reasons of backward compatibility, that option is still supported.
 
 =item B<-nfssweight>=I<code>=I<weight>, B<-nfsswidth>=I<code>=I<width>
 
