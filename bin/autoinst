@@ -581,7 +581,7 @@ sub expand_encodings {
     return
         map { my ($font, $style, $shape) = @{$_}{qw(font style shape)};
               my @encodings
-                  = $shape eq 'textcomp' ? (['fontools_ts1', 'ts1'])
+                  = $shape eq 'textcomp' ? (['ts1', 'ts1'])
                   : $style eq 'Orn'      ? ([Fontinfo::get_orn($font), 'u'])
                   : map { [lc $_, lc $_] } @{$ARGV{encoding}}
                   ;
@@ -642,8 +642,15 @@ sub cleanup {
         $item->{features} = [ sort keys %feature ];
 
         # add finishing touches to name and NFSS code of encoding
-        $item->{encoding}[0]
-            =~ s/\A (ot1|t1|ly1|lgr|t2[abc]|t3|ts3) \z/fontools_$1/xms;
+        my $try = Cwd::abs_path($item->{encoding}[0]);
+        $try .= '.enc' if $try !~ m/[.]enc\z/xms;
+        if (-e $try) {
+            $item->{encoding}[0] = $try;
+        }
+        else {
+            $item->{encoding}[0]
+                =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_$1/xmsi;
+        }
         $item->{encoding}[1] = uc $item->{encoding}[1];
 
         $item->{cmdline} = make_cmdline($item);
@@ -1216,18 +1223,27 @@ sub parse_options {
         $STYLE{Inf}{reqd} = ['auto'];
     }
 
+    # All specified encodings should either be built-in,
+    # or have an accompanying .enc file in the current directory.
     $ARGV{encoding} =~ s/\s+//xmsg;
-    my @textencodings = grep { $_ ne 'TS1' }
-                             map { uc }
-                                 split /,/, $ARGV{encoding};
+    my @encodings = split /,/, $ARGV{encoding};
+    for my $enc (@encodings) {
+        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
+            my $try = Cwd::abs_path($enc);
+            $try .= '.enc' if $try !~ m/[.]enc\z/xms;
+            if (!-e $try) {
+                die "[ERROR]     No .enc file found for '$enc'";
+            }
+        }
+    }
+    my @textencodings = grep { $_ !~ m/TS1/xmsi } @encodings;
     $ARGV{encoding} = \@textencodings;
 
     # TS1-encoded fonts are generated if:
     # - the user explicitly asked for TS1, or
     # - the text encodings contain T1 and the user didn't turn off TS1
-    unless ( (grep { $_ eq 'T1' } @{$ARGV{encoding}} and $ARGV{textcomp})
-             or $ARGV{textcomp} == 1 )
-    {
+    unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
+             or $ARGV{textcomp} == 1 ) {
         delete $SHAPE{textcomp};
     }
 
@@ -2567,9 +2583,11 @@ The style file passes these to F<otftotfm> in the specified order,
 so the I<last> one will become the default text encoding of your document.
 
 The default choice of encodings is "OT1,LY1,T1".
-For each encoding, a file F<< <encoding>.enc >> (in all I<lowercase>!)
-should be somewhere where F<otftotfm> can find it. Suitable encoding files
-for OT1, T1/TS1, LY1, LGR, T2A/B/C and T3/TS3 come with B<autoinst>.
+For each specified encoding XYZ, B<autoinst> will first see if there is
+an encoding file F<XYZ.enc> in the current directory, and if found it will
+use that; otherwise it will use one of its built-in encoding files.
+Currently B<autoinst> comes with support for the OT1, T1/TS1, LY1, LGR,
+T2A/B/C and T3/TS3 encodings.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
 with other packages; the "fontools_" prefix may be omitted.)
 
@@ -2860,6 +2878,11 @@ This document describes B<autoinst> version __VERSION__.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2020-04-30>
+
+When present, use encoding files in the current working directory
+in preference of the ones that come with B<autoinst>.
 
 =item I<2020-04-28>
 
