@@ -4,7 +4,7 @@ rm -rf test/output
 mkdir -p test/output
 cd test/output
 if [ -x "$(command -v parallel)" ]; then
-    parallel --citation ../../bin/autoinst -verbose -target="$PWD" -noupdmap {}/*.[ot]tf ::: ../testfiles/*
+    parallel ../../bin/autoinst -verbose -target="$PWD" -noupdmap {}/*.[ot]tf ::: ../testfiles/*
 else
     for dirname in ../testfiles/*; do
         ../../bin/autoinst -verbose -target="$PWD" -noupdmap "$dirname"/*.[ot]tf
