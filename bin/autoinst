@@ -456,63 +456,71 @@ sub main {
 
     ARGV::parse_options();
 
-    my @fonts = map { Font::get_fontinfo($_) } @ARGV;
-    # my @fonts = map { Fontinfo::parse_fontinfo($_) } @ARGV;
-
-    $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
-    create_logfile(@fonts);
-    Font::assert_unique(@fonts);
-    # Fontinfo::assert_unique(@fonts);
-
-    # We can only handle the '-inferiors=auto' option now,
-    # since we need to know which inferior figures this font supports;
-    # so we have to do the font info parsing first.
-    if ($ARGV{inferiors} eq 'auto') {
-        Font::handle_auto_inferiors(@fonts);
-        # Fontinfo::handle_auto_inferiors(@fonts);
+    my %fontfamily;
+    for my $fontfile (@ARGV) {
+        my $font = Font::get_fontinfo($fontfile);
+        my $family = $font->{family};
+        push @{$fontfamily{$family}}, $font;
     }
 
-    # For each font, figure out the styles, shapes and encodings to generate
-    my @worklist
-        = cleanup(expand_encodings(expand_shapes(expand_styles(@fonts))));
+    while (my ($family, $fonts) = each %fontfamily) {
+        local %ARGV = %ARGV;
 
-    # Organize the worklist by family, encoding, style, series and shape
-    my %fddata;
-    for my $item (@worklist) {
-        my $family   = $item->{font}{family};
-        my $encoding = $item->{encoding}[1];
-        my $style    = $item->{style};
-        my $series   = $item->{font}{series};
-        my $shape    = $item->{fdshape};
-        my $minsize  = $item->{font}{minsize};
-        my $maxsize  = $item->{font}{maxsize};
+        my @fonts = @$fonts;
 
-        push @{$fddata{$family}{$encoding}{$style}{$series}{$shape}},
-             [ $minsize, $maxsize, $item->{fontname} ];
-    }
+        $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
+        create_logfile(@fonts);
+        Font::assert_unique(@fonts);
 
-    # Decide to which weights and widths we'll map the standard NFSS codes
-    decide_nfss_mappings(@fonts);
-
-    log_worklist(@worklist);
-
-    if (!$ARGV{dryrun}) {
-        # Create the LaTeX support files
-        while (my ($fam, $famdata) = each %fddata) {
-            LaTeX::write_stylefile($fam, $famdata);
-            while (my ($enc, $encdata) = each %$famdata) {
-                while (my ($sty, $stydata) = each %$encdata) {
-                    LaTeX::write_fdfile($fam, $enc, $sty, $stydata);
-                }
-            }
+        # We can only handle the '-inferiors=auto' option now,
+        # since we need to know which inferior figures this font supports;
+        # so we have to do the font info parsing first.
+        if ($ARGV{inferiors} eq 'auto') {
+            Font::handle_auto_inferiors(@fonts);
         }
 
-        # Create (and execute) commands for otftotfm
-        make_commands(@worklist);
-    }
+        # For each font, figure out the styles, shapes and encodings to generate
+        my @worklist
+            = cleanup(expand_encodings(expand_shapes(expand_styles(@fonts))));
 
-    close $ARGV{logfile};
-    print "\n";
+        # Organize the worklist by family, encoding, style, series and shape
+        my %fddata;
+        for my $item (@worklist) {
+            my $family   = $item->{font}{family};
+            my $encoding = $item->{encoding}[1];
+            my $style    = $item->{style};
+            my $series   = $item->{font}{series};
+            my $shape    = $item->{fdshape};
+            my $minsize  = $item->{font}{minsize};
+            my $maxsize  = $item->{font}{maxsize};
+
+            push @{$fddata{$family}{$encoding}{$style}{$series}{$shape}},
+                [ $minsize, $maxsize, $item->{fontname} ];
+        }
+
+        # Decide to which weights and widths we'll map the standard NFSS codes
+        decide_nfss_mappings(@fonts);
+
+        log_worklist(@worklist);
+
+        if (!$ARGV{dryrun}) {
+            # Create the LaTeX support files
+            while (my ($fam, $famdata) = each %fddata) {
+                LaTeX::write_stylefile($fam, $famdata);
+                while (my ($enc, $encdata) = each %$famdata) {
+                    while (my ($sty, $stydata) = each %$encdata) {
+                        LaTeX::write_fdfile($fam, $enc, $sty, $stydata);
+                    }
+                }
+            }
+
+            # Create (and execute) commands for otftotfm
+            make_commands(@worklist);
+        }
+
+        close $ARGV{logfile};
+        print "\n";
+    }
 
     return;
 }
@@ -1364,16 +1372,16 @@ sub get_fontinfo {
 
     my $info = Font::Info->new($filename);
 
-    my $basicdata = Font::Data::get_basicdata($filename);
+    my $basicdata = Font::Raw::get_basicdata($filename);
     $info->parse_basicdata($basicdata);
 
-    my $os2data = Font::Data::get_os2data($filename);
+    my $os2data = Font::Raw::get_os2data($filename);
     $info->parse_os2data($os2data);
 
-    my $featuredata = Font::Data::get_featuredata($filename);
+    my $featuredata = Font::Raw::get_featuredata($filename);
     $info->parse_featuredata($featuredata);
 
-    my $sizedata = Font::Data::get_sizedata($filename);
+    my $sizedata = Font::Raw::get_sizedata($filename);
     $info->parse_sizedata($sizedata);
 
     return $info;
@@ -1435,28 +1443,6 @@ sub assert_unique {
     if ($err_details) {
         print {$ARGV{logfile}} $err_details, $ERR_PARSE;
         die $err_details, $ERR_PARSE;
-    }
-
-    my %fontfamilies = map { ( $_->{family} => 1 ) } @fonts;
-    my @fontfamilies = keys %fontfamilies;
-    if (scalar @fontfamilies > 1) {
-        warn <<"END_WARNING_MULTIPLE_FAMILIES";
-[WARNING]   Your fonts seem to belong to multiple families:
-
-                @{[ join( "\n" . q{ } x 16, sort @fontfamilies ) ]}
-
-            "autoinst" performs best when installing one family at a time.
-            If you think your fonts should all be in the same family,
-            you may have found a bug in autoinst's font info parsing.
-
-            Please see the log file for details on how the fonts' families,
-            weights, widths and shapes were parsed.
-END_WARNING_MULTIPLE_FAMILIES
-
-        # increase verbosity if necessary, to log all relevant info
-        if ($ARGV{verbose} < 1) {
-            $ARGV{verbose} = 1;
-        }
     }
 
     return 1;
@@ -1733,7 +1719,7 @@ sub parse_sizedata {
 }
 
 
-package Font::Data;
+package Font::Raw;
 
 sub get_basicdata {
     my $filename = shift;
