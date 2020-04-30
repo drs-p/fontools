@@ -793,9 +793,6 @@ I'm using the following options:
     extra:              $ARGV{extra}
 
     figurekern:         @{[ $ARGV{figurekern}   ? 'keep' : 'remove' ]}
-    mergewidths:        @{[ $ARGV{mergewidths}  ? 'yes' : 'no' ]}
-    mergeweights:       @{[ $ARGV{mergeweights} ? 'yes' : 'no' ]}
-    mergeshapes:        @{[ $ARGV{mergeshapes}  ? 'yes' : 'no' ]}
 
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
