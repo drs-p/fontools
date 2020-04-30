@@ -1270,7 +1270,7 @@ sub parse_options {
     delete @STYLE{qw(LF OsF)}    unless $ARGV{proportional};
     delete @STYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
 
-    my $localtarget = File::Spec->catdir( Cwd->getcwd(), 'autoinst_output' );
+    my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
     if ($ARGV{manual}) {
         warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
             if $ARGV{target};
