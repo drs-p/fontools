@@ -1785,9 +1785,7 @@ sub write_stylefile {
 
 END_STY_HEADER
 
-    my $enc = join ',', grep { $_ ne 'OT1' } @{$ARGV{encoding}};
-
-    print {$STY} "\\RequirePackage[$enc]{fontenc}\n" if $enc;
+    print {$STY} "\\RequirePackage{fontenc}\n";
     print {$STY} "\\RequirePackage{textcomp}\n" if $seen{TS1};
 
     print {$STY} <<'END_STY_FONTAXES_START';
@@ -2532,12 +2530,9 @@ Add more details to the log file. Repeat this option for even more info.
 =item B<-encoding>=I<encoding[,encoding]>
 
 Generate the specified encoding(s) for the text fonts.
-Multiple encodings may be specified as a comma-separated list:
-C<-encoding=OT1,LY1,T1> (without spaces!).
-The style file passes these to F<otftotfm> in the specified order,
-so the I<last> one will become the default text encoding of your document.
+Multiple encodings may be specified as a comma-separated list
+(without spaces!); the default choice of encodings is "OT1,LY1,T1".
 
-The default choice of encodings is "OT1,LY1,T1".
 For each specified encoding XYZ, B<autoinst> will first see if there is
 an encoding file F<XYZ.enc> in the current directory, and if found it will
 use that; otherwise it will use one of its built-in encoding files.
