@@ -499,9 +499,9 @@ sub main {
         }
 
         # Decide to which weights and widths we'll map the standard NFSS codes
-        decide_nfss_mappings(@fonts);
+        my $choice = decide_nfss_mappings(@fonts);
 
-        log_worklist(@worklist);
+        log_worklist($choice, @worklist);
 
         if (!$ARGV{dryrun}) {
             # Create the LaTeX support files
@@ -509,7 +509,7 @@ sub main {
                 LaTeX::write_stylefile($fam, $famdata);
                 while (my ($enc, $encdata) = each %$famdata) {
                     while (my ($sty, $stydata) = each %$encdata) {
-                        LaTeX::write_fdfile($fam, $enc, $sty, $stydata);
+                        LaTeX::write_fdfile($choice, $fam, $enc, $sty, $stydata);
                     }
                 }
             }
@@ -671,7 +671,7 @@ sub cleanup {
 }
 
 #-----------------------------------------------------------------------
-# Modify NFSS_WEIGHT and _WIDTH tables: pick one choice for each NFSS code
+# Decide which weight and width to use for each NFSS code
 #-----------------------------------------------------------------------
 sub decide_nfss_mappings {
     my ( %weight, %width );
@@ -680,9 +680,14 @@ sub decide_nfss_mappings {
         $width{ $font->{width} } //= $font->{width_class};
     }
 
+    my $choice = {
+        weight => {},
+        width => {},
+    };
+
     NFSSWEIGHT:
     for my $nfssweight (@NFSS_WEIGHT) {
-        $NFSS_WEIGHT{$nfssweight}
+        $choice->{weight}{$nfssweight}
             = [ grep { $weight{$_} } @{$NFSS_WEIGHT{$nfssweight}} ];
     }
 
@@ -693,48 +698,48 @@ sub decide_nfss_mappings {
     # 2.  otherwise we move the ul/ub weight to the el/eb position,
     #     unless that weight is the Ultralight/Ultrabold weight
     if ( !$ARGV{el} and !$ARGV{ul} ) {
-        if ( @{$NFSS_WEIGHT{ul}} and !@{$NFSS_WEIGHT{el}} ) {
+        if ( @{$choice->{weight}{ul}} and !@{$choice->{weight}{el}} ) {
             if ( $weight{thin}
-                    and $weight{thin} > $weight{$NFSS_WEIGHT{ul}[0]} ) {
-                $NFSS_WEIGHT{el} = [ 'thin', ];
+                    and $weight{thin} > $weight{$choice->{weight}{ul}[0]} ) {
+                $choice->{weight}{el} = [ 'thin', ];
             }
-            elsif ( $NFSS_WEIGHT{ul}[0] ne 'ultralight' ) {
-                $NFSS_WEIGHT{el} = [ shift @{$NFSS_WEIGHT{ul}} ];
+            elsif ( $choice->{weight}{ul}[0] ne 'ultralight' ) {
+                $choice->{weight}{el} = [ shift @{$choice->{weight}{ul}} ];
             }
         }
     }
     if ( !$ARGV{eb} and !$ARGV{ub} ) {
-        if ( @{$NFSS_WEIGHT{ub}} and !@{$NFSS_WEIGHT{eb}} ) {
+        if ( @{$choice->{weight}{ub}} and !@{$choice->{weight}{eb}} ) {
             if (    $weight{heavy}
-                and $weight{heavy} < $weight{$NFSS_WEIGHT{ub}[0]}
+                and $weight{heavy} < $weight{$choice->{weight}{ub}[0]}
             ) {
-                $NFSS_WEIGHT{eb} = [ 'heavy', ]
-                    unless @{$NFSS_WEIGHT{b}}
-                       and $weight{$NFSS_WEIGHT{b}[0]} > $weight{heavy};
+                $choice->{weight}{eb} = [ 'heavy', ]
+                    unless @{$choice->{weight}{b}}
+                       and $weight{$choice->{weight}{b}[0]} > $weight{heavy};
             }
-            elsif ( $NFSS_WEIGHT{ub}[0] ne 'ultrabold' ) {
-                $NFSS_WEIGHT{eb} = [ shift @{$NFSS_WEIGHT{ub}} ];
+            elsif ( $choice->{weight}{ub}[0] ne 'ultrabold' ) {
+                $choice->{weight}{eb} = [ shift @{$choice->{weight}{ub}} ];
             }
         }
     }
 
     # Special case: if we don't have Regular but we *do* have Medium,
     # move Medium from the "sb" list to the "m" (i.e., Regular) one.
-    if ( !@{$NFSS_WEIGHT{''}} ) {
+    if ( !@{$choice->{weight}{''}} ) {
         my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
         if ($alternate) {
-            $NFSS_WEIGHT{''} = [ $alternate ];
-            $NFSS_WEIGHT{sb}
-                = [ grep { $_ ne $alternate } @{$NFSS_WEIGHT{sb}} ];
+            $choice->{weight}{''} = [ $alternate ];
+            $choice->{weight}{sb}
+                = [ grep { $_ ne $alternate } @{$choice->{weight}{sb}} ];
         }
     }
 
     # Some more trickery to map the sl code to Book or Text (but of course
     # only if sl is empty and Book/Text is lighter than Regular)
-    if ( !@{$NFSS_WEIGHT{sl}} ) {
-        $NFSS_WEIGHT{sl}
-            = [ grep { $weight{$_} < $weight{$NFSS_WEIGHT{''}[0]} }
-                     @{$NFSS_WEIGHT{''}}
+    if ( !@{$choice->{weight}{sl}} ) {
+        $choice->{weight}{sl}
+            = [ grep { $weight{$_} < $weight{$choice->{weight}{''}[0]} }
+                     @{$choice->{weight}{''}}
             ];
     }
 
@@ -742,12 +747,14 @@ sub decide_nfss_mappings {
     for my $nfsswidth (@NFSS_WIDTH) {
         for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
             if ( $width{$width} ) {
-                $NFSS_WIDTH{$nfsswidth} = [ $width ];
+                $choice->{width}{$nfsswidth} = [ $width ];
                 next NFSSWIDTH;
             }
         }
-        $NFSS_WIDTH{$nfsswidth} = [];
+        $choice->{width}{$nfsswidth} = [];
     }
+
+    return $choice;
 }
 
 #-----------------------------------------------------------------------
@@ -837,23 +844,25 @@ END_PARSE_FONT
 # Log all fonts, styles, encodings etc. we're  going to create
 #-----------------------------------------------------------------------
 sub log_worklist {
+    my ($choice, @items) = @_;
+
     my @worklist
         = sort { $a->{font}{filename} cmp $b->{font}{filename}
                     || $a->{encoding}[1] cmp $b->{encoding}[1]
                     || $a->{style} cmp $b->{style}
-               } @_;
+               } @items;
 
     my $LOG = $ARGV{logfile};
 
     print {$LOG} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
     for my $weight (@NFSS_WEIGHT) {
         printf {$LOG} "    %-3s =>  %s\n",
-                $weight || 'm', $NFSS_WEIGHT{$weight}[0] || '';
+                $weight || 'm', $choice->{weight}{$weight}[0] || '';
     }
     printf {$LOG} "\n";
     for my $width (@NFSS_WIDTH) {
         printf {$LOG} "    %-3s =>  %s\n",
-                $width || 'm', $NFSS_WIDTH{$width}[0] || '';
+                $width || 'm', $choice->{width}{$width}[0] || '';
     }
     printf {$LOG} "\n";
 
@@ -2011,7 +2020,7 @@ sub get_keys {
 # Create a .fd file for NFSS
 #-----------------------------------------------------------------------
 sub write_fdfile {
-    my ($fam, $enc, $sty, $data) = @_;
+    my ($choice, $fam, $enc, $sty, $data) = @_;
 
     my $fn = sprintf "%s%s-%s.fd", $enc, $fam, $sty;
     my $dir = File::Spec->catdir(
@@ -2090,9 +2099,9 @@ END_COMMENT
         for my $nfsswidth (@NFSS_WIDTH) {
             my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
 
-            for my $weight ( @{$NFSS_WEIGHT{$nfssweight}} ) {
+            for my $weight ( @{$choice->{weight}{$nfssweight}} ) {
                 $weight = '' if $weight eq 'regular';
-                for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
+                for my $width ( @{$choice->{width}{$nfsswidth}} ) {
                     $width = '' if $width eq 'regular';
                     my $series = ( $weight . $width ) || 'regular';
                     if ( exists $data->{$series} ) {
@@ -2860,7 +2869,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-04-30>
+=item I<2020-05-01>
 
 When present, use encoding files in the current working directory
 in preference of the ones that come with B<autoinst>.
