@@ -271,6 +271,18 @@ my %SSUB_SHAPE = (
 );
 
 
+sub delete_figurestyle {
+    delete @FIGURESTYLE{@_};
+    return;
+}
+
+
+sub delete_style {
+    delete @STYLE{@_};
+    return;
+}
+
+
 ############################################################################
 
 
@@ -278,6 +290,8 @@ sub main {
     print "autoinst, version $VERSION\n";
 
     ARGV::parse_options();
+
+    ARGV::process_options();
 
     my %fontfamily;
     for my $fontfile (@ARGV) {
@@ -293,6 +307,11 @@ sub main {
 
         if (!$ARGV{nfss}) {
             $ARGV{nfss} = $fonts[0]->{nfss};
+        }
+        # If the user didn't explicitly say anything about ligatures,
+        # activate them unless the font is a typewriter font.
+        if ($ARGV{ligatures} == 2) {
+            $ARGV{ligatures} = $ARGV{nfss} eq 'tt' ? 0 : 1;
         }
 
         $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
@@ -360,6 +379,7 @@ sub main {
 
     return;
 }
+
 
 #-----------------------------------------------------------------------
 # Return a list with all unique entries from the input
@@ -959,17 +979,25 @@ sub parse_options {
     )
     or die "$USAGE";
 
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Process the command-line options
+# --------------------------------------------------------------------------
+sub process_options {
     die "$USAGE" unless @ARGV;
 
-    delete $STYLE{smallcaps}     unless $ARGV{smallcaps};
-    delete $STYLE{swash}         unless $ARGV{swash};
+    main::delete_style('smallcaps')         unless $ARGV{smallcaps};
+    main::delete_style('swash')             unless $ARGV{swash};
 
-    delete $FIGURESTYLE{Titl}          unless $ARGV{titling};
-    delete $FIGURESTYLE{Sup}           unless $ARGV{superiors};
-    delete $FIGURESTYLE{Orn}           unless $ARGV{ornaments};
-    delete @FIGURESTYLE{qw(Numr Dnom)} unless $ARGV{fractions};
+    main::delete_figurestyle('Titl')        unless $ARGV{titling};
+    main::delete_figurestyle('Sup')         unless $ARGV{superiors};
+    main::delete_figurestyle('Orn')         unless $ARGV{ornaments};
+    main::delete_figurestyle(qw(Numr Dnom)) unless $ARGV{fractions};
     $ARGV{inferiors} ||= 'auto';
-    if    ($ARGV{inferiors} eq 'none') { delete $FIGURESTYLE{Inf} }
+    if    ($ARGV{inferiors} eq 'none') { main::delete_figurestyle('Inf') }
     elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
     elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
     elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
@@ -1003,22 +1031,17 @@ sub parse_options {
     # - the text encodings contain T1 and the user didn't turn off TS1
     unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
              or $ARGV{textcomp} == 1 ) {
-        delete $STYLE{textcomp};
+        main::delete_style('textcomp');
     }
 
-    # If the user didn't explicitly say anything about ligatures,
-    # activate them unless the font is a typewriter font.
-    if ($ARGV{ligatures} == 2) {
-        $ARGV{ligatures} = $ARGV{nfss} ne 'tt' ? 1 : 0;
-    }
     # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
     $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
     $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
 
-    delete @FIGURESTYLE{qw(LF TLF)}    unless $ARGV{lining};
-    delete @FIGURESTYLE{qw(OsF TOsF)}  unless $ARGV{oldstyle};
-    delete @FIGURESTYLE{qw(LF OsF)}    unless $ARGV{proportional};
-    delete @FIGURESTYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
+    main::delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
+    main::delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
+    main::delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
+    main::delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
 
     my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
     if ($ARGV{manual}) {
@@ -1095,8 +1118,9 @@ END_WARNING_SPACES_IN_PATHS
         $FIGURESTYLE{TLF}{extra}  = $tkern;
         $FIGURESTYLE{TOsF}{extra} = $tkern;
     }
-}
 
+    return;
+}
 
 # --------------------------------------------------------------------------
 #   Processes the -inferiors=auto option, given a list of fonts.
