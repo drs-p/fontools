@@ -1190,11 +1190,11 @@ sub get_fontinfo {
 
     my $info = Font::Info->new($filename);
 
-    my $basicdata = Font::Raw::get_basicdata($filename);
-    $info->process_basicdata($basicdata);
+    my $basicinfo = Font::Raw::get_basicinfo($filename);
+    $info->process_basicinfo($basicinfo);
 
-    my $os2data = Font::Raw::get_os2data($filename);
-    $info->process_os2data($os2data);
+    my $os2_table = Font::Raw::get_os2_table($filename);
+    $info->process_os2_table($os2_table);
 
     my $featuredata = Font::Raw::get_featuredata($filename);
     $info->process_featuredata($featuredata);
@@ -1207,6 +1207,7 @@ sub get_fontinfo {
 
     return $info;
 }
+
 
 # Error messages, used in assert_unique()
 my $ERR_DETAIL =<<'END_ERR_DETAIL';
@@ -1274,6 +1275,9 @@ sub assert_unique {
 
 package Font::Info;
 
+# --------------------------------------------------------------------------
+#   Constructor: returns a new Font::Info object, with default values.
+# --------------------------------------------------------------------------
 sub new {
     my ($cls, $filename) = @_;
 
@@ -1292,7 +1296,11 @@ sub new {
     return bless $self, $cls;
 }
 
-sub process_basicdata {
+
+# --------------------------------------------------------------------------
+#   Processes the basic info (list of key-value pairs) for a font.
+# --------------------------------------------------------------------------
+sub process_basicinfo {
     my ($self, $data) = @_;
 
     $data->{family}    =  $data->{preferredfamily} || $data->{family};
@@ -1441,14 +1449,22 @@ sub process_basicdata {
     return;
 }
 
-sub process_os2data {
-    my ($self, $data) = @_;
 
-    @{$self}{qw(weight_class width_class)} = @$data;
+# --------------------------------------------------------------------------
+#   Extracts usWeightClass and usWidthClass from the OS/2 table.
+# --------------------------------------------------------------------------
+sub process_os2_table {
+    my ($self, $os2_table) = @_;
+
+    @{$self}{qw(weight_class width_class)} = unpack '@4n @6n', $os2_table;
 
     return;
 }
 
+
+# --------------------------------------------------------------------------
+#   Processes the list of features this font supports.
+# --------------------------------------------------------------------------
 sub process_featuredata {
     my ($self, $data) = @_;
 
@@ -1458,16 +1474,15 @@ sub process_featuredata {
 }
 
 
-#-----------------------------------------------------------------------
-# Fill the 'minsize' and 'maxsize' fields in the 'info' struct
-# with limits of optical design size range of this font
-#-----------------------------------------------------------------------
+# --------------------------------------------------------------------------
+#   Extracts 'minsize' and 'maxsize' from the optical design size info.
+# --------------------------------------------------------------------------
 sub process_sizedata {
     my ($self, $data) = @_;
 
     if (my ($minsize, $maxsize)
             = $data =~ m/[(] ([\d.]+) \s* pt, \s*
-                            ([\d.]+) \s* pt  \s* [)]]/xms) {
+                             ([\d.]+) \s* pt  \s* [)]]/xms) {
     # fix some known bugs
         if ($self->{name} eq 'GaramondPremrPro-It'
             && $minsize == 6 && $maxsize == 8.9) {
@@ -1513,7 +1528,11 @@ sub process_nfss_classification {
 
 package Font::Raw;
 
-sub get_basicdata {
+
+# --------------------------------------------------------------------------
+#   Returns the output of otfinfo -i as a list of key-value pairs.
+# --------------------------------------------------------------------------
+sub get_basicinfo {
     my $filename = shift;
 
     my $cmd = qq(otfinfo --info "$filename");
@@ -1533,9 +1552,9 @@ sub get_basicdata {
 
 
 # --------------------------------------------------------------------------
-#   Returns a ref to an array containing usWeightClass and usWidthClass
+#   Returns the font's OS/2 table.
 # --------------------------------------------------------------------------
-sub get_os2data {
+sub get_os2_table {
     my $filename = shift;
 
     eval {
@@ -1546,14 +1565,15 @@ sub get_os2data {
         close $otfinfo
             or die "'$cmd' failed";
 
-        my ($weight_class, $width_class) = unpack '@4n @6n', $os2_table;
-
-        return [$weight_class, $width_class];
+        return $os2_table;
     } or warn "[WARNING]   $@";
 }
 
 
 # --------------------------------------------------------------------------
+#   Returns a list of features that this font supports.
+#   We include 'kern' in this list even if there is only a 'kern' table
+#   (but no feature), since otftotfm can also use the (legacy) table.
 # --------------------------------------------------------------------------
 sub get_featuredata {
     my $filename = shift;
@@ -1581,7 +1601,7 @@ sub get_featuredata {
 
 
 # --------------------------------------------------------------------------
-#   Returns the size info for this font (note that this may be empty).
+#   Returns the size info for this font (which may be empty).
 # --------------------------------------------------------------------------
 sub get_sizedata {
     my $filename = shift;
