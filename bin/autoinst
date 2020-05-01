@@ -291,6 +291,10 @@ sub main {
 
         my @fonts = @$fonts;
 
+        if (!$ARGV{nfss}) {
+            $ARGV{nfss} = $fonts[0]->{nfss};
+        }
+
         $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
         create_logfile(@fonts);
         Font::assert_unique(@fonts);
@@ -1002,31 +1006,6 @@ sub parse_options {
         delete $STYLE{textcomp};
     }
 
-    # Determine NFSS classification of this family, if the user
-    # didn't explicitly specify it
-    eval {
-        if ( !$ARGV{nfss} ) {
-            # EXPERIMENTAL: parse "post" table to see if font is fixed-width
-            my $cmd = qq(otfinfo --dump-table "post" "$ARGV[0]");
-            open my $otfinfo, '-|:raw', $cmd
-                or die "could not fork(): $!";
-            my $post_table = do { local $/; <$otfinfo> };
-            close $otfinfo
-                or die "'$cmd' failed";
-
-            my $is_fixed_pitch = unpack '@12N', $post_table;
-
-            $ARGV{nfss} = $is_fixed_pitch                 ? 'tt'
-                        : $ARGV[0] =~ m/mono(?!type)/xmsi ? 'tt'
-                        : $ARGV[0] =~ m/sans/xmsi         ? 'sf'
-                        :                                   'rm'
-                        ;
-        }
-
-        # return 'Success' to avoid empty warning
-        1;
-    } or warn "[WARNING]   $@";
-
     # If the user didn't explicitly say anything about ligatures,
     # activate them unless the font is a typewriter font.
     if ($ARGV{ligatures} == 2) {
@@ -1154,16 +1133,19 @@ sub get_fontinfo {
     my $info = Font::Info->new($filename);
 
     my $basicdata = Font::Raw::get_basicdata($filename);
-    $info->parse_basicdata($basicdata);
+    $info->process_basicdata($basicdata);
 
     my $os2data = Font::Raw::get_os2data($filename);
-    $info->parse_os2data($os2data);
+    $info->process_os2data($os2data);
 
     my $featuredata = Font::Raw::get_featuredata($filename);
-    $info->parse_featuredata($featuredata);
+    $info->process_featuredata($featuredata);
 
     my $sizedata = Font::Raw::get_sizedata($filename);
-    $info->parse_sizedata($sizedata);
+    $info->process_sizedata($sizedata);
+
+    my $nfssdata = Font::Raw::get_nfss_classification($filename);
+    $info->process_nfss_classification($nfssdata);
 
     return $info;
 }
@@ -1252,7 +1234,7 @@ sub new {
     return bless $self, $cls;
 }
 
-sub parse_basicdata {
+sub process_basicdata {
     my ($self, $data) = @_;
 
     $data->{family}    =  $data->{preferredfamily} || $data->{family};
@@ -1401,21 +1383,15 @@ sub parse_basicdata {
     return;
 }
 
-sub parse_os2data {
+sub process_os2data {
     my ($self, $data) = @_;
 
-    # EXPERIMENTAL: we extract the usWeightClass and usWidthClass
-    # properties from the font's OS/2 table
-    @{$self}{qw(weight_class width_class)} = unpack '@4n @6n', $data;
+    @{$self}{qw(weight_class width_class)} = @$data;
 
     return;
 }
 
-#-----------------------------------------------------------------------
-# Fill the 'feature' field in the 'info' struct with a list of
-# all features this font supports
-#-----------------------------------------------------------------------
-sub parse_featuredata {
+sub process_featuredata {
     my ($self, $data) = @_;
 
     %{$self->{feature}} = map { $_ => 1 } @$data;
@@ -1428,40 +1404,47 @@ sub parse_featuredata {
 # Fill the 'minsize' and 'maxsize' fields in the 'info' struct
 # with limits of optical design size range of this font
 #-----------------------------------------------------------------------
-sub parse_sizedata {
+sub process_sizedata {
     my ($self, $data) = @_;
 
     if (my ($minsize, $maxsize)
-        = $data =~ m/[(] ([\d.]+) \s* pt, \s*
-                         ([\d.]+) \s* pt  \s* [)]]/xms
-    ) {
+            = $data =~ m/[(] ([\d.]+) \s* pt, \s*
+                            ([\d.]+) \s* pt  \s* [)]]/xms) {
     # fix some known bugs
         if ($self->{name} eq 'GaramondPremrPro-It'
-            && $minsize == 6 && $maxsize == 8.9)
-        {
+            && $minsize == 6 && $maxsize == 8.9) {
             ($minsize, $maxsize) = (8.9, 14.9);
         }
         elsif ($self->{family} eq 'KeplerStd'
             && $self->{subfamily} =~ m/Caption/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
+            && $minsize == 8.9 && $maxsize == 13.9) {
             ($minsize, $maxsize) = (6, 8.9);
         }
         elsif ($self->{family} eq 'KeplerStd'
             && $self->{subfamily} =~ m/Subhead/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
+            && $minsize == 8.9 && $maxsize == 13.9) {
             ($minsize, $maxsize) = (13.9, 23);
         }
         elsif ($self->{family} eq 'KeplerStd'
             && $self->{subfamily} =~ m/Display/xms
-            && $minsize == 8.9 && $maxsize == 13.9)
-        {
+            && $minsize == 8.9 && $maxsize == 13.9) {
             ($minsize, $maxsize) = (23, 72);
         }
 
         @{$self}{qw(minsize maxsize)} = ($minsize, $maxsize);
     }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Adds the NFSS classification (rm, sf, tt) to self.
+# --------------------------------------------------------------------------
+sub process_nfss_classification {
+    my ($self, $data) = @_;
+
+    $self->{nfss} = $data;
 
     return;
 }
@@ -1490,6 +1473,10 @@ sub get_basicdata {
     return \%data;
 }
 
+
+# --------------------------------------------------------------------------
+#   Returns a ref to an array containing usWeightClass and usWidthClass
+# --------------------------------------------------------------------------
 sub get_os2data {
     my $filename = shift;
 
@@ -1501,10 +1488,15 @@ sub get_os2data {
         close $otfinfo
             or die "'$cmd' failed";
 
-        return $os2_table;
+        my ($weight_class, $width_class) = unpack '@4n @6n', $os2_table;
+
+        return [$weight_class, $width_class];
     } or warn "[WARNING]   $@";
 }
 
+
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 sub get_featuredata {
     my $filename = shift;
 
@@ -1529,6 +1521,10 @@ sub get_featuredata {
     return \@data;
 }
 
+
+# --------------------------------------------------------------------------
+#   Returns the size info for this font (note that this may be empty).
+# --------------------------------------------------------------------------
 sub get_sizedata {
     my $filename = shift;
 
@@ -1540,6 +1536,35 @@ sub get_sizedata {
         or die "[ERROR]     '$cmd' failed.";
 
     return $data;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns the NFSS classification (i.e., rm, sf or tt) for this font.
+#   Note that the algorithm used is "best effort only", so its results
+#   may be wrong.
+# --------------------------------------------------------------------------
+sub get_nfss_classification {
+    my $filename = shift;
+
+    eval {
+        my $cmd = qq(otfinfo --dump-table "post" "$filename");
+        open my $otfinfo, '-|:raw', $cmd
+            or die "could not fork(): $!";
+        my $post_table = do { local $/; <$otfinfo> };
+        close $otfinfo
+            or die "'$cmd' failed";
+
+        my $is_fixed_pitch = unpack '@12N', $post_table;
+
+        my $classification = $is_fixed_pitch                  ? 'tt'
+                           : $filename =~ m/mono(?!type)/xmsi ? 'tt'
+                           : $filename =~ m/sans/xmsi         ? 'sf'
+                           :                                    'rm'
+                           ;
+
+        return $classification;
+    } or warn "[WARNING]   $@";
 }
 
 
