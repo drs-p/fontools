@@ -290,7 +290,6 @@ sub main {
     print "autoinst, version $VERSION\n";
 
     ARGV::parse_options();
-
     ARGV::process_options();
 
     my %fontfamily;
@@ -868,8 +867,8 @@ Possible options:
 
     -(no)figurekern         Keep or remove kerns between tabular figures
 
-    -nfssweight=xx=yyyy     Map the "xx" NFSS code to the "yyyy" weight
-    -nfsswidth=xx=yyyy      Map the "xx" NFSS code to the "yyyy" width
+    -nfssweight=XX=YYYY     Map the "XX" NFSS code to the "YYYY" weight
+    -nfsswidth=XX=YYYY      Map the "XX" NFSS code to the "YYYY" width
 
     -help                   Print this text and exit
     -doc                    Print the complete documentation and exit
@@ -878,6 +877,7 @@ Possible options:
     -verbose                Print more data to log file
                             (repeat for even higher verbosity)
     -version                Print version number and exit
+
     font[s]                 The fonts (.otf or .ttf format) to install.
 
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
@@ -959,7 +959,8 @@ sub parse_options {
         'logfile=s'           => \$ARGV{logfile},
         'verbose+'            => \$ARGV{verbose},
         'nfssweight=s%'       => sub {
-                                     my ( $ignored, $key, $values ) = @_;
+                                     my ($ignored, $key, $values) = @_;
+                                     $key = lc $key;
                                      push @{$ARGV{nfssweight}},
                                           "$key=$values";
                                      my @values = split m/,/, lc $values;
@@ -968,7 +969,8 @@ sub parse_options {
                                      $ARGV{$key} = 'user-defined';
                                  },
         'nfsswidth=s%'        => sub {
-                                     my ( $ignored, $key, $values ) = @_;
+                                     my ($ignored, $key, $values) = @_;
+                                     $key = lc $key;
                                      my @values = split m/,/, lc $values;
                                      push @{$ARGV{nfsswidth}},
                                           "$key=$values";
@@ -984,11 +986,24 @@ sub parse_options {
 
 
 # --------------------------------------------------------------------------
-#   Process the command-line options
+#   Processes the command-line options. This is split into a number
+#   of smaller steps, that each process a group of related options.
 # --------------------------------------------------------------------------
 sub process_options {
     die "$USAGE" unless @ARGV;
 
+    process_styles_options();
+    process_encoding_options();
+    process_target_options();
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes all options that select or deselect styles.
+# --------------------------------------------------------------------------
+sub process_styles_options {
     main::delete_style('smallcaps')         unless $ARGV{smallcaps};
     main::delete_style('swash')             unless $ARGV{swash};
 
@@ -1009,6 +1024,36 @@ sub process_options {
         $ARGV{inferiors} = 'auto';
         $FIGURESTYLE{Inf}{reqd} = ['auto'];
     }
+
+    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
+    $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
+    $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
+
+    main::delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
+    main::delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
+    main::delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
+    main::delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
+
+    if (!$ARGV{figurekern}) {
+        my @digits = qw(zero one two three four five six seven eight nine);
+        my $tkern
+            = join ' ', map { my $left = $_;
+                              map { qq(--ligkern="$left {} $_") } @digits
+                            }
+                            @digits;
+
+        $FIGURESTYLE{TLF}{extra}  = $tkern;
+        $FIGURESTYLE{TOsF}{extra} = $tkern;
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the options for selecting encodings.
+# --------------------------------------------------------------------------
+sub process_encoding_options {
 
     # All specified encodings should either be built-in,
     # or have an accompanying .enc file in the current directory.
@@ -1034,14 +1079,14 @@ sub process_options {
         main::delete_style('textcomp');
     }
 
-    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
+    return;
+}
 
-    main::delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
-    main::delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
-    main::delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
-    main::delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
+
+# --------------------------------------------------------------------------
+#   Processes the options related to the target TEXMF directory.
+# --------------------------------------------------------------------------
+sub process_target_options{
 
     my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
     if ($ARGV{manual}) {
@@ -1107,18 +1152,6 @@ END_WARNING_DUMPING_FILES
 END_WARNING_SPACES_IN_PATHS
     }
 
-    if (!$ARGV{figurekern}) {
-        my @digits = qw(zero one two three four five six seven eight nine);
-        my $tkern
-            = join ' ', map { my $left = $_;
-                              map { qq(--ligkern="$left {} $_") } @digits
-                            }
-                            @digits;
-
-        $FIGURESTYLE{TLF}{extra}  = $tkern;
-        $FIGURESTYLE{TOsF}{extra} = $tkern;
-    }
-
     return;
 }
 
@@ -1142,7 +1175,7 @@ sub choose_inferiors {
 
     # If we didn't find any inferior figures, delete the 'Inf' entry
     # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
+    main::delete_figurestyle('Inf') if $ARGV{inferiors} eq 'auto';
 }
 
 
