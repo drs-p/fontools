@@ -169,7 +169,15 @@ for my $code (@NFSS_WEIGHT) {
 
 sub get_weights {
     my $key = shift;
+
     return @{$NFSS_WEIGHT{$key}};
+}
+
+sub set_weights {
+    my ($key, @values) = @_;
+
+    $NFSS_WEIGHT{$key} = [ @values, @{$NFSS_WEIGHT{$key}} ];
+    return;
 }
 
 sub get_all_nfss_weights {
@@ -208,6 +216,13 @@ sub get_widths {
     my $key = shift;
 
     return @{$NFSS_WIDTH{$key}};
+}
+
+sub set_widths {
+    my ($key, @values) = @_;
+
+    $NFSS_WIDTH{$key} = [ @values, @{$NFSS_WIDTH{$key}} ];
+    return;
 }
 
 sub get_all_nfss_widths {
@@ -1227,8 +1242,7 @@ sub parse_options {
                                           "$key=$values";
                                      my @values = split m/,/, lc $values;
                                      $key = q{} if $key eq 'm';
-                                     $NFSS_WEIGHT{$key}
-                                         = [ @values, @{$NFSS_WEIGHT{$key}} ];
+                                     main::set_weights($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
         'nfsswidth=s%'        => sub {
@@ -1237,8 +1251,7 @@ sub parse_options {
                                      push @{$ARGV{nfsswidth}},
                                           "$key=$values";
                                      $key = q{} if $key eq 'm';
-                                     $NFSS_WIDTH{$key}
-                                         = [ @values, @{$NFSS_WIDTH{$key}} ];
+                                     main::set_widths($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
     )
