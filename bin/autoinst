@@ -141,9 +141,6 @@ for my $full (keys %ABBREV) {
     -   We define NFSS_WEIGHT and NFSS_WIDTH first as arrays
         and then as hashtables; this allows us to use the array-variants
         as an *ordered* (by weight/width) list of values.
-    -   We exclude the Medium and Regular weights and widths
-        from the @WEIGHTS and @WIDTHS arrays to avoid false positives;
-        see the comments in the parse_basicinfo() function.
 
 =end Comment
 
@@ -170,8 +167,22 @@ for my $code (@NFSS_WEIGHT) {
         = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WEIGHT{$code}} ];
 }
 
-my @WEIGHTS = grep { $_ !~ m/ regular | medium /xms }
+sub get_weights {
+    my $key = shift;
+    return @{$NFSS_WEIGHT{$key}};
+}
+
+sub get_all_nfss_weights {
+    return @NFSS_WEIGHT;
+}
+
+my @allweights = grep { $_ !~ m/ regular | medium /xms }
                    map { @{$_} } values %NFSS_WEIGHT;
+@allweights = ( Util::mqrs(@allweights), qw(medium regular) );
+sub get_all_weights {
+    return @allweights;
+}
+
 
 my @NFSS_WIDTH = (
     uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
@@ -193,7 +204,22 @@ for my $code (@NFSS_WIDTH) {
         = [ map { @{ $ABBREV{$_} // [$_] } } @{$NFSS_WIDTH{$code}} ];
 }
 
-my @WIDTHS = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
+sub get_widths {
+    my $key = shift;
+
+    return @{$NFSS_WIDTH{$key}};
+}
+
+sub get_all_nfss_widths {
+    return @NFSS_WIDTH;
+}
+
+my @allwidths = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
+@allwidths = Util::mqrs(@allwidths);
+sub get_all_widths {
+    return @allwidths;
+}
+
 
 =begin Comment
 
@@ -206,7 +232,7 @@ my @WIDTHS = grep { $_ ne 'regular' } map { @{$_} } values %NFSS_WIDTH;
 
 =cut
 
-my @NFSS_SHAPE = (
+my %NFSS_SHAPE = (
     roman       =>  'n',
     upright     =>  'n',
     italic      =>  'it',
@@ -216,7 +242,6 @@ my @NFSS_SHAPE = (
     romani      =>  'n',    # Silentium has two roman shapes, but no italic;
     romanii     =>  'it',   # so we cheat by mapping the second roman to 'it'
 );
-my %NFSS_SHAPE = @NFSS_SHAPE;
 for my $full (keys %ABBREV) {
     if (defined $NFSS_SHAPE{$full}) {
         for my $abbrev ( @{$ABBREV{$full}} ) {
@@ -224,6 +249,18 @@ for my $full (keys %ABBREV) {
         }
     }
 }
+
+sub get_shape {
+    my $key = shift;
+
+    return $NFSS_SHAPE{$key};
+}
+
+my @allshapes = Util::mqrs(keys %NFSS_SHAPE);
+sub get_all_shapes {
+    return @allshapes;
+}
+
 
 =begin Comment
 
@@ -686,9 +723,9 @@ sub decide_nfss_mappings {
     };
 
     NFSSWEIGHT:
-    for my $nfssweight (@NFSS_WEIGHT) {
+    for my $nfssweight (main::get_all_nfss_weights()) {
         $choice->{weight}{$nfssweight}
-            = [ grep { $weight{$_} } @{$NFSS_WEIGHT{$nfssweight}} ];
+            = [ grep { $weight{$_} } main::get_weights($nfssweight) ];
     }
 
     # Some trickery to handle the case where the ul/ub codes are mapped
@@ -744,8 +781,8 @@ sub decide_nfss_mappings {
     }
 
     NFSSWIDTH:
-    for my $nfsswidth (@NFSS_WIDTH) {
-        for my $width ( @{$NFSS_WIDTH{$nfsswidth}} ) {
+    for my $nfsswidth (main::get_all_nfss_widths()) {
+        for my $width ( main::get_widths($nfsswidth) ) {
             if ( $width{$width} ) {
                 $choice->{width}{$nfsswidth} = [ $width ];
                 next NFSSWIDTH;
@@ -855,12 +892,12 @@ sub log_worklist {
     my $LOG = $ARGV{logfile};
 
     print {$LOG} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
-    for my $weight (@NFSS_WEIGHT) {
+    for my $weight (main::get_all_nfss_weights()) {
         printf {$LOG} "    %-3s =>  %s\n",
                 $weight || 'm', $choice->{weight}{$weight}[0] || '';
     }
     printf {$LOG} "\n";
-    for my $width (@NFSS_WIDTH) {
+    for my $width (main::get_all_nfss_widths()) {
         printf {$LOG} "    %-3s =>  %s\n",
                 $width || 'm', $choice->{width}{$width}[0] || '';
     }
@@ -1480,18 +1517,6 @@ sub handle_auto_inferiors {
 
 package Font::Info;
 
-#-----------------------------------------------------------------------
-# Re-order argument list so that longer strings come before shorter ones
-#
-# This is needed when matching a string against a list of patterns
-# where some of the patterns may be substrings of other patterns;
-# then we want the *longest* matching pattern, so we test the patterns
-# in descending order of length.
-#-----------------------------------------------------------------------
-sub mqrs {
-    return map { quotemeta } reverse sort { length($a) <=> length($b) } @_;
-}
-
 sub new {
     my ($cls, $filename) = @_;
 
@@ -1545,26 +1570,29 @@ sub parse_basicdata {
     # 3.  Test the weights 'medium' and 'regular' *last*, since these strings
     #     may also occur in Subfamily without indicating the weight;
     #     so we only take them to mean weight if we find no other hit.
-    for my $width ( mqrs(@WIDTHS) ) {
+    my @widths = main::get_all_widths();
+    for my $width (@widths) {
         if ($fullinfo =~ m/${width}/xms) {
             $self->{width} = $width;
-            my $widths = join '|', mqrs(@WIDTHS);
+            my $widths = join '|', @widths;
             $fullinfo =~ s/${widths}//gxmsi;
             last;
         }
     }
-    for my $weight ( mqrs(@WEIGHTS), qw(medium regular) ) {
+    my @weights = main::get_all_weights();
+    for my $weight (@weights) {
         if ($fullinfo =~ m/${weight}/xms) {
             $self->{weight} = $weight;
-            my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+            my $weights = join '|', @weights;
             $fullinfo =~ s/${weights}//gxmsi;
             last;
         }
     }
-    for my $shape ( mqrs( keys %NFSS_SHAPE ) ) {
+    my @shapes = main::get_all_shapes();
+    for my $shape (@shapes) {
         if ($fullinfo =~ m/${shape}/xms) {
             $self->{shape} = $shape;
-            my $shapes = join '|', mqrs( keys %NFSS_SHAPE );
+            my $shapes = join '|', @shapes;
             $fullinfo =~ s/${shapes}//gxmsi;
             last;
         }
@@ -1594,7 +1622,7 @@ sub parse_basicdata {
 
     # Some font families put different shapes into separate families;
     # we merge these into the 'main' family.
-    my $shapes = join '|', mqrs( qw(it italic) );
+    my $shapes = join '|', Util::mqrs( qw(it italic) );
     if ( $self->{family} =~ m/(.+?) (${shapes}) \z/xmsi
             and ( $self->{shape} eq 'regular'
                 or $self->{shape} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
@@ -1604,7 +1632,7 @@ sub parse_basicdata {
         $self->{shape}  = $UNABBREVIATE{ lc($2) } // lc($2);
     }
 
-    $shapes = join '|', mqrs( qw(smallcaps sc smcp caps) );
+    $shapes = join '|', Util::mqrs( qw(smallcaps sc smcp caps) );
     if ( $self->{family} =~ m/(.+?) ( -? ${shapes}) \z/xmsi ) {
         $self->{family}       = $1;
         $self->{is_smallcaps} = 1;
@@ -1616,7 +1644,7 @@ sub parse_basicdata {
 
     # Some font families put different widths into separate families;
     # we merge these into the 'main' font family.
-    my $widths = join '|', mqrs(@WIDTHS);
+    my $widths = join '|', main::get_all_widths();
     if ( $self->{family} =~ m/(.+?) (${widths}) \z/xmsi
             and ( $self->{width} eq 'regular'
                 or $self->{width} eq ( $UNABBREVIATE{ lc($2) } // lc($2) )
@@ -1628,7 +1656,7 @@ sub parse_basicdata {
 
     # Some font families put extreme weights into separate families;
     # we merge these into the 'main' font family.
-    my $weights = join '|', mqrs(@WEIGHTS), qw(medium regular);
+    my $weights = join '|', main::get_all_weights();
     # Be careful with the word 'Text': this might be part of
     # the font family name (i.e., Libre Caslon Text) and should
     # not be mistaken for a weight.
@@ -1649,7 +1677,7 @@ sub parse_basicdata {
     # it's unnecessary now, but we don't want to break the old behaviour.
     $self->{family} =~ s/text \z//xmsi;
 
-    $self->{basicshape} = $NFSS_SHAPE{$self->{shape}};
+    $self->{basicshape} = main::get_shape($self->{shape});
 
     # We define 'series' as 'weight + width'. This matches NFSS,
     # but contradicts how most fonts are named (which is 'width + weight').
@@ -2094,9 +2122,9 @@ END_SSUB_SHAPE
 END_COMMENT
     my %seen;
     NFSSWEIGHT:
-    for my $nfssweight (@NFSS_WEIGHT) {
+    for my $nfssweight (main::get_all_nfss_weights()) {
         NFSSWIDTH:
-        for my $nfsswidth (@NFSS_WIDTH) {
+        for my $nfsswidth (main::get_all_nfss_widths()) {
             my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
 
             for my $weight ( @{$choice->{weight}{$nfssweight}} ) {
@@ -2138,6 +2166,23 @@ END_SSUB_BX
     close $FD;
 
     return;
+}
+
+
+package Util;
+
+#-----------------------------------------------------------------------
+# Re-order argument list so that longer strings come before shorter ones
+#
+# This is needed when matching a string against a list of patterns
+# where some of the patterns may be substrings of other patterns;
+# then we want the *longest* matching pattern, so we test the patterns
+# in descending order of length.
+#-----------------------------------------------------------------------
+sub mqrs {
+    return map { quotemeta }
+               reverse sort { length($a) <=> length($b) }
+                            @_;
 }
 
 
