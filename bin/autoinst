@@ -77,18 +77,31 @@ my %UNABBREVIATE = (
     slant   =>  'slanted',
     ultra   =>  'ultrablack',
 );
-my %ABBREV;
+my %abbrev;
 while ( my ($k, $v) = each %UNABBREVIATE ) {
-    push @{$ABBREV{$v}}, $k;
+    push @{$abbrev{$v}}, $k;
 }
-for my $full (keys %ABBREV) {
-    push @{$ABBREV{$full}}, $full;
+for my $full (keys %abbrev) {
+    push @{$abbrev{$full}}, $full;
 }
 
+
+#   Returns the unabbreviated form of its argument,
+#   or its argument itself if no unabbreviated form is known.
 sub unabbreviate {
     my $key = shift;
 
     return $UNABBREVIATE{$key} // $key;
+}
+
+
+#   Returns a list of known abbreviations of its argument,
+#   or a singleton list containing just the argument itself
+#   if no abbreviations are known.
+sub get_abbreviated_forms {
+    my $key = shift;
+
+    return @{ $abbrev{$key} // [$key] };
 }
 
 =begin Comment
@@ -174,7 +187,7 @@ my %WEIGHT = @WEIGHT;
 # Add abbreviated forms, using the %ABBREV table constructed earlier
 for my $code (@WEIGHT) {
     $WEIGHT{$code}
-        = [ map { @{ $ABBREV{$_} // [$_] } } @{$WEIGHT{$code}} ];
+        = [ map { get_abbreviated_forms($_) } @{$WEIGHT{$code}} ];
 }
 
 sub get_weights {
@@ -219,7 +232,7 @@ my %WIDTH = @WIDTH;
 # Add abbreviated forms, using the %ABBREV table constructed earlier
 for my $code (@WIDTH) {
     $WIDTH{$code}
-        = [ map { @{ $ABBREV{$_} // [$_] } } @{$WIDTH{$code}} ];
+        = [ map { get_abbreviated_forms($_) } @{$WIDTH{$code}} ];
 }
 
 sub get_widths {
@@ -267,9 +280,10 @@ my %SHAPE = (
     romani      =>  'n',    # Silentium has two roman shapes, but no italic;
     romanii     =>  'it',   # so we cheat by mapping the second roman to 'it'
 );
-for my $full (keys %ABBREV) {
+#   Add abbreviated forms to %SHAPE table
+for my $full (keys %abbrev) {
     if (defined $SHAPE{$full}) {
-        for my $abbrev ( @{$ABBREV{$full}} ) {
+        for my $abbrev (get_abbreviated_forms($full)) {
             $SHAPE{$abbrev} = $SHAPE{$full};
         }
     }
