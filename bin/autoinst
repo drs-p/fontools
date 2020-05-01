@@ -354,7 +354,6 @@ sub main {
 
         # Decide to which weights and widths we'll map the standard NFSS codes
         my $choice = NFSS::map_nfss_codes(@fonts);
-
         log_worklist($choice, @worklist);
 
         if (!$ARGV{dryrun}) {
@@ -380,31 +379,24 @@ sub main {
 }
 
 
-#-----------------------------------------------------------------------
-# Return a list with all unique entries from the input
-#-----------------------------------------------------------------------
-sub uniq {
-    my %seen;
-    return grep { !$seen{$_}++ } @_;
-}
-
-#-----------------------------------------------------------------------
-# Determine which figure styles to create for each font;
-# return a list of (font, fontstyle) tuples
-#-----------------------------------------------------------------------
+# --------------------------------------------------------------------------
+#   Determines which figure styles to create for the given fonts;
+#   returns a list of (font, figurestyle) tuples.
+# --------------------------------------------------------------------------
 sub expand_figurestyles {
     return map { my $font = $_;
                  map { { font => $font, figurestyle => $_ } }
-                     grep { has_all_reqd_features($font, $FIGURESTYLE{$_}) }
+                     grep { has_all_reqd($font, $FIGURESTYLE{$_}) }
                           keys %FIGURESTYLE
                }
                @_;
 }
 
-#-----------------------------------------------------------------------
-# Check if $font has all features mentioned in the 'reqd' subtable of $target
-#-----------------------------------------------------------------------
-sub has_all_reqd_features {
+
+# --------------------------------------------------------------------------
+#   Checks if $font has all features in the 'reqd' table of $target.
+# --------------------------------------------------------------------------
+sub has_all_reqd {
     my ($font, $target) = @_;
 
     return 0 unless defined $target;
@@ -414,10 +406,11 @@ sub has_all_reqd_features {
     return 1;
 }
 
-#-----------------------------------------------------------------------
-# Determine which styles to create for each (font, figurestyle) combination;
-# return a list of (font, figurestyle, style) tuples
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Determines which styles to create for the given (font, figurestyle)
+#   combinations; returns a list of (font, figurestyle, style) tuples.
+# --------------------------------------------------------------------------
 sub expand_styles {
     return map { my ($font, $figurestyle) = @{$_}{qw(font figurestyle)};
                  map { { font        => $font,
@@ -431,10 +424,10 @@ sub expand_styles {
                @_;
 }
 
-#-----------------------------------------------------------------------
-# Check if $font has at least one of the features mentioned
-# in the 'reqd' subtable of $target
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Checks if $font has at least one feature in the 'reqd' table in $target.
+# --------------------------------------------------------------------------
 sub has_some_reqd {
     my ($font, $target) = @_;
 
@@ -443,10 +436,11 @@ sub has_some_reqd {
     return grep { $font->{feature}{$_} } @{$target->{reqd}};
 }
 
-#-----------------------------------------------------------------------
-# Determine which encodings to use for each (font, figurestyle, style) combi;
-# return a list of (font, figurestyle, style, encoding) tuples
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Determines which encodings to use for each (font, figurestyle, style)
+#   combination; returns a list of (font, figurestyle, style, enc) tuples.
+# --------------------------------------------------------------------------
 sub expand_encodings {
     return
         map { my ($font, $figurestyle, $style)
@@ -467,9 +461,10 @@ sub expand_encodings {
             @_;
 }
 
-#-----------------------------------------------------------------------
-# Add some finishing touches to the work list
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Adds some miscellaneous finishing touches to the list of work items.
+# --------------------------------------------------------------------------
 sub cleanup {
     my @worklist = @_;
 
@@ -530,9 +525,10 @@ sub cleanup {
     return grep { $_ } @worklist;
 }
 
-#-----------------------------------------------------------------------
-# Log all fonts, styles, encodings etc. we're  going to create
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Logs command line options and the results of font info parsing.
+# --------------------------------------------------------------------------
 sub create_logfile {
     my @fonts = @_;
 
@@ -613,9 +609,10 @@ END_PARSE_FONT
     }
 }
 
-#-----------------------------------------------------------------------
-# Log all fonts, styles, encodings etc. we're  going to create
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Logs NFSS mappings and all fonts we're going to create.
+# --------------------------------------------------------------------------
 sub log_worklist {
     my ($choice, @items) = @_;
 
@@ -679,9 +676,10 @@ END_FONTINFO
     print {$LOG} "\n";
 }
 
-#-----------------------------------------------------------------------
-# Generate all otftotfm commands, and either save or execute them
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Generates all commands for otftotfm and saves or executes them.
+# --------------------------------------------------------------------------
 sub make_commands {
     my @worklist = @_;
 
@@ -739,9 +737,10 @@ my %SCHEME = (
     fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
 );
 
-#-----------------------------------------------------------------------
-# Generate a command line for otftotfm
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Generates a command line for otftotfm from a work item.
+# --------------------------------------------------------------------------
 sub make_cmdline {
     my $item = shift;
 
@@ -776,7 +775,8 @@ sub make_cmdline {
 }
 
 #-----------------------------------------------------------------------
-# Return a string with all "directory" options for otftotfm set
+#   Returns a string with all "directory" options for otftotfm set.
+#   Also creates directories that don't exist yet.
 #-----------------------------------------------------------------------
 sub set_targetdirs {
     my $font = shift;
@@ -804,8 +804,8 @@ sub set_targetdirs {
 
     $dir{$_}
         = File::Spec->catdir(
-            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family
-        ) for qw(enc map);
+            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
+        for qw(enc map);
 
     File::Path::make_path(values %dir) unless $ARGV{dryrun};
 
@@ -916,9 +916,10 @@ END_USAGE
     nfssweight      => [],
 );
 
-#-----------------------------------------------------------------------
-# Process command-line arguments
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Parses the command-line options and removes these from @ARGV.
+# --------------------------------------------------------------------------
 sub parse_options {
     $ARGV{cmdline} = join ' ', ($0, @ARGV);
 
@@ -1233,9 +1234,9 @@ my $ERR_PARSE =<<'END_ERR_PARSE';
             Please also send a bug report to the author.
 END_ERR_PARSE
 
-#-----------------------------------------------------------------------
-# Assert all parsed font infos are unique
-#-----------------------------------------------------------------------
+# --------------------------------------------------------------------------
+#   Asserts all parsed fonts are unique.
+# --------------------------------------------------------------------------
 sub assert_unique {
     my @fonts = @_;
 
