@@ -295,11 +295,11 @@ sub main {
         create_logfile(@fonts);
         Font::assert_unique(@fonts);
 
-        # We can only handle the '-inferiors=auto' option now,
-        # since we need to know which inferior figures this font supports;
-        # so we have to do the font info parsing first.
+        # We can only handle the '-inferiors=auto' option now;
+        # since we need to know which inferior figures this font supports,
+        # we have to do the font info parsing first.
         if ($ARGV{inferiors} eq 'auto') {
-            Font::handle_auto_inferiors(@fonts);
+            ARGV::choose_inferiors(@fonts);
         }
 
         # Figure out which styles and encodings to generate.
@@ -1119,6 +1119,30 @@ END_WARNING_SPACES_IN_PATHS
 }
 
 
+# --------------------------------------------------------------------------
+#   Processes the -inferiors=auto option, given a list of fonts.
+#   We look through these fonts and simply pick the very first
+#   type of inferiors we see (we assume that this type is supported
+#   by all fonts in this family).
+# --------------------------------------------------------------------------
+sub choose_inferiors {
+    FONT:
+    for my $font (@_) {
+        for my $inf (qw(subs sinf dnom)) {
+            if (exists $font->{feature}{$inf}) {
+                $ARGV{inferiors} = $inf;
+                $FIGURESTYLE{Inf}{reqd} = [$inf];
+                last FONT;
+            }
+        }
+    }
+
+    # If we didn't find any inferior figures, delete the 'Inf' entry
+    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
+    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
+}
+
+
 ############################################################################
 
 
@@ -1202,26 +1226,6 @@ sub assert_unique {
     }
 
     return 1;
-}
-
-#-----------------------------------------------------------------------
-# Handle the -inferiors=auto option
-#-----------------------------------------------------------------------
-sub handle_auto_inferiors {
-    FONT:
-    for my $font (@_) {
-        for my $inf (qw(subs sinf dnom)) {
-            if (exists $font->{feature}{$inf}) {
-                $ARGV{inferiors} = $inf;
-                $FIGURESTYLE{Inf}{reqd} = [$inf];
-                last FONT;
-            }
-        }
-    }
-
-    # If we didn't find any inferior figures, delete the 'Inf' entry
-    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
 
