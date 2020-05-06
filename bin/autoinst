@@ -208,67 +208,6 @@ my %FIGURESTYLE = (
     },
 );
 
-=begin Comment
-
-    The %FIGURESTYLE_DEFAULTS table is used to populate the 'reqd' and 'nice'
-    subtables of the %FIGURESTYLE table, depending on the default figure style
-    for the current font. This is needed because some font families
-    provide only features for the non-default figure styles.
-
-    We therefore make the OpenType features that correspond
-    to the default figure style 'nice' (optional), so that this figure style
-    is always generated, even without OpenType features in the font;
-    the other figure style are only generated when the corresponding
-    features are present in the font.
-
-=end Comment
-
-=cut
-
-my %FIGURESTYLE_DEFAULTS = (
-    lnum =>
-        sub {
-            push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
-        },
-    onum =>
-        sub {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'onum';
-        },
-    tnum =>
-        sub {
-            push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
-        },
-    pnum =>
-        sub {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
-        },
-);
-
-
-sub delete_figurestyle {
-    delete @FIGURESTYLE{@_};
-    return;
-}
-
-
-sub delete_style {
-    delete @STYLE{@_};
-    return;
-}
-
-
 # --------------------------------------------------------------------------
 #   Processes the command-line options. This is split into a number
 #   of smaller steps, that each process a group of related options.
@@ -286,15 +225,15 @@ sub process_options {
 #   Processes all options that select or deselect styles.
 # --------------------------------------------------------------------------
 sub process_styles_options {
-    delete_style('smallcaps')         unless $ARGV{smallcaps};
-    delete_style('swash')             unless $ARGV{swash};
+    delete $STYLE{smallcaps}           unless $ARGV{smallcaps};
+    delete $STYLE{swash}               unless $ARGV{swash};
 
-    delete_figurestyle('Titl')        unless $ARGV{titling};
-    delete_figurestyle('Sup')         unless $ARGV{superiors};
-    delete_figurestyle('Orn')         unless $ARGV{ornaments};
-    delete_figurestyle(qw(Numr Dnom)) unless $ARGV{fractions};
+    delete $FIGURESTYLE{Titl}          unless $ARGV{titling};
+    delete $FIGURESTYLE{Sup}           unless $ARGV{superiors};
+    delete $FIGURESTYLE{Orn}           unless $ARGV{ornaments};
+    delete @FIGURESTYLE{qw(Numr Dnom)} unless $ARGV{fractions};
     $ARGV{inferiors} ||= 'auto';
-    if    ($ARGV{inferiors} eq 'none') { delete_figurestyle('Inf') }
+    if    ($ARGV{inferiors} eq 'none') { delete $FIGURESTYLE{Inf} }
     elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
     elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
     elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
@@ -308,13 +247,35 @@ sub process_styles_options {
     }
 
     # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
+    if ($ARGV{fig_height} eq 'lnum') {
+            push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
+            push @{$FIGURESTYLE{LF}{nice}},   'lnum';
+            push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
+            push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
+        }
+    if ($ARGV{fig_height} eq 'onum') {
+            push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
+            push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
+            push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
+            push @{$FIGURESTYLE{OsF}{nice}},  'onum';
+        }
+    if ($ARGV{fig_width} eq 'tnum') {
+            push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
+            push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
+            push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
+            push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
+        }
+    if ($ARGV{fig_width} eq 'pnum') {
+            push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
+            push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
+            push @{$FIGURESTYLE{LF}{nice}},   'pnum';
+            push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
+        }
 
-    delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
-    delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
-    delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
-    delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
+    delete @FIGURESTYLE{qw(LF TLF)}    unless $ARGV{lining};
+    delete @FIGURESTYLE{qw(OsF TOsF)}  unless $ARGV{oldstyle};
+    delete @FIGURESTYLE{qw(LF OsF)}    unless $ARGV{proportional};
+    delete @FIGURESTYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
 
     if (!$ARGV{figurekern}) {
         my @digits = qw(zero one two three four five six seven eight nine);
@@ -358,7 +319,7 @@ sub process_encoding_options {
     # - the text encodings contain T1 and the user didn't turn off TS1
     unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
              or $ARGV{textcomp} == 1 ) {
-        delete_style('textcomp');
+        delete $STYLE{textcomp};
     }
 
     return;
@@ -1180,7 +1141,7 @@ sub choose_inferiors {
 
     # If we didn't find any inferior figures, delete the 'Inf' entry
     # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    delete_figurestyle('Inf') if $ARGV{inferiors} eq 'auto';
+    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
 
