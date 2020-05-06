@@ -378,8 +378,12 @@ sub process_encoding_options {
     # TS1-encoded fonts are generated if:
     # - the user explicitly asked for TS1, or
     # - the text encodings contain T1 and the user didn't turn off TS1
-    unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
-             or $ARGV{textcomp} == 1 ) {
+    if ($ARGV{textcomp} == 1
+            or ($ARGV{textcomp} >= 1
+                and grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}})) {
+        $ARGV{textcomp} = 1;
+    }
+    else {
         delete $STYLE{textcomp};
     }
 
