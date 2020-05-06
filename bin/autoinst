@@ -571,25 +571,25 @@ I'm using the following options:
                                       :                       '(unknown)'
                                     ]}
 
-    lining:             @{[ $ARGV{lining}       ? 'yes' : 'no' ]}
-    oldstyle:           @{[ $ARGV{oldstyle}     ? 'yes' : 'no' ]}
-    proportional:       @{[ $ARGV{proportional} ? 'yes' : 'no' ]}
-    tabular:            @{[ $ARGV{tabular}      ? 'yes' : 'no' ]}
-    ts1:                @{[ $STYLE{textcomp}    ? 'yes' : 'no' ]}
-    smallcaps:          @{[ $ARGV{smallcaps}    ? 'yes' : 'no' ]}
-    swash:              @{[ $ARGV{swash}        ? 'yes' : 'no' ]}
-    titling:            @{[ $ARGV{titling}      ? 'yes' : 'no' ]}
-    superiors:          @{[ $ARGV{superiors}    ? 'yes' : 'no' ]}
+    lining:             @{[ $ARGV{lining}       ? 'yes'     : 'no'     ]}
+    oldstyle:           @{[ $ARGV{oldstyle}     ? 'yes'     : 'no'     ]}
+    proportional:       @{[ $ARGV{proportional} ? 'yes'     : 'no'     ]}
+    tabular:            @{[ $ARGV{tabular}      ? 'yes'     : 'no'     ]}
+    ts1:                @{[ $STYLE{textcomp}    ? 'yes'     : 'no'     ]}
+    smallcaps:          @{[ $ARGV{smallcaps}    ? 'yes'     : 'no'     ]}
+    swash:              @{[ $ARGV{swash}        ? 'yes'     : 'no'     ]}
+    titling:            @{[ $ARGV{titling}      ? 'yes'     : 'no'     ]}
+    superiors:          @{[ $ARGV{superiors}    ? 'yes'     : 'no'     ]}
     inferiors:          $ARGV{inferiors}
-    ornaments:          @{[ $ARGV{ornaments}    ? 'yes' : 'no' ]}
-    fractions:          @{[ $ARGV{fractions}    ? 'yes' : 'no' ]}
-    ligatures:          @{[ $ARGV{ligatures}    ? 'yes' : 'no' ]}
+    ornaments:          @{[ $ARGV{ornaments}    ? 'yes'     : 'no'     ]}
+    fractions:          @{[ $ARGV{fractions}    ? 'yes'     : 'no'     ]}
+    ligatures:          @{[ $ARGV{ligatures}    ? 'yes'     : 'no'     ]}
 
-    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto' ]}
+    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto'   ]}
     target:             $ARGV{target}
     extra:              $ARGV{extra}
 
-    figurekern:         @{[ $ARGV{figurekern}   ? 'keep' : 'remove' ]}
+    figurekern:         @{[ $ARGV{figurekern}   ? 'keep'    : 'remove' ]}
 
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
@@ -600,7 +600,7 @@ END_ARGUMENTS
 
     return if $ARGV{verbose} < 1;
 
-    print {$LOG} '-' x 76 . "\n\nResults of font info parsing:\n";
+    print {$LOG} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
     for my $font (@fonts) {
         print {$LOG} <<"END_PARSE_FONT";
@@ -630,7 +630,8 @@ sub log_worklist {
         = sort { $a->{font}{filename}    cmp $b->{font}{filename}
                     || $a->{encoding}    cmp $b->{encoding}
                     || $a->{figurestyle} cmp $b->{figurestyle}
-               } @items;
+               }
+               @items;
 
     my $LOG = $ARGV{logfile};
 
@@ -707,7 +708,8 @@ sub make_commands {
     else {
         my $oops = 0;
         $| = 1;     # turn on autoflush, to make a poor man's progress bar
-        print "[INFO]      Generating fonts ";
+        printf "[INFO]      Generating fonts for %s ",
+                $worklist[0]->{font}{family};
         for my $command (@commands) {
             print '.';
             open my $otftotfm, '-|', "$command 2>&1"
@@ -1385,9 +1387,9 @@ sub process_basicinfo {
 
     # Take care to unabbreviate weight and width; CondensedUltra fonts
     # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
-    $self->{width} = NFSS::unabbreviate($self->{width});
+    $self->{width}  = NFSS::unabbreviate($self->{width});
     $self->{weight} = NFSS::unabbreviate($self->{weight});
-    $self->{shape} = NFSS::unabbreviate($self->{shape});
+    $self->{shape}  = NFSS::unabbreviate($self->{shape});
 
     # Some font families put different shapes into separate families;
     # we merge these into the 'main' family.
