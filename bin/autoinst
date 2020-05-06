@@ -48,6 +48,8 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 
+package Autoinst;
+
 =begin Comment
 
     The %STYLE table is used in deciding which font styles
@@ -254,22 +256,6 @@ my %FIGURESTYLE_DEFAULTS = (
         },
 );
 
-=begin Comment
-
-    The SSUB_SHAPE table is used to generate extra ssub rules in .fd files
-    to map missing Slanted shapes to Italic and vice versa.
-
-=end Comment
-
-=cut
-
-my %SSUB_SHAPE = (
-    sl      =>  'it',
-    scsl    =>  'scit',
-    it      =>  'sl',
-    scit    =>  'scsl',
-);
-
 
 sub delete_figurestyle {
     delete @FIGURESTYLE{@_};
@@ -283,14 +269,185 @@ sub delete_style {
 }
 
 
+# --------------------------------------------------------------------------
+#   Processes the command-line options. This is split into a number
+#   of smaller steps, that each process a group of related options.
+# --------------------------------------------------------------------------
+sub process_options {
+    process_styles_options();
+    process_encoding_options();
+    process_target_options();
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes all options that select or deselect styles.
+# --------------------------------------------------------------------------
+sub process_styles_options {
+    delete_style('smallcaps')         unless $ARGV{smallcaps};
+    delete_style('swash')             unless $ARGV{swash};
+
+    delete_figurestyle('Titl')        unless $ARGV{titling};
+    delete_figurestyle('Sup')         unless $ARGV{superiors};
+    delete_figurestyle('Orn')         unless $ARGV{ornaments};
+    delete_figurestyle(qw(Numr Dnom)) unless $ARGV{fractions};
+    $ARGV{inferiors} ||= 'auto';
+    if    ($ARGV{inferiors} eq 'none') { delete_figurestyle('Inf') }
+    elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
+    elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
+    elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
+    elsif ($ARGV{inferiors} eq 'dnom') { $FIGURESTYLE{Inf}{reqd} = ['dnom'] }
+    else  {
+        # Apparently we mistook the first argument (font name) for
+        # an optional argument to -inferiors; let's undo that.
+        unshift @ARGV, $ARGV{inferiors};
+        $ARGV{inferiors} = 'auto';
+        $FIGURESTYLE{Inf}{reqd} = ['auto'];
+    }
+
+    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
+    $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
+    $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
+
+    delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
+    delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
+    delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
+    delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
+
+    if (!$ARGV{figurekern}) {
+        my @digits = qw(zero one two three four five six seven eight nine);
+        my $tkern
+            = join ' ', map { my $left = $_;
+                              map { qq(--ligkern="$left {} $_") } @digits
+                            }
+                            @digits;
+
+        $FIGURESTYLE{TLF}{extra}  = $tkern;
+        $FIGURESTYLE{TOsF}{extra} = $tkern;
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the options for selecting encodings.
+# --------------------------------------------------------------------------
+sub process_encoding_options {
+
+    # All specified encodings should either be built-in,
+    # or have an accompanying .enc file in the current directory.
+    $ARGV{encoding} =~ s/\s+//xmsg;
+    my @encodings = split /,/, $ARGV{encoding};
+    for my $enc (@encodings) {
+        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
+            my $try = Cwd::abs_path($enc);
+            $try .= '.enc' if $try !~ m/[.]enc\z/xms;
+            if (!-e $try) {
+                die "[ERROR]     No .enc file found for '$enc'";
+            }
+        }
+    }
+    my @textencodings = grep { $_ !~ m/TS1/xmsi } @encodings;
+    $ARGV{encoding} = \@textencodings;
+
+    # TS1-encoded fonts are generated if:
+    # - the user explicitly asked for TS1, or
+    # - the text encodings contain T1 and the user didn't turn off TS1
+    unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
+             or $ARGV{textcomp} == 1 ) {
+        delete_style('textcomp');
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the options related to the target TEXMF directory.
+# --------------------------------------------------------------------------
+sub process_target_options{
+
+    my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
+    if ($ARGV{manual}) {
+        warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
+            if $ARGV{target};
+        $ARGV{target} = $localtarget;
+        $ARGV{updmap} = 0;
+    }
+    elsif ($ARGV{target}) {
+        $ARGV{updmap} = 0;
+        warn <<"END_WARNING_TARGET_UPDMAP";
+[WARNING]   The '-target' option may interfere with kpathsea and updmap;
+            automatic calling of updmap has been disabled.
+            Please call updmap manually.
+END_WARNING_TARGET_UPDMAP
+    }
+    elsif (!$ARGV{target}) {
+        my $is_windows_os = ( $^O =~ /^MSWin/i );
+        my $kpsepath = $is_windows_os
+            ? eval { qx( kpsewhich -expand-var=\$TEXMFLOCAL;\$TEXMFHOME ) }
+            : eval { qx( kpsewhich -expand-var='\$TEXMFLOCAL:\$TEXMFHOME' ) }
+            ;
+        if (!$kpsepath) {
+            warn <<"END_WARNING_KPSEWHICH";
+[WARNING]   Call to "kpsewhich" failed.
+            Maybe your TeX system doesn't use the kpathsea library?
+
+            Consider using the "-target" command line option
+            to specify a TEXMF tree where autoinst should install all files.
+END_WARNING_KPSEWHICH
+        }
+        else {
+            my $pathsep = $is_windows_os ? ';' : ':';
+            for my $dir ( split m/$pathsep/xms, substr $kpsepath, 0, -1 ) {
+                if (-w $dir) { $ARGV{target} = $dir; last }
+                if (-e $dir) { next }
+                my $par = File::Spec->catdir( $dir, File::Spec->updir() );
+                if (-w $par) { $ARGV{target} = $dir; last }
+            }
+        }
+    }
+
+    if (!$ARGV{target}) {
+        $ARGV{target} = $localtarget;
+        $ARGV{updmap} = 0;
+        warn <<"END_WARNING_DUMPING_FILES";
+[WARNING]   No user-writable TEXMF-tree found!
+
+            I'm putting all generated files in "$ARGV{target}".
+
+            Please install these files into a suitable TEXMF directory,
+            update the filename database and run 'updmap' (or similar);
+            see your TeX installation's documentation.
+END_WARNING_DUMPING_FILES
+    }
+
+    if ($ARGV{target} =~ m/[ ]/xms) {
+        warn <<"END_WARNING_SPACES_IN_PATHS";
+[WARNING]   The pathname of your target directory contains spaces:
+                "$ARGV{target}"
+            If you experience any problems, try re-running autoinst
+            on a target directory without spaces in its name.
+END_WARNING_SPACES_IN_PATHS
+    }
+
+    return;
+}
+
 ############################################################################
+
+
+package main;
 
 
 sub main {
     print "autoinst, version $VERSION\n";
 
     ARGV::parse_options();
-    ARGV::process_options();
+    Autoinst::process_options();
 
     my %fontfamily;
     for my $fontfile (@ARGV) {
@@ -994,179 +1151,14 @@ sub parse_options {
     )
     or die "$USAGE";
 
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the command-line options. This is split into a number
-#   of smaller steps, that each process a group of related options.
-# --------------------------------------------------------------------------
-sub process_options {
-    die "$USAGE" unless @ARGV;
-
-    process_styles_options();
-    process_encoding_options();
-    process_target_options();
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes all options that select or deselect styles.
-# --------------------------------------------------------------------------
-sub process_styles_options {
-    main::delete_style('smallcaps')         unless $ARGV{smallcaps};
-    main::delete_style('swash')             unless $ARGV{swash};
-
-    main::delete_figurestyle('Titl')        unless $ARGV{titling};
-    main::delete_figurestyle('Sup')         unless $ARGV{superiors};
-    main::delete_figurestyle('Orn')         unless $ARGV{ornaments};
-    main::delete_figurestyle(qw(Numr Dnom)) unless $ARGV{fractions};
-    $ARGV{inferiors} ||= 'auto';
-    if    ($ARGV{inferiors} eq 'none') { main::delete_figurestyle('Inf') }
-    elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
-    elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
-    elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
-    elsif ($ARGV{inferiors} eq 'dnom') { $FIGURESTYLE{Inf}{reqd} = ['dnom'] }
-    else  {
-        # apparently we mistook the first argument (font name) for
-        # an optional argument to -inferiors; let's undo that
-        unshift @ARGV, $ARGV{inferiors};
-        $ARGV{inferiors} = 'auto';
-        $FIGURESTYLE{Inf}{reqd} = ['auto'];
-    }
-
-    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_height}}();
-    $FIGURESTYLE_DEFAULTS{$ARGV{fig_width}}();
-
-    main::delete_figurestyle(qw(LF TLF))    unless $ARGV{lining};
-    main::delete_figurestyle(qw(OsF TOsF))  unless $ARGV{oldstyle};
-    main::delete_figurestyle(qw(LF OsF))    unless $ARGV{proportional};
-    main::delete_figurestyle(qw(TLF TOsF))  unless $ARGV{tabular};
-
-    if (!$ARGV{figurekern}) {
-        my @digits = qw(zero one two three four five six seven eight nine);
-        my $tkern
-            = join ' ', map { my $left = $_;
-                              map { qq(--ligkern="$left {} $_") } @digits
-                            }
-                            @digits;
-
-        $FIGURESTYLE{TLF}{extra}  = $tkern;
-        $FIGURESTYLE{TOsF}{extra} = $tkern;
+    if (!@ARGV) {
+        die "$USAGE\n"
+            . "[ERROR]     No font arguments given, nothing to do!\n";
     }
 
     return;
 }
 
-
-# --------------------------------------------------------------------------
-#   Processes the options for selecting encodings.
-# --------------------------------------------------------------------------
-sub process_encoding_options {
-
-    # All specified encodings should either be built-in,
-    # or have an accompanying .enc file in the current directory.
-    $ARGV{encoding} =~ s/\s+//xmsg;
-    my @encodings = split /,/, $ARGV{encoding};
-    for my $enc (@encodings) {
-        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
-            my $try = Cwd::abs_path($enc);
-            $try .= '.enc' if $try !~ m/[.]enc\z/xms;
-            if (!-e $try) {
-                die "[ERROR]     No .enc file found for '$enc'";
-            }
-        }
-    }
-    my @textencodings = grep { $_ !~ m/TS1/xmsi } @encodings;
-    $ARGV{encoding} = \@textencodings;
-
-    # TS1-encoded fonts are generated if:
-    # - the user explicitly asked for TS1, or
-    # - the text encodings contain T1 and the user didn't turn off TS1
-    unless ( (grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}} and $ARGV{textcomp})
-             or $ARGV{textcomp} == 1 ) {
-        main::delete_style('textcomp');
-    }
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the options related to the target TEXMF directory.
-# --------------------------------------------------------------------------
-sub process_target_options{
-
-    my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
-    if ($ARGV{manual}) {
-        warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
-            if $ARGV{target};
-        $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
-    }
-    elsif ($ARGV{target}) {
-        $ARGV{updmap} = 0;
-        warn <<"END_WARNING_TARGET_UPDMAP";
-[WARNING]   The '-target' option may interfere with kpathsea and updmap;
-            automatic calling of updmap has been disabled.
-            Please call updmap manually.
-END_WARNING_TARGET_UPDMAP
-    }
-    elsif (!$ARGV{target}) {
-        my $is_windows_os = ( $^O =~ /^MSWin/i );
-        my $kpsepath = $is_windows_os
-            ? eval { qx( kpsewhich -expand-var=\$TEXMFLOCAL;\$TEXMFHOME ) }
-            : eval { qx( kpsewhich -expand-var='\$TEXMFLOCAL:\$TEXMFHOME' ) }
-            ;
-        if (!$kpsepath) {
-            warn <<"END_WARNING_KPSEWHICH";
-[WARNING]   Call to "kpsewhich" failed.
-            Maybe your TeX system doesn't use the kpathsea library?
-
-            Consider using the "-target" command line option
-            to specify a TEXMF tree where autoinst should install all files.
-END_WARNING_KPSEWHICH
-        }
-        else {
-            my $pathsep = $is_windows_os ? ';' : ':';
-            for my $dir ( split m/$pathsep/xms, substr $kpsepath, 0, -1 ) {
-                if (-w $dir) { $ARGV{target} = $dir; last }
-                if (-e $dir) { next }
-                my $par = File::Spec->catdir( $dir, File::Spec->updir() );
-                if (-w $par) { $ARGV{target} = $dir; last }
-            }
-        }
-    }
-
-    if (!$ARGV{target}) {
-        $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
-        warn <<"END_WARNING_DUMPING_FILES";
-[WARNING]   No user-writable TEXMF-tree found!
-
-            I'm putting all generated files in "$ARGV{target}".
-
-            Please install these files into a suitable TEXMF directory,
-            update the filename database and run 'updmap' (or similar);
-            see your TeX installation's documentation.
-END_WARNING_DUMPING_FILES
-    }
-
-    if ($ARGV{target} =~ m/[ ]/xms) {
-        warn <<"END_WARNING_SPACES_IN_PATHS";
-[WARNING]   The pathname of your target directory contains spaces:
-                "$ARGV{target}"
-            If you experience any problems, try re-running autoinst
-            on a target directory without spaces in its name.
-END_WARNING_SPACES_IN_PATHS
-    }
-
-    return;
-}
 
 # --------------------------------------------------------------------------
 #   Processes the -inferiors=auto option, given a list of fonts.
@@ -1188,7 +1180,7 @@ sub choose_inferiors {
 
     # If we didn't find any inferior figures, delete the 'Inf' entry
     # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    main::delete_figurestyle('Inf') if $ARGV{inferiors} eq 'auto';
+    delete_figurestyle('Inf') if $ARGV{inferiors} eq 'auto';
 }
 
 
@@ -1662,6 +1654,23 @@ sub get_nfss_classification {
 
 
 package LaTeX;
+
+=begin Comment
+
+    The SSUB_SHAPE table is used to generate extra ssub rules in .fd files
+    to map missing Slanted shapes to Italic and vice versa.
+
+=end Comment
+
+=cut
+
+my %SSUB_SHAPE = (
+    sl      =>  'it',
+    scsl    =>  'scit',
+    it      =>  'sl',
+    scit    =>  'scsl',
+);
+
 
 #-----------------------------------------------------------------------
 # Create a LaTeX style file
