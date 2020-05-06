@@ -545,6 +545,10 @@ sub main {
         @worklist = map { expand_encodings($_) }    @worklist;
         @worklist = grep { $_ } map { cleanup($_) } @worklist;
 
+        # Decide to which weights and widths we'll map the standard NFSS codes
+        my $choice = NFSS::map_nfss_codes(@fonts);
+        log_worklist($choice, @worklist);
+
         # Organize the worklist by family, encoding, style, series and shape
         my %fddata;
         for my $item (@worklist) {
@@ -559,10 +563,6 @@ sub main {
             push @{$fddata{$family}{$encoding}{$figurestyle}{$series}{$shape}},
                 [ $minsize, $maxsize, $item->{fontname} ];
         }
-
-        # Decide to which weights and widths we'll map the standard NFSS codes
-        my $choice = NFSS::map_nfss_codes(@fonts);
-        log_worklist($choice, @worklist);
 
         if (!$ARGV{dryrun}) {
             # Create the LaTeX support files
