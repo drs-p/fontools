@@ -208,6 +208,67 @@ my %FIGURESTYLE = (
     },
 );
 
+
+sub get_all_figurestyles {
+    return keys %FIGURESTYLE;
+}
+
+
+sub get_styles {
+    my $figurestyle = shift;
+
+    my $result = $FIGURESTYLE{$figurestyle}{styles} // [];
+
+    return @{$result};
+}
+
+
+sub get_reqd_features {
+    my $what = shift;
+
+    my $result = $FIGURESTYLE{$what}{reqd} // $STYLE{$what}{reqd} // [];
+
+    return @{$result};
+}
+
+
+sub get_nice_features {
+    my $what = shift;
+
+    my $result = $FIGURESTYLE{$what}{nice} // $STYLE{$what}{nice} // [];
+
+    return @{$result};
+}
+
+
+sub get_features {
+    my $what = shift;
+
+    return ( get_reqd_features($what), get_nice_features($what) );
+}
+
+
+sub get_name {
+    my $what = shift;
+
+    return $STYLE{$what}{name} // '';
+}
+
+
+sub get_extra {
+    my $what = shift;
+
+    return $FIGURESTYLE{$what}{extra} // $STYLE{$what}{extra} // '';
+}
+
+
+sub get_fdshape {
+    my ($style, $basicshape) = @_;
+
+    return $STYLE{$style}{code}{$basicshape};
+}
+
+
 # --------------------------------------------------------------------------
 #   Processes the command-line options. This is split into a number
 #   of smaller steps, that each process a group of related options.
@@ -398,6 +459,31 @@ END_WARNING_SPACES_IN_PATHS
     return;
 }
 
+
+# --------------------------------------------------------------------------
+#   Processes the -inferiors=auto option, given a list of fonts.
+#   We look through these fonts and simply pick the very first
+#   type of inferiors we see (we assume that this type is supported
+#   by all fonts in this family).
+# --------------------------------------------------------------------------
+sub choose_inferiors {
+    FONT:
+    for my $font (@_) {
+        for my $inf (qw(subs sinf dnom)) {
+            if (exists $font->{feature}{$inf}) {
+                $ARGV{inferiors} = $inf;
+                $FIGURESTYLE{Inf}{reqd} = [$inf];
+                last FONT;
+            }
+        }
+    }
+
+    # If we didn't find any inferior figures, delete the 'Inf' entry
+    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
+    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
+}
+
+
 ############################################################################
 
 
@@ -439,7 +525,7 @@ sub main {
         # since we need to know which inferior figures this font supports,
         # we have to do the font info parsing first.
         if ($ARGV{inferiors} eq 'auto') {
-            ARGV::choose_inferiors(@fonts);
+            Autoinst::choose_inferiors(@fonts);
         }
 
         # Figure out which styles and encodings to generate.
@@ -507,8 +593,10 @@ sub expand_figurestyles {
     my $font = $workitem->{font};
 
     my @results;
-    while (my ($figurestyle, $table) = each %FIGURESTYLE) {
-        if (has_all_reqd($font, $table)) {
+    for my $figurestyle (Autoinst::get_all_figurestyles()) {
+        my @reqd = Autoinst::get_reqd_features($figurestyle);
+        my $ok = !( grep { !$font->has_feature($_) } @reqd );
+        if ($ok) {
             my %new_workitem = %{$workitem};
             $new_workitem{figurestyle} = $figurestyle;
             push @results, \%new_workitem;
@@ -520,20 +608,6 @@ sub expand_figurestyles {
 
 
 # --------------------------------------------------------------------------
-#   Checks if $font has all features from the 'reqd' table of $target.
-# --------------------------------------------------------------------------
-sub has_all_reqd {
-    my ($font, $target) = @_;
-
-    return 0 unless defined $target;
-    for my $prereq (@{$target->{reqd}}) {
-        return 0 if !$font->{feature}{$prereq};
-    }
-    return 1;
-}
-
-
-# --------------------------------------------------------------------------
 #   Determines which styles to create for the given work item;
 #   returns a list of new work items, one for each style.
 # --------------------------------------------------------------------------
@@ -541,12 +615,13 @@ sub expand_styles {
     my $workitem = shift;
 
     my ($font, $figurestyle) = @{$workitem}{qw(font figurestyle)};
-    my @styles = @{$FIGURESTYLE{$figurestyle}{styles}};
 
     my @results;
-    for my $style (@styles) {
-        my $table = $STYLE{$style};
-        if (has_some_reqd($font, $table)) {
+    for my $style (Autoinst::get_styles($figurestyle)) {
+        my @reqd = Autoinst::get_reqd_features($style);
+        my $ok = (scalar @reqd == 0)
+                 || grep { $font->has_feature($_) } @reqd;
+        if ($ok) {
             my %new_workitem = %{$workitem};
             $new_workitem{style} = $style;
             push @results, \%new_workitem;
@@ -554,19 +629,6 @@ sub expand_styles {
     }
 
     return @results;
-}
-
-
-# --------------------------------------------------------------------------
-#   Checks if $font has at least one of the features from the 'reqd' table
-#   in $target.
-# --------------------------------------------------------------------------
-sub has_some_reqd {
-    my ($font, $target) = @_;
-
-    return 0 unless defined $target->{code}{$font->{basicshape}};
-    return 1 unless @{$target->{reqd}};
-    return grep { $font->{feature}{$_} } @{$target->{reqd}};
 }
 
 
@@ -616,21 +678,20 @@ sub cleanup {
     }
 
     # generate unique name for this font
-    $workitem->{fontname} = join '-', grep { $_ } $font->{name},
-                                                  lc $figurestyle,
-                                                  lc $STYLE{$style}{name},
-                                                  lc $encoding;
+    $workitem->{fontname}
+            = join '-', grep { $_ } $font->{name},
+                                    lc $figurestyle,
+                                    lc Autoinst::get_name($style),
+                                    lc $encoding;
 
     # look up NFSS code for font's shape
-    $workitem->{fdshape} = $STYLE{$style}{code}{$font->{basicshape}};
+    $workitem->{fdshape} = Autoinst::get_fdshape($style, $font->{basicshape});
 
     # compile list of OpenType features to use with this font
     my %feature = map { ($_ => 1) }
-                        grep { $font->{feature}{$_} }
-                             ( @{$FIGURESTYLE{$figurestyle}{reqd}},
-                               @{$FIGURESTYLE{$figurestyle}{nice}},
-                               @{$STYLE{$style}{reqd}},
-                               @{$STYLE{$style}{nice}} );
+                        grep { $font->has_feature($_) }
+                             ( Autoinst::get_features($figurestyle),
+                               Autoinst::get_features($style) );
     if ($feature{lnum} && $feature{onum}) {
         delete $feature{lnum};
     }
@@ -693,7 +754,7 @@ I'm using the following options:
     oldstyle:           @{[ $ARGV{oldstyle}     ? 'yes'     : 'no'     ]}
     proportional:       @{[ $ARGV{proportional} ? 'yes'     : 'no'     ]}
     tabular:            @{[ $ARGV{tabular}      ? 'yes'     : 'no'     ]}
-    ts1:                @{[ $STYLE{textcomp}    ? 'yes'     : 'no'     ]}
+    ts1:                @{[ $ARGV{textcomp}     ? 'yes'     : 'no'     ]}
     smallcaps:          @{[ $ARGV{smallcaps}    ? 'yes'     : 'no'     ]}
     swash:              @{[ $ARGV{swash}        ? 'yes'     : 'no'     ]}
     titling:            @{[ $ARGV{titling}      ? 'yes'     : 'no'     ]}
@@ -896,8 +957,8 @@ sub make_cmdline {
                             '--ligkern="ff i =: ffi"',
                             '--ligkern="ff l =: ffl"' )
                         : ''),
-                     $FIGURESTYLE{$item->{figurestyle}}{extra},
-                     $STYLE{$item->{style}}{extra},
+                     Autoinst::get_extra($item->{figurestyle}),
+                     Autoinst::get_extra($item->{style}),
                      $ARGV{extra},
                      qq("$item->{font}{filename}"),
                      $item->{fontname},
@@ -1121,30 +1182,6 @@ sub parse_options {
 }
 
 
-# --------------------------------------------------------------------------
-#   Processes the -inferiors=auto option, given a list of fonts.
-#   We look through these fonts and simply pick the very first
-#   type of inferiors we see (we assume that this type is supported
-#   by all fonts in this family).
-# --------------------------------------------------------------------------
-sub choose_inferiors {
-    FONT:
-    for my $font (@_) {
-        for my $inf (qw(subs sinf dnom)) {
-            if (exists $font->{feature}{$inf}) {
-                $ARGV{inferiors} = $inf;
-                $FIGURESTYLE{Inf}{reqd} = [$inf];
-                last FONT;
-            }
-        }
-    }
-
-    # If we didn't find any inferior figures, delete the 'Inf' entry
-    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
-}
-
-
 ############################################################################
 
 
@@ -1259,6 +1296,13 @@ sub new {
     };
 
     return bless $self, $cls;
+}
+
+
+sub has_feature {
+    my ($self, $feat) = @_;
+
+    return exists $self->{feature}{$feat};
 }
 
 
