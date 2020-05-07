@@ -48,16 +48,54 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 
-# --------------------------------------------------------------------------
-#   The main routine; this drives everything.
-# --------------------------------------------------------------------------
+=begin Architecture
+
+----------------------------------------------------------------------------
+
+    Autoinst is built as a number of packages:
+
+        main        Contains just the main() routine.
+
+        Options     Parses the command-line options.
+                    Note that the *processing* of the user's choices
+                    is mostly delegated to the `Tables` package,
+                    since this processing involves adapting the tables.
+
+        Log         Logs the font parsing and creation process.
+
+        Font        Code for getting font info. Contains two subpackages:
+
+                    Font::Raw       Gets 'raw' data from font files.
+                    Font::Info      Extracts font info from raw data.
+
+        Tables      Contains tables that drive the font creation process
+                    (especially the decisions which files to create).
+
+        Work        Generates all font files, driven by data from `Tables`.
+
+        NFSS        Contains tables and routines that map
+                    font characteristics (weight, width, shape)
+                    to NFSS attributes.
+
+        LaTeX       Creates LaTeX support (.sty and .fd files).
+
+        Otftotfm    Drives `otftotfm` to actually generate the fonts.
+
+        Util        A few utility functions.
+
+----------------------------------------------------------------------------
+
+=end Architecture
+
+=cut
+
+
 sub main {
     print "autoinst, version $VERSION\n";
 
     Options::parse_options();
     Tables::process_options();
 
-    # Parse fonts and organize resulting info by family.
     my %fontfamily;
     for my $fontfile (@ARGV) {
         my $font = Font::get_fontinfo($fontfile);
@@ -85,153 +123,17 @@ sub main {
         my @worklist = Work::generate_worklist(@fonts);
         $log->log_worklist(@worklist);
 
-        my $targetdirs = get_targetdirs($family, @fonts);
-        my @commands = map { create_command($targetdirs, $_) } @worklist;
+        my $targetdirs = Otftotfm::get_targetdirs($family, @fonts);
+        my @commands = map { Otftotfm::create_command($targetdirs, $_) }
+                           @worklist;
         $log->log_commands(@commands) if $ARGV{verbose} >= 1;
 
         if (!$ARGV{dryrun}) {
             LaTeX::create_support_files($family, $nfss_mapping, @worklist);
-            run_commands($log, $family, @commands);
+            Otftotfm::run_commands($log, $family, @commands);
         }
 
         $log->close();
-    }
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns a string with all "directory" options for otftotfm set.
-#   Also creates directories that don't exist yet.
-# --------------------------------------------------------------------------
-sub get_targetdirs {
-    my ($family, @fonts) = @_;
-
-    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
-
-    my @filetypes = qw(tfm vf);
-    if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
-    if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
-
-    my %dir = map { ( $_ => File::Spec->catdir(
-                            $ARGV{target},
-                            'fonts',
-                            $_,
-                            $ARGV{vendor},
-                            $ARGV{typeface} || $family) )
-                  }
-                  @filetypes;
-
-    $dir{$_}
-        = File::Spec->catdir(
-            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
-        for qw(enc map);
-
-    File::Path::make_path(values %dir) unless $ARGV{dryrun};
-
-    my $result
-        = join q{ },
-               map { qq(--${_}-directory="$dir{$_}") }
-                   @filetypes;
-    $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
-               . File::Spec->catfile($dir{map}, "$family.map")
-               . '"';
-
-    return $result;
-}
-
-
-# The official names for various coding schemes.
-my %SCHEME = (
-    fontools_ot1 => 'TEX TEXT',
-    fontools_t1  => 'EXTENDED TEX FONT ENCODING - LATIN',
-    fontools_ts1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
-    fontools_ly1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
-    fontools_lgr => 'GREEK FONT ENCODING - LGR',
-    fontools_t2a => 'TEX CYRILLIC FONT ENCODING - T2A',
-    fontools_t2b => 'TEX CYRILLIC FONT ENCODING - T2B',
-    fontools_t2c => 'TEX CYRILLIC FONT ENCODING - T2C',
-    fontools_t3  => 'TEX IPA ENCODING',
-    fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
-);
-
-# --------------------------------------------------------------------------
-#   Generates a command for otftotfm from a work item.
-# --------------------------------------------------------------------------
-sub create_command {
-    my ($targetdirs, $item) = @_;
-
-    if (!$ARGV{ligatures}) {
-        @{$item->{features}} = grep { $_ ne 'liga' } @{$item->{features}};
-    }
-    return join ' ', 'otftotfm',
-                     ($ARGV{manual} ? '--pl' : '--automatic'),
-                     "--encoding=$item->{enc_file}",
-                     $targetdirs,
-                     '--no-updmap',
-                     ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
-                        ? '--no-type1'
-                        : ''),
-                     ($SCHEME{$item->{enc_file}}
-                        ? qq(--coding-scheme="$SCHEME{$item->{enc_file}}")
-                        : ''),
-                     (map { "--feature=$_" } @{$item->{features}}),
-                     ($ARGV{ligatures}
-                        ? ( '--ligkern="f i =: fi"',
-                            '--ligkern="f l =: fl"',
-                            '--ligkern="f f =: ff"',
-                            '--ligkern="ff i =: ffi"',
-                            '--ligkern="ff l =: ffl"' )
-                        : ''),
-                     Tables::get_extra($item->{figurestyle}),
-                     Tables::get_extra($item->{style}),
-                     $ARGV{extra},
-                     qq("$item->{font}{filename}"),
-                     $item->{fontname},
-                     ;
-}
-
-
-# --------------------------------------------------------------------------
-#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
-# --------------------------------------------------------------------------
-sub run_commands {
-    my ($log, $family, @commands) = @_;
-
-    # Make sure the last command *does* call updmap.
-    $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
-
-    if ($ARGV{manual}) {
-        open my $BAT, '>', 'autoinst.bat'
-            or die "[ERROR]     Can't create 'autoinst.bat': $!";
-        print {$BAT} "$_\n" for @commands;
-        close $BAT;
-    }
-    else {
-        my $oops = 0;
-        $| = 1;     # turn on autoflush, to make a poor man's progress bar
-        print "[INFO]      Generating fonts for $family ";
-        for my $command (@commands) {
-            print '.';
-            open my $otftotfm, '-|', "$command 2>&1"
-                or die "could not fork(): $!";
-            my $msgs = do { local $/; <$otftotfm> };
-            close $otftotfm
-                or do {
-                    warn "\n$command\n\n$msgs\n";
-                    $log->log("\n$command\n\n$msgs\n");
-                    $oops = 1;
-                };
-        }
-        print "\n";
-        $| = 0;
-        if ($oops) {
-            warn <<"END_OTFTOTFM_WARNING";
-[ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
-            please check the messages above and in the log file.
-END_OTFTOTFM_WARNING
-        }
     }
 
     return;
@@ -1864,6 +1766,148 @@ sub parse_options {
     if (!@ARGV) {
         die "$USAGE\n"
             . "[ERROR]     No font arguments given, nothing to do!\n";
+    }
+
+    return;
+}
+
+
+############################################################################
+
+
+package Otftotfm;
+
+# --------------------------------------------------------------------------
+#   Returns a string with all "directory" options for otftotfm set.
+#   Also creates directories that don't exist yet.
+# --------------------------------------------------------------------------
+sub get_targetdirs {
+    my ($family, @fonts) = @_;
+
+    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
+
+    my @filetypes = qw(tfm vf);
+    if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
+    if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
+
+    my %dir = map { ( $_ => File::Spec->catdir(
+                            $ARGV{target},
+                            'fonts',
+                            $_,
+                            $ARGV{vendor},
+                            $ARGV{typeface} || $family) )
+                  }
+                  @filetypes;
+
+    $dir{$_}
+        = File::Spec->catdir(
+            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
+        for qw(enc map);
+
+    File::Path::make_path(values %dir) unless $ARGV{dryrun};
+
+    my $result
+        = join q{ },
+               map { qq(--${_}-directory="$dir{$_}") }
+                   @filetypes;
+    $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
+               . File::Spec->catfile($dir{map}, "$family.map")
+               . '"';
+
+    return $result;
+}
+
+
+# The official names for various coding schemes.
+my %SCHEME = (
+    fontools_ot1 => 'TEX TEXT',
+    fontools_t1  => 'EXTENDED TEX FONT ENCODING - LATIN',
+    fontools_ts1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
+    fontools_ly1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
+    fontools_lgr => 'GREEK FONT ENCODING - LGR',
+    fontools_t2a => 'TEX CYRILLIC FONT ENCODING - T2A',
+    fontools_t2b => 'TEX CYRILLIC FONT ENCODING - T2B',
+    fontools_t2c => 'TEX CYRILLIC FONT ENCODING - T2C',
+    fontools_t3  => 'TEX IPA ENCODING',
+    fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
+);
+
+# --------------------------------------------------------------------------
+#   Generates a command for otftotfm from a work item.
+# --------------------------------------------------------------------------
+sub create_command {
+    my ($targetdirs, $item) = @_;
+
+    if (!$ARGV{ligatures}) {
+        @{$item->{features}} = grep { $_ ne 'liga' } @{$item->{features}};
+    }
+    return join ' ', 'otftotfm',
+                     ($ARGV{manual} ? '--pl' : '--automatic'),
+                     "--encoding=$item->{enc_file}",
+                     $targetdirs,
+                     '--no-updmap',
+                     ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
+                        ? '--no-type1'
+                        : ''),
+                     ($SCHEME{$item->{enc_file}}
+                        ? qq(--coding-scheme="$SCHEME{$item->{enc_file}}")
+                        : ''),
+                     (map { "--feature=$_" } @{$item->{features}}),
+                     ($ARGV{ligatures}
+                        ? ( '--ligkern="f i =: fi"',
+                            '--ligkern="f l =: fl"',
+                            '--ligkern="f f =: ff"',
+                            '--ligkern="ff i =: ffi"',
+                            '--ligkern="ff l =: ffl"' )
+                        : ''),
+                     Tables::get_extra($item->{figurestyle}),
+                     Tables::get_extra($item->{style}),
+                     $ARGV{extra},
+                     qq("$item->{font}{filename}"),
+                     $item->{fontname},
+                     ;
+}
+
+
+# --------------------------------------------------------------------------
+#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
+# --------------------------------------------------------------------------
+sub run_commands {
+    my ($log, $family, @commands) = @_;
+
+    # Make sure the last command *does* call updmap.
+    $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
+
+    if ($ARGV{manual}) {
+        open my $BAT, '>', 'autoinst.bat'
+            or die "[ERROR]     Can't create 'autoinst.bat': $!";
+        print {$BAT} "$_\n" for @commands;
+        close $BAT;
+    }
+    else {
+        my $oops = 0;
+        $| = 1;     # turn on autoflush, to make a poor man's progress bar
+        print "[INFO]      Generating fonts for $family ";
+        for my $command (@commands) {
+            print '.';
+            open my $otftotfm, '-|', "$command 2>&1"
+                or die "could not fork(): $!";
+            my $msgs = do { local $/; <$otftotfm> };
+            close $otftotfm
+                or do {
+                    warn "\n$command\n\n$msgs\n";
+                    $log->log("\n$command\n\n$msgs\n");
+                    $oops = 1;
+                };
+        }
+        print "\n";
+        $| = 0;
+        if ($oops) {
+            warn <<"END_OTFTOTFM_WARNING";
+[ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
+            please check the messages above and in the log file.
+END_OTFTOTFM_WARNING
+        }
     }
 
     return;
