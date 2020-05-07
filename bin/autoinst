@@ -126,7 +126,6 @@ sub main {
         }
 
         close $log;
-        print "\n";
     }
 
     return;
@@ -216,8 +215,8 @@ sub cleanup {
     my ($font, $figurestyle, $style, $encoding)
         = @{$workitem}{qw(font figurestyle style encoding)};
 
-    # don't generate smallcaps version of TS1-encoded fonts,
-    # as these contain the same glyphs as the regular version
+    # Don't generate smallcaps version of TS1-encoded fonts,
+    # as these contain the same glyphs as the regular version.
     if ($font->{is_smallcaps}) {
         if ($style eq 'textcomp') {
             return;
@@ -227,7 +226,7 @@ sub cleanup {
         }
     }
 
-    # generate unique name for this font
+    # Generate unique name for this font.
     $workitem->{fontname}
             = join '-', grep { $_ } $font->{name},
                                     lc $figurestyle,
@@ -237,7 +236,7 @@ sub cleanup {
     # look up NFSS code for font's shape
     $workitem->{fdshape} = Autoinst::get_fdshape($style, $font->{basicshape});
 
-    # compile list of OpenType features to use with this font
+    # Compile list of OpenType features to use with this font.
     my %feature = map { ($_ => 1) }
                         grep { $font->has_feature($_) }
                              ( Autoinst::get_features($figurestyle),
@@ -247,7 +246,7 @@ sub cleanup {
     }
     $workitem->{features} = [ sort keys %feature ];
 
-    # add finishing touches to name and NFSS code of encoding
+    # Add finishing touches to name and NFSS code of encoding.
     my $try = Cwd::abs_path($workitem->{encoding});
     $try .= '.enc' if $try !~ m/[.]enc\z/xms;
     if (-e $try) {
@@ -312,6 +311,7 @@ END_OTFTOTFM_WARNING
     return;
 }
 
+
 # The official names for various coding schemes
 my %SCHEME = (
     fontools_ot1 => 'TEX TEXT',
@@ -325,7 +325,6 @@ my %SCHEME = (
     fontools_t3  => 'TEX IPA ENCODING',
     fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
 );
-
 
 # --------------------------------------------------------------------------
 #   Generates a command line for otftotfm from a work item.
@@ -363,6 +362,7 @@ sub make_cmdline {
                      ;
 }
 
+
 #-----------------------------------------------------------------------
 #   Returns a string with all "directory" options for otftotfm set.
 #   Also creates directories that don't exist yet.
@@ -379,15 +379,12 @@ sub set_targetdirs {
                    :                      qw(type1 truetype)
                    ;
 
-    my %dir = map { (
-                        $_ => File::Spec->catdir(
+    my %dir = map { ( $_ => File::Spec->catdir(
                             $ARGV{target},
                             'fonts',
                             $_,
                             $ARGV{vendor},
-                            $ARGV{typeface} || $family
-                        )
-                    )
+                            $ARGV{typeface} || $family) )
                   }
                   @FILETYPES;
 
@@ -398,10 +395,13 @@ sub set_targetdirs {
 
     File::Path::make_path(values %dir) unless $ARGV{dryrun};
 
-    my $result = join ' ', map { qq(--${_}-directory="$dir{$_}") } @FILETYPES;
+    my $result
+        = join q{ },
+               map { qq(--${_}-directory="$dir{$_}") }
+                   @FILETYPES;
     $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
-                . File::Spec->catfile($dir{map}, "$family.map")
-                . '"';
+               . File::Spec->catfile($dir{map}, "$family.map")
+               . '"';
 
     return $result;
 }
@@ -1044,8 +1044,9 @@ sub choose_inferiors {
         }
     }
 
-    # If we didn't find any inferior figures, delete the 'Inf' entry
-    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
+    # If we didn't find any inferior figures,
+    # delete the 'Inf' entry from the %FIGURESTYLE table
+    # to indicate we don't want to generate this style.
     delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
@@ -1405,7 +1406,6 @@ sub process_nfss_classification {
 
 package Font::Raw;
 
-
 # --------------------------------------------------------------------------
 #   Returns the output of otfinfo -i as a list of key-value pairs.
 # --------------------------------------------------------------------------
@@ -1528,22 +1528,14 @@ sub get_nfss_classification {
 
 package LaTeX;
 
-=begin Comment
-
-    The SSUB_SHAPE table is used to generate extra ssub rules in .fd files
-    to map missing Slanted shapes to Italic and vice versa.
-
-=end Comment
-
-=cut
-
+# This table is used to generate extra ssub rules in .fd files
+# to map missing Slanted shapes to Italic and vice versa.
 my %SSUB_SHAPE = (
     sl      =>  'it',
     scsl    =>  'scit',
     it      =>  'sl',
     scit    =>  'scsl',
 );
-
 
 #-----------------------------------------------------------------------
 # Create a LaTeX style file
@@ -1738,6 +1730,7 @@ END_STYLE_REST
     return;
 }
 
+
 #-----------------------------------------------------------------------
 # Walk a nested dictionary, return lookup table with all keys
 #-----------------------------------------------------------------------
@@ -1752,6 +1745,7 @@ sub get_keys {
 
     return $seen;
 }
+
 
 #-----------------------------------------------------------------------
 # Create a .fd file for NFSS
@@ -1883,7 +1877,8 @@ END_SSUB_BX
 
 package Log;
 
-
+# --------------------------------------------------------------------------
+#   Creates the log file and logs the command line options.
 # --------------------------------------------------------------------------
 sub create_logfile {
     if (-e $ARGV{logfile}) {
