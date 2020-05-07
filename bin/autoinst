@@ -48,452 +48,9 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 
-package Autoinst;
-
-=begin Comment
-
-    The %STYLE table is used in deciding which font styles
-    (normal, small caps, swash or textcomp) to generate.
-
-    Each key in this table names a style; the corresponding value
-    is an anonymous hash with several key/value pairs:
-        code    An anonymous hash with three possible keys:
-                'n'  -> the NFSS code to use for this variant shape
-                        if the 'basic shape' is upright;
-                'it' -> the NFSS code to use for this variant shape
-                        if the 'basic shape' is italic
-                'sl' -> the NFSS code to use for this variant shape
-                        if the 'basic shape' is slanted (aka oblique);
-                If any entry is missing, the corresponding version
-                of this variant style will not be built.
-        reqd    A list of required OpenType features;
-                this style is built if the font supports at least *one*
-                of these features.
-        nice    A list of optional OpenType features;
-                these are used if the font supports them, but don't
-                prevent this style from being built when missing.
-        extra   Extra options passed to otftotfm when creating this style.
-        name    A string added to the name of the generated font,
-                to make it unique.
-
-    Textcomp is treated as a 'style' even though it is technically
-    an encoding; that is just the easiest way to do things.
-
-=end Comment
-
-=cut
-
-my %STYLE = (
-    normal => {
-        code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [ ],
-        nice  => [ 'kern', 'liga' ],
-        extra => '',
-        name  => '',
-    },
-    smallcaps => {
-        code  => { n => 'sc', it => 'scit', sl => 'scsl' },
-        reqd  => [ 'smcp' ],
-        nice  => [ 'kern', 'liga' ],
-        extra => '--unicoding="germandbls =: SSsmall"',
-        name  => 'sc',
-    },
-    # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
-    # comes last in the command line; else 'aalt' might be overridden
-    swash => {
-        code  => { n => 'nw', it => 'sw' },
-        reqd  => [ 'swsh' ],
-        nice  => [ 'kern', 'liga', 'dlig' ],
-        extra => '--include-alternates="*.swash" --feature=aalt',
-        name  => 'swash',
-    },
-    textcomp => {
-        code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [ ],
-        nice  => [ 'onum' ],
-        extra => '',
-        name  => '',
-    },
-);
-
-=begin Comment
-
-    The %FIGURESTYLE table is used in deciding which figure styles to generate.
-    Each figure style (lining, oldstyle, tabular, proportional, superior,
-    inferior etc.) becomes a separate font family. We also treat Ornaments
-    as a figure style here; that's just the easiest way to handle them.
-
-    Each key in this table names a figure style; the corresponding
-    value is an anonymous hash with four key/value pairs:
-        reqd    A list of required OpenType features; this style is built
-                if the font supports *all* these features.
-        nice    A list of optional OpenType features;
-                these are used if the font supports them, but don't
-                prevent this style from being built when missing.
-        extra   Extra options passed to otftotfm when creating this style.
-        style   An anonymous array of 'variant' styles to build with
-                this figure style.
-
-    The 'reqd' and 'nice' subtables for the TLF, LF, TOsF and OsF styles
-    are empty; these are filled in at run time, depending on
-    which figure style is default for the current font.
-
-    The 'reqd' subtable for the Inf style is also empty; this may be filled
-    with 'subs', 'sinf' or 'dnom' depending on the -inferiors options.
-
-=end Comment
-
-=cut
-
-my %FIGURESTYLE = (
-    TLF => {
-        reqd   => [ ],
-        nice   => [ ],
-        extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
-    },
-    LF => {
-        reqd   => [ ],
-        nice   => [ ],
-        extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
-    },
-    TOsF => {
-        reqd   => [ ],
-        nice   => [ ],
-        extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
-    },
-    OsF => {
-        reqd   => [ ],
-        nice   => [ ],
-        extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
-    },
-    Sup => {
-        reqd   => [ 'sups' ],
-        nice   => [ ],
-        extra  => '--ligkern="* {KL} *"',
-        styles => [ 'normal' ],
-    },
-    Inf => {
-        reqd   => [ ],
-        nice   => [ ],
-        extra  => '--ligkern="* {KL} *"',
-        styles => [ 'normal' ],
-    },
-    Numr => {
-        reqd   => [ 'numr'],
-        nice   => [ ],
-        extra  => '--ligkern="* {KL} *"',
-        styles => [ 'normal' ],
-    },
-    Dnom => {
-        reqd   => [ 'dnom' ],
-        nice   => [ ],
-        extra  => '--ligkern="* {KL} *"',
-        styles => [ 'normal' ],
-    },
-    Titl => {
-        reqd   => [ 'titl' ],
-        nice   => [ 'kern', 'liga' ],
-        extra  => '',
-        styles => [ 'normal' ],
-    },
-    Orn => {
-        reqd   => [ 'ornm' ],
-        nice   => [ ],
-        extra  => '--ligkern="* {KL} *"',
-        styles => [ 'normal' ],
-    },
-);
-
-
-sub get_all_figurestyles {
-    return keys %FIGURESTYLE;
-}
-
-
-sub get_styles {
-    my $figurestyle = shift;
-
-    my $result = $FIGURESTYLE{$figurestyle}{styles} // [];
-
-    return @{$result};
-}
-
-
-sub get_reqd_features {
-    my $what = shift;
-
-    my $result = $FIGURESTYLE{$what}{reqd} // $STYLE{$what}{reqd} // [];
-
-    return @{$result};
-}
-
-
-sub get_nice_features {
-    my $what = shift;
-
-    my $result = $FIGURESTYLE{$what}{nice} // $STYLE{$what}{nice} // [];
-
-    return @{$result};
-}
-
-
-sub get_features {
-    my $what = shift;
-
-    return ( get_reqd_features($what), get_nice_features($what) );
-}
-
-
-sub get_name {
-    my $what = shift;
-
-    return $STYLE{$what}{name} // '';
-}
-
-
-sub get_extra {
-    my $what = shift;
-
-    return $FIGURESTYLE{$what}{extra} // $STYLE{$what}{extra} // '';
-}
-
-
-sub get_fdshape {
-    my ($style, $basicshape) = @_;
-
-    return $STYLE{$style}{code}{$basicshape};
-}
-
-
 # --------------------------------------------------------------------------
-#   Processes the command-line options. This is split into a number
-#   of smaller steps, that each process a group of related options.
+#
 # --------------------------------------------------------------------------
-sub process_options {
-    process_styles_options();
-    process_encoding_options();
-    process_target_options();
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes all options that select or deselect styles.
-# --------------------------------------------------------------------------
-sub process_styles_options {
-    delete $STYLE{smallcaps}           unless $ARGV{smallcaps};
-    delete $STYLE{swash}               unless $ARGV{swash};
-
-    delete $FIGURESTYLE{Titl}          unless $ARGV{titling};
-    delete $FIGURESTYLE{Sup}           unless $ARGV{superiors};
-    delete $FIGURESTYLE{Orn}           unless $ARGV{ornaments};
-    delete @FIGURESTYLE{qw(Numr Dnom)} unless $ARGV{fractions};
-    $ARGV{inferiors} ||= 'auto';
-    if    ($ARGV{inferiors} eq 'none') { delete $FIGURESTYLE{Inf} }
-    elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
-    elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
-    elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
-    elsif ($ARGV{inferiors} eq 'dnom') { $FIGURESTYLE{Inf}{reqd} = ['dnom'] }
-    else  {
-        # Apparently we mistook the first argument (font name) for
-        # an optional argument to -inferiors; let's undo that.
-        unshift @ARGV, $ARGV{inferiors};
-        $ARGV{inferiors} = 'auto';
-        $FIGURESTYLE{Inf}{reqd} = ['auto'];
-    }
-
-    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
-    if ($ARGV{fig_height} eq 'lnum') {
-            push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
-        }
-    if ($ARGV{fig_height} eq 'onum') {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'onum';
-        }
-    if ($ARGV{fig_width} eq 'tnum') {
-            push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
-        }
-    if ($ARGV{fig_width} eq 'pnum') {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
-        }
-
-    delete @FIGURESTYLE{qw(LF TLF)}    unless $ARGV{lining};
-    delete @FIGURESTYLE{qw(OsF TOsF)}  unless $ARGV{oldstyle};
-    delete @FIGURESTYLE{qw(LF OsF)}    unless $ARGV{proportional};
-    delete @FIGURESTYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
-
-    if (!$ARGV{figurekern}) {
-        my @digits = qw(zero one two three four five six seven eight nine);
-        my $tkern
-            = join ' ', map { my $left = $_;
-                              map { qq(--ligkern="$left {} $_") } @digits
-                            }
-                            @digits;
-
-        $FIGURESTYLE{TLF}{extra}  = $tkern;
-        $FIGURESTYLE{TOsF}{extra} = $tkern;
-    }
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the options for selecting encodings.
-# --------------------------------------------------------------------------
-sub process_encoding_options {
-
-    # All specified encodings should either be built-in,
-    # or have an accompanying .enc file in the current directory.
-    $ARGV{encoding} =~ s/\s+//xmsg;
-    my @encodings = split /,/, $ARGV{encoding};
-    for my $enc (@encodings) {
-        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
-            my $try = Cwd::abs_path($enc);
-            $try .= '.enc' if $try !~ m/[.]enc\z/xms;
-            if (!-e $try) {
-                die "[ERROR]     No .enc file found for '$enc'";
-            }
-        }
-    }
-    my @textencodings = grep { $_ !~ m/TS1/xmsi } @encodings;
-    $ARGV{encoding} = \@textencodings;
-
-    # TS1-encoded fonts are generated if:
-    # - the user explicitly asked for TS1, or
-    # - the text encodings contain T1 and the user didn't turn off TS1
-    if ($ARGV{textcomp} == 1
-            or ($ARGV{textcomp} >= 1
-                and grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}})) {
-        $ARGV{textcomp} = 1;
-    }
-    else {
-        delete $STYLE{textcomp};
-    }
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the options related to the target TEXMF directory.
-# --------------------------------------------------------------------------
-sub process_target_options{
-
-    my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
-    if ($ARGV{manual}) {
-        warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
-            if $ARGV{target};
-        $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
-    }
-    elsif ($ARGV{target}) {
-        $ARGV{updmap} = 0;
-        warn <<"END_WARNING_TARGET_UPDMAP";
-[WARNING]   The '-target' option may interfere with kpathsea and updmap;
-            automatic calling of updmap has been disabled.
-            Please call updmap manually.
-END_WARNING_TARGET_UPDMAP
-    }
-    elsif (!$ARGV{target}) {
-        my $is_windows_os = ( $^O =~ /^MSWin/i );
-        my $kpsepath = $is_windows_os
-            ? eval { qx( kpsewhich -expand-var=\$TEXMFLOCAL;\$TEXMFHOME ) }
-            : eval { qx( kpsewhich -expand-var='\$TEXMFLOCAL:\$TEXMFHOME' ) }
-            ;
-        if (!$kpsepath) {
-            warn <<"END_WARNING_KPSEWHICH";
-[WARNING]   Call to "kpsewhich" failed.
-            Maybe your TeX system doesn't use the kpathsea library?
-
-            Consider using the "-target" command line option
-            to specify a TEXMF tree where autoinst should install all files.
-END_WARNING_KPSEWHICH
-        }
-        else {
-            my $pathsep = $is_windows_os ? ';' : ':';
-            for my $dir ( split m/$pathsep/xms, substr $kpsepath, 0, -1 ) {
-                if (-w $dir) { $ARGV{target} = $dir; last }
-                if (-e $dir) { next }
-                my $par = File::Spec->catdir( $dir, File::Spec->updir() );
-                if (-w $par) { $ARGV{target} = $dir; last }
-            }
-        }
-    }
-
-    if (!$ARGV{target}) {
-        $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
-        warn <<"END_WARNING_DUMPING_FILES";
-[WARNING]   No user-writable TEXMF-tree found!
-
-            I'm putting all generated files in "$ARGV{target}".
-
-            Please install these files into a suitable TEXMF directory,
-            update the filename database and run 'updmap' (or similar);
-            see your TeX installation's documentation.
-END_WARNING_DUMPING_FILES
-    }
-
-    if ($ARGV{target} =~ m/[ ]/xms) {
-        warn <<"END_WARNING_SPACES_IN_PATHS";
-[WARNING]   The pathname of your target directory contains spaces:
-                "$ARGV{target}"
-            If you experience any problems, try re-running autoinst
-            on a target directory without spaces in its name.
-END_WARNING_SPACES_IN_PATHS
-    }
-
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the -inferiors=auto option, given a list of fonts.
-#   We look through these fonts and simply pick the very first
-#   type of inferiors we see (we assume that this type is supported
-#   by all fonts in this family).
-# --------------------------------------------------------------------------
-sub choose_inferiors {
-    FONT:
-    for my $font (@_) {
-        for my $inf (qw(subs sinf dnom)) {
-            if (exists $font->{feature}{$inf}) {
-                $ARGV{inferiors} = $inf;
-                $FIGURESTYLE{Inf}{reqd} = [$inf];
-                last FONT;
-            }
-        }
-    }
-
-    # If we didn't find any inferior figures, delete the 'Inf' entry
-    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
-    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
-}
-
-
-############################################################################
-
-
-package main;
-
-
 sub main {
     print "autoinst, version $VERSION\n";
 
@@ -1183,6 +740,449 @@ sub parse_options {
     }
 
     return;
+}
+
+
+############################################################################
+
+
+package Autoinst;
+
+=begin Comment
+
+    The %STYLE table is used in deciding which font styles
+    (normal, small caps, swash or textcomp) to generate.
+
+    Each key in this table names a style; the corresponding value
+    is an anonymous hash with several key/value pairs:
+        code    An anonymous hash with three possible keys:
+                'n'  -> the NFSS code to use for this variant shape
+                        if the 'basic shape' is upright;
+                'it' -> the NFSS code to use for this variant shape
+                        if the 'basic shape' is italic
+                'sl' -> the NFSS code to use for this variant shape
+                        if the 'basic shape' is slanted (aka oblique);
+                If any entry is missing, the corresponding version
+                of this variant style will not be built.
+        reqd    A list of required OpenType features;
+                this style is built if the font supports at least *one*
+                of these features.
+        nice    A list of optional OpenType features;
+                these are used if the font supports them, but don't
+                prevent this style from being built when missing.
+        extra   Extra options passed to otftotfm when creating this style.
+        name    A string added to the name of the generated font,
+                to make it unique.
+
+    Textcomp is treated as a 'style' even though it is technically
+    an encoding; that is just the easiest way to do things.
+
+=end Comment
+
+=cut
+
+my %STYLE = (
+    normal => {
+        code  => { n => 'n', it => 'it', sl => 'sl' },
+        reqd  => [ ],
+        nice  => [ 'kern', 'liga' ],
+        extra => '',
+        name  => '',
+    },
+    smallcaps => {
+        code  => { n => 'sc', it => 'scit', sl => 'scsl' },
+        reqd  => [ 'smcp' ],
+        nice  => [ 'kern', 'liga' ],
+        extra => '--unicoding="germandbls =: SSsmall"',
+        name  => 'sc',
+    },
+    # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
+    # comes last in the command line; else 'aalt' might be overridden
+    swash => {
+        code  => { n => 'nw', it => 'sw' },
+        reqd  => [ 'swsh' ],
+        nice  => [ 'kern', 'liga', 'dlig' ],
+        extra => '--include-alternates="*.swash" --feature=aalt',
+        name  => 'swash',
+    },
+    textcomp => {
+        code  => { n => 'n', it => 'it', sl => 'sl' },
+        reqd  => [ ],
+        nice  => [ 'onum' ],
+        extra => '',
+        name  => '',
+    },
+);
+
+=begin Comment
+
+    The %FIGURESTYLE table is used in deciding which figure styles to generate.
+    Each figure style (lining, oldstyle, tabular, proportional, superior,
+    inferior etc.) becomes a separate font family. We also treat Ornaments
+    as a figure style here; that's just the easiest way to handle them.
+
+    Each key in this table names a figure style; the corresponding
+    value is an anonymous hash with four key/value pairs:
+        reqd    A list of required OpenType features; this style is built
+                if the font supports *all* these features.
+        nice    A list of optional OpenType features;
+                these are used if the font supports them, but don't
+                prevent this style from being built when missing.
+        extra   Extra options passed to otftotfm when creating this style.
+        style   An anonymous array of 'variant' styles to build with
+                this figure style.
+
+    The 'reqd' and 'nice' subtables for the TLF, LF, TOsF and OsF styles
+    are empty; these are filled in at run time, depending on
+    which figure style is default for the current font.
+
+    The 'reqd' subtable for the Inf style is also empty; this may be filled
+    with 'subs', 'sinf' or 'dnom' depending on the -inferiors options.
+
+=end Comment
+
+=cut
+
+my %FIGURESTYLE = (
+    TLF => {
+        reqd   => [ ],
+        nice   => [ ],
+        extra  => '',
+        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+    },
+    LF => {
+        reqd   => [ ],
+        nice   => [ ],
+        extra  => '',
+        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+    },
+    TOsF => {
+        reqd   => [ ],
+        nice   => [ ],
+        extra  => '',
+        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+    },
+    OsF => {
+        reqd   => [ ],
+        nice   => [ ],
+        extra  => '',
+        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+    },
+    Sup => {
+        reqd   => [ 'sups' ],
+        nice   => [ ],
+        extra  => '--ligkern="* {KL} *"',
+        styles => [ 'normal' ],
+    },
+    Inf => {
+        reqd   => [ ],
+        nice   => [ ],
+        extra  => '--ligkern="* {KL} *"',
+        styles => [ 'normal' ],
+    },
+    Numr => {
+        reqd   => [ 'numr'],
+        nice   => [ ],
+        extra  => '--ligkern="* {KL} *"',
+        styles => [ 'normal' ],
+    },
+    Dnom => {
+        reqd   => [ 'dnom' ],
+        nice   => [ ],
+        extra  => '--ligkern="* {KL} *"',
+        styles => [ 'normal' ],
+    },
+    Titl => {
+        reqd   => [ 'titl' ],
+        nice   => [ 'kern', 'liga' ],
+        extra  => '',
+        styles => [ 'normal' ],
+    },
+    Orn => {
+        reqd   => [ 'ornm' ],
+        nice   => [ ],
+        extra  => '--ligkern="* {KL} *"',
+        styles => [ 'normal' ],
+    },
+);
+
+
+sub get_all_figurestyles {
+    return keys %FIGURESTYLE;
+}
+
+
+sub get_styles {
+    my $figurestyle = shift;
+
+    my $result = $FIGURESTYLE{$figurestyle}{styles} // [];
+
+    return @{$result};
+}
+
+
+sub get_reqd_features {
+    my $what = shift;
+
+    my $result = $FIGURESTYLE{$what}{reqd} // $STYLE{$what}{reqd} // [];
+
+    return @{$result};
+}
+
+
+sub get_nice_features {
+    my $what = shift;
+
+    my $result = $FIGURESTYLE{$what}{nice} // $STYLE{$what}{nice} // [];
+
+    return @{$result};
+}
+
+
+sub get_features {
+    my $what = shift;
+
+    return ( get_reqd_features($what), get_nice_features($what) );
+}
+
+
+sub get_name {
+    my $what = shift;
+
+    return $STYLE{$what}{name} // '';
+}
+
+
+sub get_extra {
+    my $what = shift;
+
+    return $FIGURESTYLE{$what}{extra} // $STYLE{$what}{extra} // '';
+}
+
+
+sub get_fdshape {
+    my ($style, $basicshape) = @_;
+
+    return $STYLE{$style}{code}{$basicshape};
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the command-line options. This is split into a number
+#   of smaller steps, that each process a group of related options.
+# --------------------------------------------------------------------------
+sub process_options {
+    process_styles_options();
+    process_encoding_options();
+    process_target_options();
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes all options that select or deselect styles.
+# --------------------------------------------------------------------------
+sub process_styles_options {
+    delete $STYLE{smallcaps}           unless $ARGV{smallcaps};
+    delete $STYLE{swash}               unless $ARGV{swash};
+
+    delete $FIGURESTYLE{Titl}          unless $ARGV{titling};
+    delete $FIGURESTYLE{Sup}           unless $ARGV{superiors};
+    delete $FIGURESTYLE{Orn}           unless $ARGV{ornaments};
+    delete @FIGURESTYLE{qw(Numr Dnom)} unless $ARGV{fractions};
+    $ARGV{inferiors} ||= 'auto';
+    if    ($ARGV{inferiors} eq 'none') { delete $FIGURESTYLE{Inf} }
+    elsif ($ARGV{inferiors} eq 'auto') { $FIGURESTYLE{Inf}{reqd} = ['auto'] }
+    elsif ($ARGV{inferiors} eq 'subs') { $FIGURESTYLE{Inf}{reqd} = ['subs'] }
+    elsif ($ARGV{inferiors} eq 'sinf') { $FIGURESTYLE{Inf}{reqd} = ['sinf'] }
+    elsif ($ARGV{inferiors} eq 'dnom') { $FIGURESTYLE{Inf}{reqd} = ['dnom'] }
+    else  {
+        # Apparently we mistook the first argument (font name) for
+        # an optional argument to -inferiors; let's undo that.
+        unshift @ARGV, $ARGV{inferiors};
+        $ARGV{inferiors} = 'auto';
+        $FIGURESTYLE{Inf}{reqd} = ['auto'];
+    }
+
+    # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
+    if ($ARGV{fig_height} eq 'lnum') {
+            push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
+            push @{$FIGURESTYLE{LF}{nice}},   'lnum';
+            push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
+            push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
+        }
+    if ($ARGV{fig_height} eq 'onum') {
+            push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
+            push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
+            push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
+            push @{$FIGURESTYLE{OsF}{nice}},  'onum';
+        }
+    if ($ARGV{fig_width} eq 'tnum') {
+            push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
+            push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
+            push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
+            push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
+        }
+    if ($ARGV{fig_width} eq 'pnum') {
+            push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
+            push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
+            push @{$FIGURESTYLE{LF}{nice}},   'pnum';
+            push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
+        }
+
+    delete @FIGURESTYLE{qw(LF TLF)}    unless $ARGV{lining};
+    delete @FIGURESTYLE{qw(OsF TOsF)}  unless $ARGV{oldstyle};
+    delete @FIGURESTYLE{qw(LF OsF)}    unless $ARGV{proportional};
+    delete @FIGURESTYLE{qw(TLF TOsF)}  unless $ARGV{tabular};
+
+    if (!$ARGV{figurekern}) {
+        my @digits = qw(zero one two three four five six seven eight nine);
+        my $tkern
+            = join ' ', map { my $left = $_;
+                              map { qq(--ligkern="$left {} $_") } @digits
+                            }
+                            @digits;
+
+        $FIGURESTYLE{TLF}{extra}  = $tkern;
+        $FIGURESTYLE{TOsF}{extra} = $tkern;
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the options for selecting encodings.
+# --------------------------------------------------------------------------
+sub process_encoding_options {
+
+    # All specified encodings should either be built-in,
+    # or have an accompanying .enc file in the current directory.
+    $ARGV{encoding} =~ s/\s+//xmsg;
+    my @encodings = split /,/, $ARGV{encoding};
+    for my $enc (@encodings) {
+        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
+            my $try = Cwd::abs_path($enc);
+            $try .= '.enc' if $try !~ m/[.]enc\z/xms;
+            if (!-e $try) {
+                die "[ERROR]     No .enc file found for '$enc'";
+            }
+        }
+    }
+    my @textencodings = grep { $_ !~ m/TS1/xmsi } @encodings;
+    $ARGV{encoding} = \@textencodings;
+
+    # TS1-encoded fonts are generated if:
+    # - the user explicitly asked for TS1, or
+    # - the text encodings contain T1 and the user didn't turn off TS1
+    if ($ARGV{textcomp} == 1
+            or ($ARGV{textcomp} >= 1
+                and grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}})) {
+        $ARGV{textcomp} = 1;
+    }
+    else {
+        delete $STYLE{textcomp};
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the options related to the target TEXMF directory.
+# --------------------------------------------------------------------------
+sub process_target_options{
+
+    my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
+    if ($ARGV{manual}) {
+        warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
+            if $ARGV{target};
+        $ARGV{target} = $localtarget;
+        $ARGV{updmap} = 0;
+    }
+    elsif ($ARGV{target}) {
+        $ARGV{updmap} = 0;
+        warn <<"END_WARNING_TARGET_UPDMAP";
+[WARNING]   The '-target' option may interfere with kpathsea and updmap;
+            automatic calling of updmap has been disabled.
+            Please call updmap manually.
+END_WARNING_TARGET_UPDMAP
+    }
+    elsif (!$ARGV{target}) {
+        my $is_windows_os = ( $^O =~ /^MSWin/i );
+        my $kpsepath = $is_windows_os
+            ? eval { qx( kpsewhich -expand-var=\$TEXMFLOCAL;\$TEXMFHOME ) }
+            : eval { qx( kpsewhich -expand-var='\$TEXMFLOCAL:\$TEXMFHOME' ) }
+            ;
+        if (!$kpsepath) {
+            warn <<"END_WARNING_KPSEWHICH";
+[WARNING]   Call to "kpsewhich" failed.
+            Maybe your TeX system doesn't use the kpathsea library?
+
+            Consider using the "-target" command line option
+            to specify a TEXMF tree where autoinst should install all files.
+END_WARNING_KPSEWHICH
+        }
+        else {
+            my $pathsep = $is_windows_os ? ';' : ':';
+            for my $dir ( split m/$pathsep/xms, substr $kpsepath, 0, -1 ) {
+                if (-w $dir) { $ARGV{target} = $dir; last }
+                if (-e $dir) { next }
+                my $par = File::Spec->catdir( $dir, File::Spec->updir() );
+                if (-w $par) { $ARGV{target} = $dir; last }
+            }
+        }
+    }
+
+    if (!$ARGV{target}) {
+        $ARGV{target} = $localtarget;
+        $ARGV{updmap} = 0;
+        warn <<"END_WARNING_DUMPING_FILES";
+[WARNING]   No user-writable TEXMF-tree found!
+
+            I'm putting all generated files in "$ARGV{target}".
+
+            Please install these files into a suitable TEXMF directory,
+            update the filename database and run 'updmap' (or similar);
+            see your TeX installation's documentation.
+END_WARNING_DUMPING_FILES
+    }
+
+    if ($ARGV{target} =~ m/[ ]/xms) {
+        warn <<"END_WARNING_SPACES_IN_PATHS";
+[WARNING]   The pathname of your target directory contains spaces:
+                "$ARGV{target}"
+            If you experience any problems, try re-running autoinst
+            on a target directory without spaces in its name.
+END_WARNING_SPACES_IN_PATHS
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Processes the -inferiors=auto option, given a list of fonts.
+#   We look through these fonts and simply pick the very first
+#   type of inferiors we see (we assume that this type is supported
+#   by all fonts in this family).
+# --------------------------------------------------------------------------
+sub choose_inferiors {
+    FONT:
+    for my $font (@_) {
+        for my $inf (qw(subs sinf dnom)) {
+            if (exists $font->{feature}{$inf}) {
+                $ARGV{inferiors} = $inf;
+                $FIGURESTYLE{Inf}{reqd} = [$inf];
+                last FONT;
+            }
+        }
+    }
+
+    # If we didn't find any inferior figures, delete the 'Inf' entry
+    # from the %FIGURESTYLE table to indicate we don't want to generate this style.
+    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
 }
 
 
