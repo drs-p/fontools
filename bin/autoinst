@@ -55,7 +55,7 @@ sub main {
     print "autoinst, version $VERSION\n";
 
     # Parse and process command line options.
-    ARGV::parse_options();
+    Options::parse_options();
     Tables::process_options();
 
     # Parse fonts and organize resulting info by family.
@@ -76,10 +76,12 @@ sub main {
         $log->log_arguments();
         $log->log_parsing(@fonts);
 
+        # We defer asserting that all fonts were parsed in a unique way
+        # until after the results of the parsing are logged.
         Font::assert_unique(@fonts);
 
-        my $choice = NFSS::map_nfss_codes(@fonts);
-        $log->log_nfss_mapping($choice);
+        my $nfss_mapping = NFSS::map_nfss_codes(@fonts);
+        $log->log_nfss_mapping($nfss_mapping);
 
         my @worklist = Work::generate_worklist(@fonts);
         $log->log_worklist(@worklist);
@@ -91,7 +93,7 @@ sub main {
         $log->close();
 
         if (!$ARGV{dryrun}) {
-            LaTeX::create_support_files($family, $choice, @worklist);
+            LaTeX::create_support_files($family, $nfss_mapping, @worklist);
             run_commands($family, @commands);
         }
     }
@@ -234,178 +236,6 @@ sub run_commands {
             please check the messages above and in the log file.
 END_OTFTOTFM_WARNING
         }
-    }
-
-    return;
-}
-
-
-############################################################################
-
-
-package ARGV;
-
-my $USAGE =<<'END_USAGE';
-
-'autoinst' is a wrapper around Eddie Kohler's TypeTools
-(http://www.lcdf.org/type/), for installing OpenType fonts in LaTeX.
-
-Usage: autoinst [options] font[s]
-
-Possible options:
-    -encoding=ENC[,ENC]*    Specify text encoding(s) (default: OT1,LY1,T1)
-
-    -(no)lining             Toggle creation of lining digits
-    -(no)oldstyle           Toggle creation of oldstyle digits
-    -(no)proportional       Toggle creation of proportional digits
-    -(no)tabular            Toggle creation of tabular digits
-    -(no)ts1                Toggle creation of TS1 fonts
-    -(no)smallcaps          Toggle creation of smallcaps
-    -(no)swash              Toggle creation of swash
-    -(no)titling            Toggle creation of titling
-    -(no)superiors          Toggle creation of fonts with superior characters
-    -noinferiors
-    -inferiors=[none|auto|subs|sinf|dnom]
-                            Use this style for subscripts (see docs)
-    -(no)ornaments          Toggle creation of ornament fonts
-    -(no)fractions          Toggle creation of fonts with digits for fractions
-    -(no)ligatures          Toggle manual addition of f-ligatures to font
-
-    -serif                  Install font as serif font
-    -sanserif               Install font as sanserif font
-    -typewriter             Install font as typewriter font
-
-    -defaultlining
-    -defaultoldstyle        Specify which figure style should be
-    -defaulttabular             considered 'default' for this font; see docs
-    -defaultproportional
-
-    -extra="TEXT"           Add TEXT to the command for 'otftotfm'
-    -target="DIRECTORY"     Install files into specified TEXMF tree
-    -vendor="VENDOR"        Only used for naming directories
-    -typeface="TYPEFACE"    Only used for naming directories
-    -(no)updmap             Toggle running of updmap
-    -manual                 Manual mode (see documentation)
-
-    -(no)figurekern         Keep or remove kerns between tabular figures
-
-    -nfssweight=XX=YYYY     Map the "XX" NFSS code to the "YYYY" weight
-    -nfsswidth=XX=YYYY      Map the "XX" NFSS code to the "YYYY" width
-
-    -help                   Print this text and exit
-    -doc                    Print the complete documentation and exit
-    -dryrun                 Don't generate fonts, only log what would be done
-    -logfile="FILE"         Write log to "FILE" (default: <fontfamily>.log)
-    -verbose                Print more data to log file
-    -version                Print version number and exit
-
-    font[s]                 The fonts (.otf or .ttf format) to install.
-
-Please report any bugs or suggestions to <marcpenninga@gmail.com>.
-END_USAGE
-
-# Default values for the command-line arguments
-%ARGV = (
-    encoding        => 'OT1,LY1,T1',
-    textcomp        => '2',     # 0 = no, 1 = yes, 2 = ('T1' ? yes : no)
-    lining          => '1',     # 0 = no, 1 = yes
-    oldstyle        => '1',     # 0 = no, 1 = yes
-    proportional    => '1',     # 0 = no, 1 = yes
-    tabular         => '1',     # 0 = no, 1 = yes
-    smallcaps       => '1',     # 0 = no, 1 = yes
-    swash           => '1',     # 0 = no, 1 = yes
-    titling         => '1',     # 0 = no, 1 = yes
-    superiors       => '1',     # 0 = no, 1 = yes
-    inferiors       => 'none',  # values: none, auto, subs, sinf, dnom
-    ornaments       => '1',     # 0 = no, 1 = yes
-    fractions       => '0',     # 0 = no, 1 = yes
-    ligatures       => '2',     # 0 = no, 1 = yes, 2 = ('tt' ? no : yes)
-    nfss            => '',
-    fig_height      => 'lnum',
-    fig_width       => 'tnum',
-    extra           => '',
-    target          => '',
-    vendor          => 'lcdftools',
-    typeface        => '',
-    updmap          => '1',     # 0 = no, 1 = yes
-    manual          => '0',     # 0 = no, 1 = yes
-    dryrun          => '0',     # 0 = no, 1 = yes
-    logfile         => '',
-    figurekern      => '1',     # 0 = no, 1 = yes
-    verbose         => 0,
-    nfsswidth       => [],
-    nfssweight      => [],
-);
-
-
-# --------------------------------------------------------------------------
-#   Parses the command-line options and removes these from @ARGV.
-# --------------------------------------------------------------------------
-sub parse_options {
-    $ARGV{cmdline} = join ' ', ($0, @ARGV);
-
-    Getopt::Long::GetOptions(
-        'help|?'              =>  sub { print $USAGE; exit },
-        'version'             =>  sub { exit },
-        'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2) },
-        'encoding=s'          => \$ARGV{encoding},
-        'ts1!'                => \$ARGV{textcomp},
-        'lining!'             => \$ARGV{lining},
-        'oldstyle!'           => \$ARGV{oldstyle},
-        'proportional!'       => \$ARGV{proportional},
-        'tabular!'            => \$ARGV{tabular},
-        'smallcaps!'          => \$ARGV{smallcaps},
-        'swash!'              => \$ARGV{swash},
-        'titling!'            => \$ARGV{titling},
-        'superiors!'          => \$ARGV{superiors},
-        'noinferiors'         =>  sub { $ARGV{inferiors} = 'none' },
-        'inferiors:s'         => \$ARGV{inferiors},
-        'ornaments!'          => \$ARGV{ornaments},
-        'fractions!'          => \$ARGV{fractions},
-        'ligatures!'          => \$ARGV{ligatures},
-        'serif'               =>  sub { $ARGV{nfss} = 'rm' },
-        'sanserif'            =>  sub { $ARGV{nfss} = 'sf' },
-        'typewriter'          =>  sub { $ARGV{nfss} = 'tt' },
-        'defaultlining'       =>  sub { $ARGV{fig_height} = 'lnum' },
-        'defaultoldstyle'     =>  sub { $ARGV{fig_height} = 'onum' },
-        'defaulttabular'      =>  sub { $ARGV{fig_width}  = 'tnum' },
-        'defaultproportional' =>  sub { $ARGV{fig_width}  = 'pnum' },
-        'extra=s'             => \$ARGV{extra},
-        'target=s'            => \$ARGV{target},
-        'vendor=s'            => \$ARGV{vendor},
-        'typeface=s'          => \$ARGV{typeface},
-        'updmap!'             => \$ARGV{updmap},
-        'dryrun'              => \$ARGV{dryrun},
-        'manual'              => \$ARGV{manual},
-        'figurekern!'         => \$ARGV{figurekern},
-        'logfile=s'           => \$ARGV{logfile},
-        'verbose+'            => \$ARGV{verbose},
-        'nfssweight=s%'       => sub {
-                                     my ($ignored, $key, $values) = @_;
-                                     $key = lc $key;
-                                     push @{$ARGV{nfssweight}},
-                                          "$key=$values";
-                                     my @values = split m/,/, lc $values;
-                                     $key = q{} if $key eq 'm';
-                                     NFSS::set_weights($key, @values);
-                                     $ARGV{$key} = 'user-defined';
-                                 },
-        'nfsswidth=s%'        => sub {
-                                     my ($ignored, $key, $values) = @_;
-                                     $key = lc $key;
-                                     my @values = split m/,/, lc $values;
-                                     push @{$ARGV{nfsswidth}},
-                                          "$key=$values";
-                                     $key = q{} if $key eq 'm';
-                                     NFSS::set_widths($key, @values);
-                                     $ARGV{$key} = 'user-defined';
-                                 },
-    )
-    or die "$USAGE";
-
-    if (!@ARGV) {
-        die "$USAGE\n"
-            . "[ERROR]     No font arguments given, nothing to do!\n";
     }
 
     return;
@@ -901,7 +731,7 @@ package LaTeX;
 #   ...
 # --------------------------------------------------------------------------
 sub create_support_files {
-    my ($family, $choice, @worklist) = @_;
+    my ($family, $nfss_mapping, @worklist) = @_;
 
     # Organize the worklist by family, encoding, style, series and shape
     my %fddata;
@@ -922,7 +752,7 @@ sub create_support_files {
     while (my ($enc, $encdata) = each %fddata) {
         while (my ($sty, $stydata) = each %$encdata) {
             write_fdfile(
-                $choice, $family, $enc, $sty, $stydata);
+                $nfss_mapping, $family, $enc, $sty, $stydata);
         }
     }
 
@@ -1153,7 +983,7 @@ sub get_keys {
 # Create a .fd file for NFSS
 #-----------------------------------------------------------------------
 sub write_fdfile {
-    my ($choice, $fam, $enc, $sty, $data) = @_;
+    my ($nfss_mapping, $fam, $enc, $sty, $data) = @_;
 
     my $fn = sprintf "%s%s-%s.fd", $enc, $fam, $sty;
     my $dir = File::Spec->catdir(
@@ -1232,9 +1062,9 @@ END_COMMENT
         for my $nfsswidth (NFSS::get_all_nfss_widths()) {
             my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
 
-            for my $weight ( @{$choice->{weight}{$nfssweight}} ) {
+            for my $weight ( @{$nfss_mapping->{weight}{$nfssweight}} ) {
                 $weight = '' if $weight eq 'regular';
-                for my $width ( @{$choice->{width}{$nfsswidth}} ) {
+                for my $width ( @{$nfss_mapping->{width}{$nfsswidth}} ) {
                     $width = '' if $width eq 'regular';
                     my $series = ( $weight . $width ) || 'regular';
                     if ( exists $data->{$series} ) {
@@ -1400,19 +1230,19 @@ END_PARSE_FONT
 #   Logs the mapping of NFSS codes to weights and widths.
 # --------------------------------------------------------------------------
 sub log_nfss_mapping {
-    my ($this, $choice) = @_;
+    my ($this, $nfss_mapping) = @_;
 
     print {$this} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
     for my $weight (NFSS::get_all_nfss_weights()) {
         printf {$this} "    %-3s =>  %s\n",
                        $weight || 'm',
-                       $choice->{weight}{$weight}[0] || '';
+                       $nfss_mapping->{weight}{$weight}[0] || '';
     }
     printf {$this} "\n";
     for my $width (NFSS::get_all_nfss_widths()) {
         printf {$this} "    %-3s =>  %s\n",
                        $width || 'm',
-                       $choice->{width}{$width}[0] || '';
+                       $nfss_mapping->{width}{$width}[0] || '';
     }
 
     return;
@@ -1767,7 +1597,7 @@ for my $full (keys %abbrev) {
 }
 
 # --------------------------------------------------------------------------
-#   Returns the NFSS code for the given shape name.
+#   Returns the NFSS code for the given shape.
 # --------------------------------------------------------------------------
 sub get_nfss_shape {
     my $key = shift;
@@ -1797,14 +1627,13 @@ sub map_nfss_codes {
         $width{ $font->{width} } //= $font->{width_class};
     }
 
-    my $choice = {
+    my $mapping = {
         weight => {},
         width => {},
     };
 
-    NFSSWEIGHT:
     for my $nfssweight (NFSS::get_all_nfss_weights()) {
-        $choice->{weight}{$nfssweight}
+        $mapping->{weight}{$nfssweight}
             = [ grep { $weight{$_} } NFSS::get_weights($nfssweight) ];
     }
 
@@ -1815,48 +1644,48 @@ sub map_nfss_codes {
     # 2.  otherwise we move the ul/ub weight to the el/eb position,
     #     unless that weight is the Ultralight/Ultrabold weight
     if ( !$ARGV{el} and !$ARGV{ul} ) {
-        if ( @{$choice->{weight}{ul}} and !@{$choice->{weight}{el}} ) {
+        if ( @{$mapping->{weight}{ul}} and !@{$mapping->{weight}{el}} ) {
             if ( $weight{thin}
-                    and $weight{thin} > $weight{$choice->{weight}{ul}[0]} ) {
-                $choice->{weight}{el} = [ 'thin', ];
+                    and $weight{thin} > $weight{$mapping->{weight}{ul}[0]} ) {
+                $mapping->{weight}{el} = [ 'thin', ];
             }
-            elsif ( $choice->{weight}{ul}[0] ne 'ultralight' ) {
-                $choice->{weight}{el} = [ shift @{$choice->{weight}{ul}} ];
+            elsif ( $mapping->{weight}{ul}[0] ne 'ultralight' ) {
+                $mapping->{weight}{el} = [ shift @{$mapping->{weight}{ul}} ];
             }
         }
     }
     if ( !$ARGV{eb} and !$ARGV{ub} ) {
-        if ( @{$choice->{weight}{ub}} and !@{$choice->{weight}{eb}} ) {
+        if ( @{$mapping->{weight}{ub}} and !@{$mapping->{weight}{eb}} ) {
             if (    $weight{heavy}
-                and $weight{heavy} < $weight{$choice->{weight}{ub}[0]}
+                and $weight{heavy} < $weight{$mapping->{weight}{ub}[0]}
             ) {
-                $choice->{weight}{eb} = [ 'heavy', ]
-                    unless @{$choice->{weight}{b}}
-                       and $weight{$choice->{weight}{b}[0]} > $weight{heavy};
+                $mapping->{weight}{eb} = [ 'heavy', ]
+                    unless @{$mapping->{weight}{b}}
+                       and $weight{$mapping->{weight}{b}[0]} > $weight{heavy};
             }
-            elsif ( $choice->{weight}{ub}[0] ne 'ultrabold' ) {
-                $choice->{weight}{eb} = [ shift @{$choice->{weight}{ub}} ];
+            elsif ( $mapping->{weight}{ub}[0] ne 'ultrabold' ) {
+                $mapping->{weight}{eb} = [ shift @{$mapping->{weight}{ub}} ];
             }
         }
     }
 
     # Special case: if we don't have Regular but we *do* have Medium,
     # move Medium from the "sb" list to the "m" (i.e., Regular) one.
-    if ( !@{$choice->{weight}{''}} ) {
+    if ( !@{$mapping->{weight}{''}} ) {
         my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
         if ($alternate) {
-            $choice->{weight}{''} = [ $alternate ];
-            $choice->{weight}{sb}
-                = [ grep { $_ ne $alternate } @{$choice->{weight}{sb}} ];
+            $mapping->{weight}{''} = [ $alternate ];
+            $mapping->{weight}{sb}
+                = [ grep { $_ ne $alternate } @{$mapping->{weight}{sb}} ];
         }
     }
 
     # Some more trickery to map the sl code to Book or Text (but of course
     # only if sl is empty and Book/Text is lighter than Regular)
-    if ( !@{$choice->{weight}{sl}} ) {
-        $choice->{weight}{sl}
-            = [ grep { $weight{$_} < $weight{$choice->{weight}{''}[0]} }
-                     @{$choice->{weight}{''}}
+    if ( !@{$mapping->{weight}{sl}} ) {
+        $mapping->{weight}{sl}
+            = [ grep { $weight{$_} < $weight{$mapping->{weight}{''}[0]} }
+                     @{$mapping->{weight}{''}}
             ];
     }
 
@@ -1864,18 +1693,190 @@ sub map_nfss_codes {
     for my $nfsswidth (NFSS::get_all_nfss_widths()) {
         for my $width ( NFSS::get_widths($nfsswidth) ) {
             if ( $width{$width} ) {
-                $choice->{width}{$nfsswidth} = [ $width ];
+                $mapping->{width}{$nfsswidth} = [ $width ];
                 next NFSSWIDTH;
             }
         }
-        $choice->{width}{$nfsswidth} = [];
+        $mapping->{width}{$nfsswidth} = [];
     }
 
-    return $choice;
+    return $mapping;
 }
 
 
 ########################################################################
+
+
+package Options;
+
+my $USAGE =<<'END_USAGE';
+
+'autoinst' is a wrapper around Eddie Kohler's TypeTools
+(http://www.lcdf.org/type/), for installing OpenType fonts in LaTeX.
+
+Usage: autoinst [options] font[s]
+
+Possible options:
+    -encoding=ENC[,ENC]*    Specify text encoding(s) (default: OT1,LY1,T1)
+
+    -(no)lining             Toggle creation of lining digits
+    -(no)oldstyle           Toggle creation of oldstyle digits
+    -(no)proportional       Toggle creation of proportional digits
+    -(no)tabular            Toggle creation of tabular digits
+    -(no)ts1                Toggle creation of TS1 fonts
+    -(no)smallcaps          Toggle creation of smallcaps
+    -(no)swash              Toggle creation of swash
+    -(no)titling            Toggle creation of titling
+    -(no)superiors          Toggle creation of fonts with superior characters
+    -noinferiors
+    -inferiors=[none|auto|subs|sinf|dnom]
+                            Use this style for subscripts (see docs)
+    -(no)ornaments          Toggle creation of ornament fonts
+    -(no)fractions          Toggle creation of fonts with digits for fractions
+    -(no)ligatures          Toggle manual addition of f-ligatures to font
+
+    -serif                  Install font as serif font
+    -sanserif               Install font as sanserif font
+    -typewriter             Install font as typewriter font
+
+    -defaultlining
+    -defaultoldstyle        Specify which figure style should be
+    -defaulttabular             considered 'default' for this font; see docs
+    -defaultproportional
+
+    -extra="TEXT"           Add TEXT to the command for 'otftotfm'
+    -target="DIRECTORY"     Install files into specified TEXMF tree
+    -vendor="VENDOR"        Only used for naming directories
+    -typeface="TYPEFACE"    Only used for naming directories
+    -(no)updmap             Toggle running of updmap
+    -manual                 Manual mode (see documentation)
+
+    -(no)figurekern         Keep or remove kerns between tabular figures
+
+    -nfssweight=XX=YYYY     Map the "XX" NFSS code to the "YYYY" weight
+    -nfsswidth=XX=YYYY      Map the "XX" NFSS code to the "YYYY" width
+
+    -help                   Print this text and exit
+    -doc                    Print the complete documentation and exit
+    -dryrun                 Don't generate fonts, only log what would be done
+    -logfile="FILE"         Write log to "FILE" (default: <fontfamily>.log)
+    -verbose                Print more data to log file
+    -version                Print version number and exit
+
+    font[s]                 The fonts (.otf or .ttf format) to install.
+
+Please report any bugs or suggestions to <marcpenninga@gmail.com>.
+END_USAGE
+
+# Default values for the command-line arguments
+%ARGV = (
+    encoding        => 'OT1,LY1,T1',
+    textcomp        => '2',     # 0 = no, 1 = yes, 2 = ('T1' ? yes : no)
+    lining          => '1',     # 0 = no, 1 = yes
+    oldstyle        => '1',     # 0 = no, 1 = yes
+    proportional    => '1',     # 0 = no, 1 = yes
+    tabular         => '1',     # 0 = no, 1 = yes
+    smallcaps       => '1',     # 0 = no, 1 = yes
+    swash           => '1',     # 0 = no, 1 = yes
+    titling         => '1',     # 0 = no, 1 = yes
+    superiors       => '1',     # 0 = no, 1 = yes
+    inferiors       => 'none',  # values: none, auto, subs, sinf, dnom
+    ornaments       => '1',     # 0 = no, 1 = yes
+    fractions       => '0',     # 0 = no, 1 = yes
+    ligatures       => '2',     # 0 = no, 1 = yes, 2 = ('tt' ? no : yes)
+    nfss            => '',
+    fig_height      => 'lnum',
+    fig_width       => 'tnum',
+    extra           => '',
+    target          => '',
+    vendor          => 'lcdftools',
+    typeface        => '',
+    updmap          => '1',     # 0 = no, 1 = yes
+    manual          => '0',     # 0 = no, 1 = yes
+    dryrun          => '0',     # 0 = no, 1 = yes
+    logfile         => '',
+    figurekern      => '1',     # 0 = no, 1 = yes
+    verbose         => 0,
+    nfsswidth       => [],
+    nfssweight      => [],
+);
+
+
+# --------------------------------------------------------------------------
+#   Parses the command-line options and removes these from @ARGV.
+# --------------------------------------------------------------------------
+sub parse_options {
+    $ARGV{cmdline} = join ' ', ($0, @ARGV);
+
+    Getopt::Long::GetOptions(
+        'help|?'              =>  sub { print $USAGE; exit },
+        'version'             =>  sub { exit },
+        'doc'                 =>  sub { Pod::Usage::pod2usage(-verbose => 2) },
+        'encoding=s'          => \$ARGV{encoding},
+        'ts1!'                => \$ARGV{textcomp},
+        'lining!'             => \$ARGV{lining},
+        'oldstyle!'           => \$ARGV{oldstyle},
+        'proportional!'       => \$ARGV{proportional},
+        'tabular!'            => \$ARGV{tabular},
+        'smallcaps!'          => \$ARGV{smallcaps},
+        'swash!'              => \$ARGV{swash},
+        'titling!'            => \$ARGV{titling},
+        'superiors!'          => \$ARGV{superiors},
+        'noinferiors'         =>  sub { $ARGV{inferiors} = 'none' },
+        'inferiors:s'         => \$ARGV{inferiors},
+        'ornaments!'          => \$ARGV{ornaments},
+        'fractions!'          => \$ARGV{fractions},
+        'ligatures!'          => \$ARGV{ligatures},
+        'serif'               =>  sub { $ARGV{nfss} = 'rm' },
+        'sanserif'            =>  sub { $ARGV{nfss} = 'sf' },
+        'typewriter'          =>  sub { $ARGV{nfss} = 'tt' },
+        'defaultlining'       =>  sub { $ARGV{fig_height} = 'lnum' },
+        'defaultoldstyle'     =>  sub { $ARGV{fig_height} = 'onum' },
+        'defaulttabular'      =>  sub { $ARGV{fig_width}  = 'tnum' },
+        'defaultproportional' =>  sub { $ARGV{fig_width}  = 'pnum' },
+        'extra=s'             => \$ARGV{extra},
+        'target=s'            => \$ARGV{target},
+        'vendor=s'            => \$ARGV{vendor},
+        'typeface=s'          => \$ARGV{typeface},
+        'updmap!'             => \$ARGV{updmap},
+        'dryrun'              => \$ARGV{dryrun},
+        'manual'              => \$ARGV{manual},
+        'figurekern!'         => \$ARGV{figurekern},
+        'logfile=s'           => \$ARGV{logfile},
+        'verbose+'            => \$ARGV{verbose},
+        'nfssweight=s%'       => sub {
+                                     my ($ignored, $key, $values) = @_;
+                                     $key = lc $key;
+                                     push @{$ARGV{nfssweight}},
+                                          "$key=$values";
+                                     my @values = split m/,/, lc $values;
+                                     $key = q{} if $key eq 'm';
+                                     NFSS::set_weights($key, @values);
+                                     $ARGV{$key} = 'user-defined';
+                                 },
+        'nfsswidth=s%'        => sub {
+                                     my ($ignored, $key, $values) = @_;
+                                     $key = lc $key;
+                                     my @values = split m/,/, lc $values;
+                                     push @{$ARGV{nfsswidth}},
+                                          "$key=$values";
+                                     $key = q{} if $key eq 'm';
+                                     NFSS::set_widths($key, @values);
+                                     $ARGV{$key} = 'user-defined';
+                                 },
+    )
+    or die "$USAGE";
+
+    if (!@ARGV) {
+        die "$USAGE\n"
+            . "[ERROR]     No font arguments given, nothing to do!\n";
+    }
+
+    return;
+}
+
+
+############################################################################
 
 
 package Tables;
