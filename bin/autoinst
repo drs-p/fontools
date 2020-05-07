@@ -58,7 +58,7 @@ sub main {
     ARGV::parse_options();
     Tables::process_options();
 
-    # Parse font info, and organize by family.
+    # Parse fonts and organize resulting info by family.
     my %fontfamily;
     for my $fontfile (@ARGV) {
         my $font = Font::get_fontinfo($fontfile);
@@ -69,248 +69,77 @@ sub main {
     while (my ($family, $fontlist) = each %fontfamily) {
         my @fonts = @$fontlist;
 
-        # Some options have font family-dependent defaults,
-        # which we can determine only now. To keep these changes
-        # from affecting other families, we localize %ARGV.
         local %ARGV = %ARGV;
         Tables::process_family_dependent_options(@fonts);
 
-        my $log = Log::create_logfile();
-        Log::log_parsing($log, @fonts);
+        my $log = Log->new($ARGV{logfile});
+        $log->log_arguments();
+        $log->log_parsing(@fonts);
 
         Font::assert_unique(@fonts);
 
-        # Figure out which styles and encodings to generate.
-        # This is a four-step process:
-        #   1.  for each font, decide which figure styles to create;
-        #   2.  for each (font, figstyle) pair, decide which styles to create;
-        #   3.  for each (font, figstyle, style) tuple,
-        #       decide which encodings to create;
-        #   4.  finally, some miscellaneous finishing touches.
-        my @worklist = map { { font => $_ } } @fonts;
-        @worklist = map { expand_figurestyles($_) } @worklist;
-        @worklist = map { expand_styles($_) }       @worklist;
-        @worklist = map { expand_encodings($_) }    @worklist;
-        @worklist = grep { $_ } map { cleanup($_) } @worklist;
-
-        # Decide to which weights and widths we'll map the standard NFSS codes
         my $choice = NFSS::map_nfss_codes(@fonts);
-        Log::log_worklist($log, $choice, @worklist);
+        $log->log_nfss_mapping($choice);
 
-        # Organize the worklist by family, encoding, style, series and shape
-        my %fddata;
-        for my $item (@worklist) {
-            my $encoding    = $item->{encoding};
-            my $figurestyle = $item->{figurestyle};
-            my $series      = $item->{font}{series};
-            my $shape       = $item->{fdshape};
-            my $minsize     = $item->{font}{minsize};
-            my $maxsize     = $item->{font}{maxsize};
-
-            push @{$fddata{$encoding}{$figurestyle}{$series}{$shape}},
-                [ $minsize, $maxsize, $item->{fontname} ];
-        }
+        my @worklist = Work::generate_worklist(@fonts);
+        $log->log_worklist(@worklist);
 
         my $targetdirs = get_targetdirs($family, @fonts);
         my @commands = map { create_command($targetdirs, $_) } @worklist;
-        Log::log_commands($log, @commands) if $ARGV{verbose} >= 1;
+        $log->log_commands(@commands) if $ARGV{verbose} >= 1;
+
+        $log->close();
 
         if (!$ARGV{dryrun}) {
-            # Create the LaTeX support files
-            LaTeX::write_stylefile($family, \%fddata);
-            while (my ($enc, $encdata) = each %fddata) {
-                while (my ($sty, $stydata) = each %$encdata) {
-                    LaTeX::write_fdfile(
-                        $choice, $family, $enc, $sty, $stydata);
-                }
-            }
-
+            LaTeX::create_support_files($family, $choice, @worklist);
             run_commands($family, @commands);
         }
-
-        close $log;
     }
 
     return;
 }
 
 
-# --------------------------------------------------------------------------
-#   Determines which figure styles to create for the given work item.
-#   A figure style is created if the current font contains all of
-#   the 'reqd' features for this figure style.
-#   Returns a list of new work items, one for each figure style.
-# --------------------------------------------------------------------------
-sub expand_figurestyles {
-    my $workitem = shift;
+#-----------------------------------------------------------------------
+#   Returns a string with all "directory" options for otftotfm set.
+#   Also creates directories that don't exist yet.
+#-----------------------------------------------------------------------
+sub get_targetdirs {
+    my ($family, @fonts) = @_;
+    # my @fonts = @_;
+    # my $family = $fonts[0]->{family};
 
-    my $font = $workitem->{font};
+    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
 
-    my @results;
-    for my $figurestyle (Tables::get_all_figurestyles()) {
-        my @reqd = Tables::get_reqd_features($figurestyle);
-        my $ok = !( grep { !$font->has_feature($_) } @reqd );
-        if ($ok) {
-            my %new_workitem = %{$workitem};
-            $new_workitem{figurestyle} = $figurestyle;
-            push @results, \%new_workitem;
-        }
-    }
+    my @filetypes = qw(tfm vf);
+    if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
+    if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
 
-    return @results;
-}
+    my %dir = map { ( $_ => File::Spec->catdir(
+                            $ARGV{target},
+                            'fonts',
+                            $_,
+                            $ARGV{vendor},
+                            $ARGV{typeface} || $family) )
+                  }
+                  @filetypes;
 
+    $dir{$_}
+        = File::Spec->catdir(
+            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
+        for qw(enc map);
 
-# --------------------------------------------------------------------------
-#   Determines which styles to create for the given work item.
-#   A style is created if the current font has at least one of the
-#   'reqd' features for this style, or if there are no 'reqd' features.
-#   Returns a list of new work items, one for each style.
-# --------------------------------------------------------------------------
-sub expand_styles {
-    my $workitem = shift;
+    File::Path::make_path(values %dir) unless $ARGV{dryrun};
 
-    my ($font, $figurestyle) = @{$workitem}{qw(font figurestyle)};
+    my $result
+        = join q{ },
+               map { qq(--${_}-directory="$dir{$_}") }
+                   @filetypes;
+    $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
+               . File::Spec->catfile($dir{map}, "$family.map")
+               . '"';
 
-    my @results;
-    for my $style (Tables::get_styles($figurestyle)) {
-        my @reqd = Tables::get_reqd_features($style);
-        my $ok = (scalar @reqd == 0)
-                 || grep { $font->has_feature($_) } @reqd;
-        if ($ok) {
-            my %new_workitem = %{$workitem};
-            $new_workitem{style} = $style;
-            push @results, \%new_workitem;
-        }
-    }
-
-    return @results;
-}
-
-
-# --------------------------------------------------------------------------
-#   Determines which encodings to use for the given work item;
-#   returns a list of new work items, one for each encoding.
-# --------------------------------------------------------------------------
-sub expand_encodings {
-    my $workitem = shift;
-
-    my ($font, $figurestyle, $style)
-        = @{$workitem}{qw(font figurestyle style)};
-    my @encodings = $style eq 'textcomp'  ? qw(ts1)
-                  : $figurestyle eq 'Orn' ? qw(ly1)
-                  :                         @{$ARGV{encoding}}
-                  ;
-
-    my @results;
-    for my $encoding (@encodings) {
-        my %new_workitem = %{$workitem};
-        $new_workitem{encoding} = $encoding;
-        push @results, \%new_workitem;
-    }
-
-    return @results;
-}
-
-
-# --------------------------------------------------------------------------
-#   Adds some miscellaneous finishing touches to the given work item.
-# --------------------------------------------------------------------------
-sub cleanup {
-    my $workitem = shift;
-
-    my ($font, $figurestyle, $style, $encoding)
-        = @{$workitem}{qw(font figurestyle style encoding)};
-
-    # Don't generate smallcaps version of TS1-encoded fonts,
-    # as these contain the same glyphs as the regular version.
-    if ($font->{is_smallcaps}) {
-        if ($style eq 'textcomp') {
-            return;
-        }
-        else {
-            $style = 'smallcaps';
-        }
-    }
-
-    # Generate unique name for this font.
-    $workitem->{fontname}
-            = join '-', grep { $_ } $font->{name},
-                                    lc $figurestyle,
-                                    lc Tables::get_name($style),
-                                    lc $encoding;
-
-    # look up NFSS code for font's shape
-    $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
-
-    # Compile list of OpenType features to use with this font.
-    my %feature = map { ($_ => 1) }
-                      grep { $font->has_feature($_) }
-                           ( Tables::get_features($figurestyle),
-                             Tables::get_features($style) );
-    if ($feature{lnum} && $feature{onum}) {
-        delete $feature{lnum};
-    }
-    $workitem->{features} = [ sort keys %feature ];
-
-    # Figure out which encoding file to use for this font.
-    my $try = Cwd::abs_path($workitem->{encoding});
-    $try .= '.enc' if $try !~ m/[.]enc\z/xms;
-    if (-e $try) {
-        $workitem->{enc_file} = $try;
-    }
-    else {
-        ($workitem->{enc_file} = $workitem->{encoding})
-            =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_\L$1\E/xmsi;
-    }
-    $workitem->{encoding} = uc $workitem->{encoding};
-
-    return $workitem;
-}
-
-
-# --------------------------------------------------------------------------
-#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
-# --------------------------------------------------------------------------
-sub run_commands {
-    my ($family, @commands) = @_;
-
-    # make sure the last command *does* call updmap
-    $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
-
-    if ($ARGV{manual}) {
-        open my $BAT, '>', 'autoinst.bat'
-            or die "[ERROR]     Can't create 'autoinst.bat': $!";
-        print {$BAT} "$_\n" for @commands;
-        close $BAT;
-    }
-    else {
-        my $oops = 0;
-        $| = 1;     # turn on autoflush, to make a poor man's progress bar
-        print "[INFO]      Generating fonts for $family ";
-        for my $command (@commands) {
-            print '.';
-            open my $otftotfm, '-|', "$command 2>&1"
-                or die "could not fork(): $!";
-            my $msgs = do { local $/; <$otftotfm> };
-            close $otftotfm
-                or do {
-                    warn "\n$command\n\n$msgs\n";
-                    print {$ARGV{logfile}} "\n$command\n\n$msgs\n";
-                    $oops = 1;
-                };
-        }
-        print "\n";
-        $| = 0;
-        if ($oops) {
-            warn <<"END_OTFTOTFM_WARNING";
-[ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
-            please check the messages above and in the log file.
-END_OTFTOTFM_WARNING
-        }
-    }
-
-    return;
+    return $result;
 }
 
 
@@ -366,46 +195,48 @@ sub create_command {
 }
 
 
-#-----------------------------------------------------------------------
-#   Returns a string with all "directory" options for otftotfm set.
-#   Also creates directories that don't exist yet.
-#-----------------------------------------------------------------------
-sub get_targetdirs {
-    my ($family, @fonts) = @_;
-    # my @fonts = @_;
-    # my $family = $fonts[0]->{family};
+# --------------------------------------------------------------------------
+#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
+# --------------------------------------------------------------------------
+sub run_commands {
+    my ($family, @commands) = @_;
 
-    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
+    # make sure the last command *does* call updmap
+    $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
 
-    my @filetypes = qw(tfm vf);
-    if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
-    if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
+    if ($ARGV{manual}) {
+        open my $BAT, '>', 'autoinst.bat'
+            or die "[ERROR]     Can't create 'autoinst.bat': $!";
+        print {$BAT} "$_\n" for @commands;
+        close $BAT;
+    }
+    else {
+        my $oops = 0;
+        $| = 1;     # turn on autoflush, to make a poor man's progress bar
+        print "[INFO]      Generating fonts for $family ";
+        for my $command (@commands) {
+            print '.';
+            open my $otftotfm, '-|', "$command 2>&1"
+                or die "could not fork(): $!";
+            my $msgs = do { local $/; <$otftotfm> };
+            close $otftotfm
+                or do {
+                    warn "\n$command\n\n$msgs\n";
+                    print {$ARGV{logfile}} "\n$command\n\n$msgs\n";
+                    $oops = 1;
+                };
+        }
+        print "\n";
+        $| = 0;
+        if ($oops) {
+            warn <<"END_OTFTOTFM_WARNING";
+[ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
+            please check the messages above and in the log file.
+END_OTFTOTFM_WARNING
+        }
+    }
 
-    my %dir = map { ( $_ => File::Spec->catdir(
-                            $ARGV{target},
-                            'fonts',
-                            $_,
-                            $ARGV{vendor},
-                            $ARGV{typeface} || $family) )
-                  }
-                  @filetypes;
-
-    $dir{$_}
-        = File::Spec->catdir(
-            $ARGV{target}, 'fonts', $_, 'dvips', $ARGV{typeface} || $family)
-        for qw(enc map);
-
-    File::Path::make_path(values %dir) unless $ARGV{dryrun};
-
-    my $result
-        = join q{ },
-               map { qq(--${_}-directory="$dir{$_}") }
-                   @filetypes;
-    $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
-               . File::Spec->catfile($dir{map}, "$family.map")
-               . '"';
-
-    return $result;
+    return;
 }
 
 
@@ -1066,6 +897,39 @@ sub get_nfss_classification {
 
 package LaTeX;
 
+# --------------------------------------------------------------------------
+#   ...
+# --------------------------------------------------------------------------
+sub create_support_files {
+    my ($family, $choice, @worklist) = @_;
+
+    # Organize the worklist by family, encoding, style, series and shape
+    my %fddata;
+    for my $item (@worklist) {
+        my $encoding    = $item->{encoding};
+        my $figurestyle = $item->{figurestyle};
+        my $series      = $item->{font}{series};
+        my $shape       = $item->{fdshape};
+        my $minsize     = $item->{font}{minsize};
+        my $maxsize     = $item->{font}{maxsize};
+
+        push @{$fddata{$encoding}{$figurestyle}{$series}{$shape}},
+            [ $minsize, $maxsize, $item->{fontname} ];
+    }
+
+    # Create the LaTeX support files
+    write_stylefile($family, \%fddata);
+    while (my ($enc, $encdata) = each %fddata) {
+        while (my ($sty, $stydata) = each %$encdata) {
+            write_fdfile(
+                $choice, $family, $enc, $sty, $stydata);
+        }
+    }
+
+    return;
+}
+
+
 # This table is used to generate extra ssub rules in .fd files
 # to map missing Slanted shapes to Italic and vice versa.
 my %SSUB_SHAPE = (
@@ -1416,17 +1280,39 @@ END_SSUB_BX
 package Log;
 
 # --------------------------------------------------------------------------
-#   Creates the log file and logs the command line options.
+#   Constructor: creates new Log object, writing to $logfile.
 # --------------------------------------------------------------------------
-sub create_logfile {
-    if (-e $ARGV{logfile}) {
-        print "[WARNING]   File '$ARGV{logfile}' already exists;\n" .
+sub new {
+    my ($class, $filename) = @_;
+
+    if (-e $filename) {
+        print "[WARNING]   File '$filename' already exists;\n" .
         "            appending new log data to end.\n";
     }
-    open my $log, '>>', $ARGV{logfile}
-        or die "$0: cannot create $ARGV{logfile}: $!";
+    open my $log, '>>', $filename
+        or die "$0: cannot create '$filename': $!";
 
-    print {$log} <<"END_ARGUMENTS";
+    return bless $log, $class;
+}
+
+
+# --------------------------------------------------------------------------
+#   Closes the logfile associated with this Log object.
+# --------------------------------------------------------------------------
+sub close {
+    my $this = shift;
+
+    close $this;
+}
+
+
+# --------------------------------------------------------------------------
+#   Logs the command line options.
+# --------------------------------------------------------------------------
+sub log_arguments {
+    my $this = shift;
+
+    print {$this} <<"END_ARGUMENTS";
 
 
 ############################################################################
@@ -1475,10 +1361,10 @@ I'm using the following options:
 END_ARGUMENTS
 
     if ($ARGV{dryrun}) {
-        print {$log} "    DRY RUN\n\n";
+        print {$this} "    DRY RUN\n\n";
     }
 
-    return $log;
+    return;
 }
 
 
@@ -1486,12 +1372,12 @@ END_ARGUMENTS
 #   Logs command line options and the results of font info parsing.
 # --------------------------------------------------------------------------
 sub log_parsing {
-    my ($log, @fonts) = @_;
+    my ($this, @fonts) = @_;
 
-    print {$log} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
+    print {$this} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
     for my $font (@fonts) {
-        print {$log} <<"END_PARSE_FONT";
+        print {$this} <<"END_PARSE_FONT";
 
     $font->{filename}
         Name:       $font->{name}
@@ -1511,10 +1397,33 @@ END_PARSE_FONT
 
 
 # --------------------------------------------------------------------------
-#   Logs NFSS mappings and all fonts we're going to create.
+#   Logs the mapping of NFSS codes to weights and widths.
+# --------------------------------------------------------------------------
+sub log_nfss_mapping {
+    my ($this, $choice) = @_;
+
+    print {$this} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
+    for my $weight (NFSS::get_all_nfss_weights()) {
+        printf {$this} "    %-3s =>  %s\n",
+                       $weight || 'm',
+                       $choice->{weight}{$weight}[0] || '';
+    }
+    printf {$this} "\n";
+    for my $width (NFSS::get_all_nfss_widths()) {
+        printf {$this} "    %-3s =>  %s\n",
+                       $width || 'm',
+                       $choice->{width}{$width}[0] || '';
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Logs all fonts we're going to create.
 # --------------------------------------------------------------------------
 sub log_worklist {
-    my ($log, $choice, @items) = @_;
+    my ($this, @items) = @_;
 
     my @worklist
         = sort { $a->{font}{filename}    cmp $b->{font}{filename}
@@ -1523,23 +1432,10 @@ sub log_worklist {
                }
                @items;
 
-    print {$log} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
-    for my $weight (NFSS::get_all_nfss_weights()) {
-        printf {$log} "    %-3s =>  %s\n",
-                      $weight || 'm',
-                      $choice->{weight}{$weight}[0] || '';
-    }
-    printf {$log} "\n";
-    for my $width (NFSS::get_all_nfss_widths()) {
-        printf {$log} "    %-3s =>  %s\n",
-                      $width || 'm',
-                      $choice->{width}{$width}[0] || '';
-    }
-
     my $prevfn = q{};
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
-            print {$log} <<"END_FONTINFO";
+            print {$this} <<"END_FONTINFO";
 
     ------------------------------------------------------------------------
 
@@ -1551,11 +1447,11 @@ sub log_worklist {
 
 END_FONTINFO
         }
-        printf {$log} "            %-3s     %-4s    %-4s    %s\n",
-                      $item->{encoding},
-                      $item->{figurestyle},
-                      $item->{fdshape},
-                      join(', ', @{$item->{features}});
+        printf {$this} "            %-3s     %-4s    %-4s    %s\n",
+                       $item->{encoding},
+                       $item->{figurestyle},
+                       $item->{fdshape},
+                       join(', ', @{$item->{features}});
         $prevfn  = $item->{font}{filename};
     }
 
@@ -1567,11 +1463,11 @@ END_FONTINFO
 #   Logs all generated otftotfm commands.
 # --------------------------------------------------------------------------
 sub log_commands {
-    my ($log, @commands) = @_;
+    my ($this, @commands) = @_;
 
-    print {$log} "\n\n";
-    print {$log} join "\n\n", @commands;
-    print {$log} "\n";
+    print {$this} "\n\n";
+    print {$this} join "\n\n", @commands;
+    print {$this} "\n";
 
     return;
 }
@@ -2485,6 +2381,171 @@ package Util;
 # --------------------------------------------------------------------------
 sub sort_desc_length {
     return reverse sort { length($a) <=> length($b) } @_;
+}
+
+
+############################################################################
+
+
+package Work;
+
+
+# --------------------------------------------------------------------------
+#   ...
+# --------------------------------------------------------------------------
+sub generate_worklist {
+    my @fonts = @_;
+
+    # Figure out which styles, figure styles and encodings to generate.
+    # This is a four-step process:
+    #   1.  for each font, decide which figure styles should be created;
+    #   2.  for each (font, figure style) pair,
+    #       decide which styles should be created;
+    #   3.  for each (font, figure style, style) tuple,
+    #       decide which encodings should be created;
+    #   4.  finally, some miscellaneous finishing touches.
+    my @worklist = map { { font => $_ } } @fonts;
+
+    @worklist = map { expand_figurestyles($_) } @worklist;
+    @worklist = map { expand_styles($_)       } @worklist;
+    @worklist = map { expand_encodings($_)    } @worklist;
+    @worklist = grep { $_ } map { cleanup($_) } @worklist;
+
+    return @worklist;
+}
+
+
+# --------------------------------------------------------------------------
+#   Determines which figure styles to create for the given work item.
+#   A figure style is created if the current font contains all of
+#   the 'reqd' features for this figure style.
+#   Returns a list of new work items, one for each figure style.
+# --------------------------------------------------------------------------
+sub expand_figurestyles {
+    my $workitem = shift;
+
+    my $font = $workitem->{font};
+
+    my @results;
+    for my $figurestyle (Tables::get_all_figurestyles()) {
+        my @reqd = Tables::get_reqd_features($figurestyle);
+        my $ok = !( grep { !$font->has_feature($_) } @reqd );
+        if ($ok) {
+            my %new_workitem = %{$workitem};
+            $new_workitem{figurestyle} = $figurestyle;
+            push @results, \%new_workitem;
+        }
+    }
+
+    return @results;
+}
+
+
+# --------------------------------------------------------------------------
+#   Determines which styles to create for the given work item.
+#   A style is created if the current font has at least one of the
+#   'reqd' features for this style, or if there are no 'reqd' features.
+#   Returns a list of new work items, one for each style.
+# --------------------------------------------------------------------------
+sub expand_styles {
+    my $workitem = shift;
+
+    my ($font, $figurestyle) = @{$workitem}{qw(font figurestyle)};
+
+    my @results;
+    for my $style (Tables::get_styles($figurestyle)) {
+        my @reqd = Tables::get_reqd_features($style);
+        my $ok = (scalar @reqd == 0)
+                 || grep { $font->has_feature($_) } @reqd;
+        if ($ok) {
+            my %new_workitem = %{$workitem};
+            $new_workitem{style} = $style;
+            push @results, \%new_workitem;
+        }
+    }
+
+    return @results;
+}
+
+
+# --------------------------------------------------------------------------
+#   Determines which encodings to use for the given work item;
+#   returns a list of new work items, one for each encoding.
+# --------------------------------------------------------------------------
+sub expand_encodings {
+    my $workitem = shift;
+
+    my ($font, $figurestyle, $style)
+        = @{$workitem}{qw(font figurestyle style)};
+    my @encodings = $style eq 'textcomp'  ? qw(ts1)
+                  : $figurestyle eq 'Orn' ? qw(ly1)
+                  :                         @{$ARGV{encoding}}
+                  ;
+
+    my @results;
+    for my $encoding (@encodings) {
+        my %new_workitem = %{$workitem};
+        $new_workitem{encoding} = $encoding;
+        push @results, \%new_workitem;
+    }
+
+    return @results;
+}
+
+
+# --------------------------------------------------------------------------
+#   Adds some miscellaneous finishing touches to the given work item.
+# --------------------------------------------------------------------------
+sub cleanup {
+    my $workitem = shift;
+
+    my ($font, $figurestyle, $style, $encoding)
+        = @{$workitem}{qw(font figurestyle style encoding)};
+
+    # Don't generate smallcaps version of TS1-encoded fonts,
+    # as these contain the same glyphs as the regular version.
+    if ($font->{is_smallcaps}) {
+        if ($style eq 'textcomp') {
+            return;
+        }
+        else {
+            $style = 'smallcaps';
+        }
+    }
+
+    # Generate unique name for this font.
+    $workitem->{fontname}
+            = join '-', grep { $_ } $font->{name},
+                                    lc $figurestyle,
+                                    lc Tables::get_name($style),
+                                    lc $encoding;
+
+    # look up NFSS code for font's shape
+    $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
+
+    # Compile list of OpenType features to use with this font.
+    my %feature = map { ($_ => 1) }
+                      grep { $font->has_feature($_) }
+                           ( Tables::get_features($figurestyle),
+                             Tables::get_features($style) );
+    if ($feature{lnum} && $feature{onum}) {
+        delete $feature{lnum};
+    }
+    $workitem->{features} = [ sort keys %feature ];
+
+    # Figure out which encoding file to use for this font.
+    my $try = Cwd::abs_path($workitem->{encoding});
+    $try .= '.enc' if $try !~ m/[.]enc\z/xms;
+    if (-e $try) {
+        $workitem->{enc_file} = $try;
+    }
+    else {
+        ($workitem->{enc_file} = $workitem->{encoding})
+            =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_\L$1\E/xmsi;
+    }
+    $workitem->{encoding} = uc $workitem->{encoding};
+
+    return $workitem;
 }
 
 
