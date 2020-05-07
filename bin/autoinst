@@ -136,8 +136,10 @@ sub main {
 
 
 # --------------------------------------------------------------------------
-#   Determines which figure styles to create for the given work item;
-#   returns a list of new work items, one for each figure style.
+#   Determines which figure styles to create for the given work item.
+#   A figure style is created if the current font contains all of
+#   the 'reqd' features for this figure style.
+#   Returns a list of new work items, one for each figure style.
 # --------------------------------------------------------------------------
 sub expand_figurestyles {
     my $workitem = shift;
@@ -160,8 +162,10 @@ sub expand_figurestyles {
 
 
 # --------------------------------------------------------------------------
-#   Determines which styles to create for the given work item;
-#   returns a list of new work items, one for each style.
+#   Determines which styles to create for the given work item.
+#   A style is created if the current font has at least one of the
+#   'reqd' features for this style, or if there are no 'reqd' features.
+#   Returns a list of new work items, one for each style.
 # --------------------------------------------------------------------------
 sub expand_styles {
     my $workitem = shift;
@@ -241,15 +245,15 @@ sub cleanup {
 
     # Compile list of OpenType features to use with this font.
     my %feature = map { ($_ => 1) }
-                        grep { $font->has_feature($_) }
-                             ( Autoinst::get_features($figurestyle),
-                               Autoinst::get_features($style) );
+                      grep { $font->has_feature($_) }
+                           ( Autoinst::get_features($figurestyle),
+                             Autoinst::get_features($style) );
     if ($feature{lnum} && $feature{onum}) {
         delete $feature{lnum};
     }
     $workitem->{features} = [ sort keys %feature ];
 
-    # Add finishing touches to name and NFSS code of encoding.
+    # Figure out which encoding file to use for this font.
     my $try = Cwd::abs_path($workitem->{encoding});
     $try .= '.enc' if $try !~ m/[.]enc\z/xms;
     if (-e $try) {
@@ -741,11 +745,17 @@ my %FIGURESTYLE = (
 );
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns a list of all known figure styles.
+# --------------------------------------------------------------------------
 sub get_all_figurestyles {
     return keys %FIGURESTYLE;
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns all styles to generate for the given figure style.
+# --------------------------------------------------------------------------
 sub get_styles {
     my $figurestyle = shift;
 
@@ -755,6 +765,9 @@ sub get_styles {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns a list of req'd features for the given (figure) style.
+# --------------------------------------------------------------------------
 sub get_reqd_features {
     my $what = shift;
 
@@ -764,6 +777,9 @@ sub get_reqd_features {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns a list of add'l features for the given (figure) style.
+# --------------------------------------------------------------------------
 sub get_nice_features {
     my $what = shift;
 
@@ -773,6 +789,9 @@ sub get_nice_features {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns a list of all features for the given (figure) style.
+# --------------------------------------------------------------------------
 sub get_features {
     my $what = shift;
 
@@ -780,6 +799,9 @@ sub get_features {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns the name of the given style.
+# --------------------------------------------------------------------------
 sub get_name {
     my $what = shift;
 
@@ -787,6 +809,9 @@ sub get_name {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns the 'extra' arguments for the given (figure) style.
+# --------------------------------------------------------------------------
 sub get_extra {
     my $what = shift;
 
@@ -794,6 +819,9 @@ sub get_extra {
 }
 
 
+# --------------------------------------------------------------------------
+#   Getter; returns the NFSS code for the given style and 'basic' shape.
+# --------------------------------------------------------------------------
 sub get_fdshape {
     my ($style, $basicshape) = @_;
 
@@ -1265,7 +1293,7 @@ sub process_basicinfo {
 
     # Some font families put different shapes into separate families;
     # we merge these into the 'main' family.
-    my $shapes = join '|', Util::mqrs( qw(it italic) );
+    my $shapes = join '|', Util::sort_desc_length(qw(it italic));
     if ( $self->{family} =~ m/(.+?) ($shapes) \z/xmsi
             and ( $self->{shape} eq 'regular'
                 or $self->{shape} eq NFSS::unabbreviate(lc($2))
@@ -1275,7 +1303,7 @@ sub process_basicinfo {
         $self->{shape}  = NFSS::unabbreviate(lc($2));
     }
 
-    $shapes = join '|', Util::mqrs( qw(smallcaps sc smcp caps) );
+    $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
     if ( $self->{family} =~ m/(.+?) -? (?: $shapes) \z/xmsi ) {
         $self->{family}       = $1;
         $self->{is_smallcaps} = 1;
@@ -2267,7 +2295,7 @@ sub get_all_nfss_weights {
 
 my @allweights = grep { $_ !~ m/ regular | medium /xms }
                    map { @{$_} } values %WEIGHT;
-@allweights = ( Util::mqrs(@allweights), qw(medium regular) );
+@allweights = (Util::sort_desc_length(@allweights), qw(medium regular));
 
 
 # --------------------------------------------------------------------------
@@ -2318,7 +2346,7 @@ sub get_all_nfss_widths {
 
 
 my @allwidths = grep { $_ ne 'regular' } map { @{$_} } values %WIDTH;
-@allwidths = Util::mqrs(@allwidths);
+@allwidths = Util::sort_desc_length(@allwidths);
 
 # --------------------------------------------------------------------------
 #   Returns a list of all known width names,
@@ -2348,7 +2376,7 @@ sub get_nfss_shape {
 }
 
 
-my @allshapes = Util::mqrs(keys %SHAPE);
+my @allshapes = Util::sort_desc_length(keys %SHAPE);
 
 # --------------------------------------------------------------------------
 #   Returns a list of all known shape names,
@@ -2452,15 +2480,11 @@ sub map_nfss_codes {
 
 package Util;
 
-#   Sorts argument list so that longer strings come before shorter ones.
-#   This is useful when matching a string against a list of patterns
-#   where some of the patterns are a substring of others;
-#   since we would want the *longest* match, we must test the patterns
-#   in order of descending length.
-sub mqrs {
-    return map { quotemeta }
-               reverse sort { length($a) <=> length($b) }
-                            @_;
+# --------------------------------------------------------------------------
+#   Sorts its arguments so that longer strings come before shorter ones.
+# --------------------------------------------------------------------------
+sub sort_desc_length {
+    return reverse sort { length($a) <=> length($b) } @_;
 }
 
 
