@@ -54,9 +54,11 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 sub main {
     print "autoinst, version $VERSION\n";
 
+    # Parse and process command line options.
     ARGV::parse_options();
     Autoinst::process_options();
 
+    # Parse font info, and organize by family.
     my %fontfamily;
     for my $fontfile (@ARGV) {
         my $font = Font::get_fontinfo($fontfile);
@@ -3168,12 +3170,13 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-01>
+=item I<2020-05-08>
 
 When present, use encoding files in the current working directory
 in preference of the ones that come with B<autoinst>.
 Changed the way ornament fonts are created; ornament glyphs are now
 always included in the position chosen by the font's designer.
+Spring cleaning: reorganized the code for better maintainability.
 
 =item I<2020-04-28>
 
