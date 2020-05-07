@@ -66,37 +66,19 @@ sub main {
         push @{$fontfamily{$family}}, $font;
     }
 
-    while (my ($family, $fonts) = each %fontfamily) {
+    while (my ($family, $fontlist) = each %fontfamily) {
+        my @fonts = @$fontlist;
+
+        # Some options have font family-dependent defaults,
+        # which we can determine only now. To keep these changes
+        # from affecting other families, we localize %ARGV.
         local %ARGV = %ARGV;
+        Autoinst::process_family_dependent_options(@fonts);
 
-        my @fonts = @$fonts;
+        my $log = Log::create_logfile():
+        Log::log_parsing($log, @fonts);
 
-        if (!$ARGV{nfss}) {
-            $ARGV{nfss} = $fonts[0]->{nfss};
-        }
-        # If the user didn't explicitly say anything about ligatures,
-        # activate them unless the font is a typewriter font.
-        if ($ARGV{ligatures} == 2) {
-            $ARGV{ligatures} = $ARGV{nfss} eq 'tt' ? 0 : 1;
-        }
-
-        $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
-        if (-e $ARGV{logfile}) {
-            print "[WARNING]   File '$ARGV{logfile}' already exists;\n" .
-            "            appending new log data to end.\n";
-        }
-        open my $logfile, '>>', $ARGV{logfile}
-            or die "$0: cannot create $ARGV{logfile}: $!";
-
-        Log::create_logfile($logfile, @fonts);
         Font::assert_unique(@fonts);
-
-        # We can only handle the '-inferiors=auto' option now;
-        # since we need to know which inferior figures this font supports,
-        # we have to do the font info parsing first.
-        if ($ARGV{inferiors} eq 'auto') {
-            Autoinst::choose_inferiors(@fonts);
-        }
 
         # Figure out which styles and encodings to generate.
         # This is a four-step process:
@@ -113,7 +95,7 @@ sub main {
 
         # Decide to which weights and widths we'll map the standard NFSS codes
         my $choice = NFSS::map_nfss_codes(@fonts);
-        Log::log_worklist($logfile, $choice, @worklist);
+        Log::log_worklist($log, $choice, @worklist);
 
         # Organize the worklist by family, encoding, style, series and shape
         my %fddata;
@@ -143,7 +125,7 @@ sub main {
             make_commands(@worklist);
         }
 
-        close $logfile;
+        close $log;
         print "\n";
     }
 
@@ -1018,6 +1000,34 @@ END_WARNING_SPACES_IN_PATHS
 
 
 # --------------------------------------------------------------------------
+#   Processes command line options with font family-specific defaults.
+# --------------------------------------------------------------------------
+sub process_family_dependent_options {
+    my @fonts = @_;
+
+    if (!$ARGV{nfss}) {
+        $ARGV{nfss} = $fonts[0]->{nfss};
+    }
+    # If the user didn't explicitly say anything about ligatures,
+    # activate them unless the font is a typewriter font.
+    if ($ARGV{ligatures} == 2) {
+        $ARGV{ligatures} = $ARGV{nfss} eq 'tt' ? 0 : 1;
+    }
+
+    # We can only handle the '-inferiors=auto' option now;
+    # since we need to know which inferior figures this font supports,
+    # we have to do the font info parsing first.
+    if ($ARGV{inferiors} eq 'auto') {
+        choose_inferiors(@fonts);
+    }
+
+    $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
 #   Processes the -inferiors=auto option, given a list of fonts.
 #   We look through these fonts and simply pick the very first
 #   type of inferiors we see (we assume that this type is supported
@@ -1028,7 +1038,7 @@ sub choose_inferiors {
     for my $font (@_) {
         for my $inf (qw(subs sinf dnom)) {
             if (exists $font->{feature}{$inf}) {
-                $ARGV{inferiors} = $inf;
+                $ARGV{inferiors} = "auto ($inf)";
                 $FIGURESTYLE{Inf}{reqd} = [$inf];
                 last FONT;
             }
@@ -1876,12 +1886,15 @@ package Log;
 
 
 # --------------------------------------------------------------------------
-#   Logs command line options and the results of font info parsing.
-# --------------------------------------------------------------------------
 sub create_logfile {
-    my ($logfile, @fonts) = @_;
+    if (-e $ARGV{logfile}) {
+        print "[WARNING]   File '$ARGV{logfile}' already exists;\n" .
+        "            appending new log data to end.\n";
+    }
+    open my $log, '>>', $ARGV{logfile}
+        or die "$0: cannot create $ARGV{logfile}: $!";
 
-    print {$logfile} <<"END_ARGUMENTS";
+    print {$log} <<"END_ARGUMENTS";
 
 
 ############################################################################
@@ -1929,7 +1942,15 @@ I'm using the following options:
 
 END_ARGUMENTS
 
-    return if $ARGV{verbose} < 1;
+    return $log;
+}
+
+
+# --------------------------------------------------------------------------
+#   Logs command line options and the results of font info parsing.
+# --------------------------------------------------------------------------
+sub log_parsing {
+    my ($logfile, @fonts) = @_;
 
     print {$logfile} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
