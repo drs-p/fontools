@@ -111,6 +111,10 @@ sub main {
                 [ $minsize, $maxsize, $item->{fontname} ];
         }
 
+        my $targetdirs = get_targetdirs($family, @fonts);
+        my @commands = map { create_command($targetdirs, $_) } @worklist;
+        Log::log_commands($log, @commands) if $ARGV{verbose} >= 1;
+
         if (!$ARGV{dryrun}) {
             # Create the LaTeX support files
             LaTeX::write_stylefile($family, \%fddata);
@@ -121,8 +125,7 @@ sub main {
                 }
             }
 
-            # Create (and execute) commands for otftotfm
-            make_commands(@worklist);
+            run_commands($family, @commands);
         }
 
         close $log;
@@ -258,19 +261,15 @@ sub cleanup {
     }
     $workitem->{encoding} = uc $workitem->{encoding};
 
-    $workitem->{cmdline} = make_cmdline($workitem);
-
     return $workitem;
 }
 
 
 # --------------------------------------------------------------------------
-#   Generates all commands for otftotfm and saves or executes them.
+#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
 # --------------------------------------------------------------------------
-sub make_commands {
-    my @worklist = @_;
-
-    my @commands = map { $_->{cmdline} } @worklist;
+sub run_commands {
+    my ($family, @commands) = @_;
 
     # make sure the last command *does* call updmap
     $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
@@ -284,8 +283,7 @@ sub make_commands {
     else {
         my $oops = 0;
         $| = 1;     # turn on autoflush, to make a poor man's progress bar
-        printf "[INFO]      Generating fonts for %s ",
-                $worklist[0]->{font}{family};
+        print "[INFO]      Generating fonts for $family ";
         for my $command (@commands) {
             print '.';
             open my $otftotfm, '-|', "$command 2>&1"
@@ -326,19 +324,20 @@ my %SCHEME = (
     fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
 );
 
-# --------------------------------------------------------------------------
-#   Generates a command line for otftotfm from a work item.
-# --------------------------------------------------------------------------
-sub make_cmdline {
-    my $item = shift;
 
-    if ( !$ARGV{ligatures} ) {
+# --------------------------------------------------------------------------
+#   Generates a command for otftotfm from a work item.
+# --------------------------------------------------------------------------
+sub create_command {
+    my ($targetdirs, $item) = @_;
+
+    if (!$ARGV{ligatures}) {
         @{$item->{features}} = grep { $_ ne 'liga' } @{$item->{features}};
     }
     return join ' ', 'otftotfm',
                      ($ARGV{manual} ? '--pl' : '--automatic'),
                      "--encoding=$item->{enc_file}",
-                     set_targetdirs($item->{font}),
+                     $targetdirs,
                      '--no-updmap',
                      ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
                         ? '--no-type1'
@@ -367,17 +366,16 @@ sub make_cmdline {
 #   Returns a string with all "directory" options for otftotfm set.
 #   Also creates directories that don't exist yet.
 #-----------------------------------------------------------------------
-sub set_targetdirs {
-    my $font = shift;
+sub get_targetdirs {
+    my ($family, @fonts) = @_;
+    # my @fonts = @_;
+    # my $family = $fonts[0]->{family};
 
-    my $family = $font->{family};
-    my ($fonttype) = map { lc $_ } $font->{filename} =~ m/[.]([ot]tf)\z/xmsi;
+    my %fonttype = map { ($_->{fonttype} => 1) } @fonts;
 
-    my @FILETYPES = qw(tfm vf);
-    push @FILETYPES, $fonttype eq 'otf' ? qw(type1)
-                   : $fonttype eq 'ttf' ? qw(truetype)
-                   :                      qw(type1 truetype)
-                   ;
+    my @filetypes = qw(tfm vf);
+    if ($fonttype{opentype}) { push @filetypes, qw(type1) }
+    if ($fonttype{truetype}) { push @filetypes, qw(truetype) }
 
     my %dir = map { ( $_ => File::Spec->catdir(
                             $ARGV{target},
@@ -386,7 +384,7 @@ sub set_targetdirs {
                             $ARGV{vendor},
                             $ARGV{typeface} || $family) )
                   }
-                  @FILETYPES;
+                  @filetypes;
 
     $dir{$_}
         = File::Spec->catdir(
@@ -398,7 +396,7 @@ sub set_targetdirs {
     my $result
         = join q{ },
                map { qq(--${_}-directory="$dir{$_}") }
-                   @FILETYPES;
+                   @filetypes;
     $result .= qq( --encoding-directory="$dir{enc}" --map-file=")
                . File::Spec->catfile($dir{map}, "$family.map")
                . '"';
@@ -1163,6 +1161,14 @@ sub new {
         weight_class => 0,
         width_class  => 0,
     };
+
+    my ($ext) = $filename =~ m/[.] ([^.]+) \z/xmsi;
+    $ext = lc $ext;
+    if    ($ext eq 'otf') { $self->{fonttype} = 'opentype' }
+    elsif ($ext eq 'ttf') { $self->{fonttype} = 'truetype' }
+    else {
+        die "[ERROR]     Unknown font type '.$ext' ($filename)";
+    }
 
     return bless $self, $cls;
 }
@@ -1999,7 +2005,6 @@ sub log_worklist {
     }
 
     my $prevfn = q{};
-    my @cmds;
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
             print {$log} <<"END_FONTINFO";
@@ -2020,13 +2025,20 @@ END_FONTINFO
                       $item->{fdshape},
                       join(', ', @{$item->{features}});
         $prevfn  = $item->{font}{filename};
-
-        push @cmds, $item->{cmdline};
     }
 
-    return if $ARGV{verbose} < 1;
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Logs all generated otftotfm commands.
+# --------------------------------------------------------------------------
+sub log_commands {
+    my ($log, @commands) = @_;
+
     print {$log} "\n\n";
-    print {$log} join "\n\n", @cmds;
+    print {$log} join "\n\n", @commands;
     print {$log} "\n";
 
     return;
