@@ -78,7 +78,7 @@ sub main {
 
         # We defer asserting that all fonts were parsed in a unique way
         # until after the results of the parsing are logged.
-        Font::assert_unique(@fonts);
+        Font::assert_unique($log, @fonts);
 
         my $nfss_mapping = NFSS::map_nfss_codes(@fonts);
         $log->log_nfss_mapping($nfss_mapping);
@@ -90,12 +90,12 @@ sub main {
         my @commands = map { create_command($targetdirs, $_) } @worklist;
         $log->log_commands(@commands) if $ARGV{verbose} >= 1;
 
-        $log->close();
-
         if (!$ARGV{dryrun}) {
             LaTeX::create_support_files($family, $nfss_mapping, @worklist);
-            run_commands($family, @commands);
+            run_commands($log, $family, @commands);
         }
+
+        $log->close();
     }
 
     return;
@@ -201,9 +201,9 @@ sub create_command {
 #   Executes (or saves to file, when $ARGV{manual} is true) all commands.
 # --------------------------------------------------------------------------
 sub run_commands {
-    my ($family, @commands) = @_;
+    my ($log, $family, @commands) = @_;
 
-    # make sure the last command *does* call updmap
+    # Make sure the last command *does* call updmap.
     $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
 
     if ($ARGV{manual}) {
@@ -224,7 +224,7 @@ sub run_commands {
             close $otftotfm
                 or do {
                     warn "\n$command\n\n$msgs\n";
-                    print {$ARGV{logfile}} "\n$command\n\n$msgs\n";
+                    $log->log("\n$command\n\n$msgs\n");
                     $oops = 1;
                 };
         }
@@ -301,9 +301,9 @@ END_ERR_PARSE
 #   Asserts all parsed fonts are unique.
 # --------------------------------------------------------------------------
 sub assert_unique {
-    my @fonts = @_;
+    my ($log, @fonts) = @_;
 
-    # These attributes should uniquely identify each font
+    # These attributes should uniquely identify each font.
     my @attributes
         = qw(family weight width shape minsize maxsize is_smallcaps);
 
@@ -322,9 +322,9 @@ sub assert_unique {
         }
     }
 
-    # Die with detailed error message if the font infos aren't unique
+    # Die with detailed error message if the font infos aren't unique.
     if ($err_details) {
-        print {$ARGV{logfile}} $err_details, $ERR_PARSE;
+        $log->log($err_details, $ERR_PARSE);
         die $err_details, $ERR_PARSE;
     }
 
@@ -1123,6 +1123,16 @@ sub new {
         or die "$0: cannot create '$filename': $!";
 
     return bless $log, $class;
+}
+
+
+# --------------------------------------------------------------------------
+#   Writes a message to the log file.
+# --------------------------------------------------------------------------
+sub log {
+    my ($this, $msg) = @_;
+
+    print {$this} $msg;
 }
 
 
