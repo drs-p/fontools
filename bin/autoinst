@@ -101,10 +101,10 @@ sub main {
 }
 
 
-#-----------------------------------------------------------------------
+# --------------------------------------------------------------------------
 #   Returns a string with all "directory" options for otftotfm set.
 #   Also creates directories that don't exist yet.
-#-----------------------------------------------------------------------
+# --------------------------------------------------------------------------
 sub get_targetdirs {
     my ($family, @fonts) = @_;
 
@@ -1762,7 +1762,7 @@ Possible options:
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
 END_USAGE
 
-# Default values for the command-line arguments
+# Default values for the command-line arguments.
 %ARGV = (
     encoding        => 'OT1,LY1,T1',
     textcomp        => '2',     # 0 = no, 1 = yes, 2 = ('T1' ? yes : no)
