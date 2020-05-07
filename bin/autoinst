@@ -375,11 +375,11 @@ sub get_targetdirs {
     # my @fonts = @_;
     # my $family = $fonts[0]->{family};
 
-    my %fonttype = map { ($_->{fonttype} => 1) } @fonts;
+    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
 
     my @filetypes = qw(tfm vf);
-    if ($fonttype{opentype}) { push @filetypes, qw(type1) }
-    if ($fonttype{truetype}) { push @filetypes, qw(truetype) }
+    if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
+    if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
 
     my %dir = map { ( $_ => File::Spec->catdir(
                             $ARGV{target},
