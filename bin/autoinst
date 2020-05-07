@@ -79,7 +79,14 @@ sub main {
         }
 
         $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
-        create_logfile(@fonts);
+        if (-e $ARGV{logfile}) {
+            print "[WARNING]   File '$ARGV{logfile}' already exists;\n" .
+            "            appending new log data to end.\n";
+        }
+        open my $logfile, '>>', $ARGV{logfile}
+            or die "$0: cannot create $ARGV{logfile}: $!";
+
+        Log::create_logfile($logfile, @fonts);
         Font::assert_unique(@fonts);
 
         # We can only handle the '-inferiors=auto' option now;
@@ -104,7 +111,7 @@ sub main {
 
         # Decide to which weights and widths we'll map the standard NFSS codes
         my $choice = NFSS::map_nfss_codes(@fonts);
-        log_worklist($choice, @worklist);
+        Log::log_worklist($logfile, $choice, @worklist);
 
         # Organize the worklist by family, encoding, style, series and shape
         my %fddata;
@@ -134,7 +141,7 @@ sub main {
             make_commands(@worklist);
         }
 
-        close $ARGV{logfile};
+        close $logfile;
         print "\n";
     }
 
@@ -271,158 +278,6 @@ sub cleanup {
     $workitem->{cmdline} = make_cmdline($workitem);
 
     return $workitem;
-}
-
-
-# --------------------------------------------------------------------------
-#   Logs command line options and the results of font info parsing.
-# --------------------------------------------------------------------------
-sub create_logfile {
-    my @fonts = @_;
-
-    if (-e $ARGV{logfile}) {
-        print "[WARNING]   File '$ARGV{logfile}' already exists;\n" .
-              "            appending new log data to end.\n";
-    }
-    open my $LOG, '>>', $ARGV{logfile}
-        or die "$0: cannot create $ARGV{logfile}: $!";
-    $ARGV{logfile} = $LOG;
-
-    print {$LOG} <<"END_ARGUMENTS";
-
-
-############################################################################
-
-
-@{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0, version $VERSION
-
-    "$ARGV{cmdline}"
-
-----------------------------------------------------------------------------
-
-I'm using the following options:
-
-    encoding(s):        @{[ join ', ', @{$ARGV{encoding}} ]}
-    NFSS:               $ARGV{nfss} @{[ $ARGV{nfss} eq 'rm' ? '(serif)'
-                                      : $ARGV{nfss} eq 'sf' ? '(sanserif)'
-                                      : $ARGV{nfss} eq 'tt' ? '(typewriter)'
-                                      :                       '(unknown)'
-                                    ]}
-
-    lining:             @{[ $ARGV{lining}       ? 'yes'     : 'no'     ]}
-    oldstyle:           @{[ $ARGV{oldstyle}     ? 'yes'     : 'no'     ]}
-    proportional:       @{[ $ARGV{proportional} ? 'yes'     : 'no'     ]}
-    tabular:            @{[ $ARGV{tabular}      ? 'yes'     : 'no'     ]}
-    ts1:                @{[ $ARGV{textcomp}     ? 'yes'     : 'no'     ]}
-    smallcaps:          @{[ $ARGV{smallcaps}    ? 'yes'     : 'no'     ]}
-    swash:              @{[ $ARGV{swash}        ? 'yes'     : 'no'     ]}
-    titling:            @{[ $ARGV{titling}      ? 'yes'     : 'no'     ]}
-    superiors:          @{[ $ARGV{superiors}    ? 'yes'     : 'no'     ]}
-    inferiors:          $ARGV{inferiors}
-    ornaments:          @{[ $ARGV{ornaments}    ? 'yes'     : 'no'     ]}
-    fractions:          @{[ $ARGV{fractions}    ? 'yes'     : 'no'     ]}
-    ligatures:          @{[ $ARGV{ligatures}    ? 'yes'     : 'no'     ]}
-
-    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto'   ]}
-    target:             $ARGV{target}
-    extra:              $ARGV{extra}
-
-    figurekern:         @{[ $ARGV{figurekern}   ? 'keep'    : 'remove' ]}
-
-    nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
-    nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
-
-    @{[ $ARGV{dryrun} ? 'DRY RUN' : '' ]}
-
-END_ARGUMENTS
-
-    return if $ARGV{verbose} < 1;
-
-    print {$LOG} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
-
-    for my $font (@fonts) {
-        print {$LOG} <<"END_PARSE_FONT";
-
-    $font->{filename}
-        Name:       $font->{name}
-        Family:     $font->{family}
-        Subfamily:  $font->{subfamily}
-        Weight:     $font->{weight} ($font->{weight_class})
-        Width:      $font->{width} ($font->{width_class})
-        Shape:      $font->{shape} @{[ $font->{is_smallcaps}
-                                            ? 'smallcaps' : '' ]}
-        Size:       $font->{minsize}-$font->{maxsize}
-        Features:   @{[ join ', ', sort keys %{$font->{feature}} ]}
-END_PARSE_FONT
-    }
-}
-
-
-# --------------------------------------------------------------------------
-#   Logs NFSS mappings and all fonts we're going to create.
-# --------------------------------------------------------------------------
-sub log_worklist {
-    my ($choice, @items) = @_;
-
-    my @worklist
-        = sort { $a->{font}{filename}    cmp $b->{font}{filename}
-                    || $a->{encoding}    cmp $b->{encoding}
-                    || $a->{figurestyle} cmp $b->{figurestyle}
-               }
-               @items;
-
-    my $LOG = $ARGV{logfile};
-
-    print {$LOG} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
-    for my $weight (NFSS::get_all_nfss_weights()) {
-        printf {$LOG} "    %-3s =>  %s\n",
-                $weight || 'm', $choice->{weight}{$weight}[0] || '';
-    }
-    printf {$LOG} "\n";
-    for my $width (NFSS::get_all_nfss_widths()) {
-        printf {$LOG} "    %-3s =>  %s\n",
-                $width || 'm', $choice->{width}{$width}[0] || '';
-    }
-    printf {$LOG} "\n";
-
-    return if $ARGV{verbose} < 1;
-
-    my ($prevfn, $prevsty, $prevenc) = ('') x 3;
-    my @cmds;
-    for my $item (@worklist) {
-        if ($prevfn ne $item->{font}{filename}) {
-            print {$LOG} <<"END_FONTINFO";
-
-    ------------------------------------------------------------------------
-
-    $item->{font}{filename}
-
-        Generating these encodings, figure styles and shapes:
-
-        ENC     STYLE   SHAPE   FEATURES USED
-END_FONTINFO
-        }
-        if ($prevenc ne $item->{encoding}
-            || $prevsty ne $item->{figurestyle}) {
-            print {$LOG} "\n";
-        }
-        printf {$LOG} "        %-3s     %-4s    %-4s    %s\n",
-                      $item->{encoding},
-                      $item->{figurestyle},
-                      $item->{fdshape},
-                      join(', ', @{$item->{features}}),
-                      ;
-        $prevfn  = $item->{font}{filename};
-        $prevsty = $item->{figurestyle};
-        $prevenc = $item->{encoding};
-
-        push @cmds, $item->{cmdline};
-    }
-
-    return if $ARGV{verbose} < 2;
-    print {$LOG} "\n\n";
-    print {$LOG} join "\n\n", @cmds;
-    print {$LOG} "\n";
 }
 
 
@@ -2007,6 +1862,158 @@ END_SSUB_BX
 
     print {$FD} "\\endinput\n";
     close $FD;
+
+    return;
+}
+
+
+############################################################################
+
+
+package Log;
+
+
+# --------------------------------------------------------------------------
+#   Logs command line options and the results of font info parsing.
+# --------------------------------------------------------------------------
+sub create_logfile {
+    my ($logfile, @fonts) = @_;
+
+    print {$logfile} <<"END_ARGUMENTS";
+
+
+############################################################################
+
+
+@{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0, version $VERSION
+
+    "$ARGV{cmdline}"
+
+----------------------------------------------------------------------------
+
+I'm using the following options:
+
+    encoding(s):        @{[ join ', ', @{$ARGV{encoding}} ]}
+    NFSS:               $ARGV{nfss} @{[ $ARGV{nfss} eq 'rm' ? '(serif)'
+                                      : $ARGV{nfss} eq 'sf' ? '(sanserif)'
+                                      : $ARGV{nfss} eq 'tt' ? '(typewriter)'
+                                      :                       '(unknown)'
+                                    ]}
+
+    lining:             @{[ $ARGV{lining}       ? 'yes'     : 'no'     ]}
+    oldstyle:           @{[ $ARGV{oldstyle}     ? 'yes'     : 'no'     ]}
+    proportional:       @{[ $ARGV{proportional} ? 'yes'     : 'no'     ]}
+    tabular:            @{[ $ARGV{tabular}      ? 'yes'     : 'no'     ]}
+    ts1:                @{[ $ARGV{textcomp}     ? 'yes'     : 'no'     ]}
+    smallcaps:          @{[ $ARGV{smallcaps}    ? 'yes'     : 'no'     ]}
+    swash:              @{[ $ARGV{swash}        ? 'yes'     : 'no'     ]}
+    titling:            @{[ $ARGV{titling}      ? 'yes'     : 'no'     ]}
+    superiors:          @{[ $ARGV{superiors}    ? 'yes'     : 'no'     ]}
+    inferiors:          $ARGV{inferiors}
+    ornaments:          @{[ $ARGV{ornaments}    ? 'yes'     : 'no'     ]}
+    fractions:          @{[ $ARGV{fractions}    ? 'yes'     : 'no'     ]}
+    ligatures:          @{[ $ARGV{ligatures}    ? 'yes'     : 'no'     ]}
+
+    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto'   ]}
+    target:             $ARGV{target}
+    extra:              $ARGV{extra}
+
+    figurekern:         @{[ $ARGV{figurekern}   ? 'keep'    : 'remove' ]}
+
+    nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
+    nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
+
+    @{[ $ARGV{dryrun} ? 'DRY RUN' : '' ]}
+
+END_ARGUMENTS
+
+    return if $ARGV{verbose} < 1;
+
+    print {$logfile} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
+
+    for my $font (@fonts) {
+        print {$logfile} <<"END_PARSE_FONT";
+
+    $font->{filename}
+        Name:       $font->{name}
+        Family:     $font->{family}
+        Subfamily:  $font->{subfamily}
+        Weight:     $font->{weight} ($font->{weight_class})
+        Width:      $font->{width} ($font->{width_class})
+        Shape:      $font->{shape} @{[ $font->{is_smallcaps}
+                                            ? 'smallcaps' : '' ]}
+        Size:       $font->{minsize}-$font->{maxsize}
+        Features:   @{[ join ', ', sort keys %{$font->{feature}} ]}
+END_PARSE_FONT
+    }
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Logs NFSS mappings and all fonts we're going to create.
+# --------------------------------------------------------------------------
+sub log_worklist {
+    my ($logfile, $choice, @items) = @_;
+
+    my @worklist
+        = sort { $a->{font}{filename}    cmp $b->{font}{filename}
+                    || $a->{encoding}    cmp $b->{encoding}
+                    || $a->{figurestyle} cmp $b->{figurestyle}
+               }
+               @items;
+
+    print {$logfile} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
+    for my $weight (NFSS::get_all_nfss_weights()) {
+        printf {$logfile} "    %-3s =>  %s\n",
+                $weight || 'm', $choice->{weight}{$weight}[0] || '';
+    }
+    printf {$logfile} "\n";
+    for my $width (NFSS::get_all_nfss_widths()) {
+        printf {$logfile} "    %-3s =>  %s\n",
+                $width || 'm', $choice->{width}{$width}[0] || '';
+    }
+    printf {$logfile} "\n";
+
+    return if $ARGV{verbose} < 1;
+
+    my ($prevfn, $prevsty, $prevenc) = ('') x 3;
+    my @cmds;
+    for my $item (@worklist) {
+        if ($prevfn ne $item->{font}{filename}) {
+            print {$logfile} <<"END_FONTINFO";
+
+    ------------------------------------------------------------------------
+
+    $item->{font}{filename}
+
+        Generating these encodings, figure styles and shapes:
+
+        ENC     STYLE   SHAPE   FEATURES USED
+END_FONTINFO
+        }
+        if ($prevenc ne $item->{encoding}
+            || $prevsty ne $item->{figurestyle}) {
+            print {$logfile} "\n";
+        }
+        printf {$logfile} "        %-3s     %-4s    %-4s    %s\n",
+                      $item->{encoding},
+                      $item->{figurestyle},
+                      $item->{fdshape},
+                      join(', ', @{$item->{features}}),
+                      ;
+        $prevfn  = $item->{font}{filename};
+        $prevsty = $item->{figurestyle};
+        $prevenc = $item->{encoding};
+
+        push @cmds, $item->{cmdline};
+    }
+
+    return if $ARGV{verbose} < 2;
+    print {$logfile} "\n\n";
+    print {$logfile} join "\n\n", @cmds;
+    print {$logfile} "\n";
 
     return;
 }
