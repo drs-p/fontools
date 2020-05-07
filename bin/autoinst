@@ -75,7 +75,7 @@ sub main {
         local %ARGV = %ARGV;
         Autoinst::process_family_dependent_options(@fonts);
 
-        my $log = Log::create_logfile():
+        my $log = Log::create_logfile();
         Log::log_parsing($log, @fonts);
 
         Font::assert_unique(@fonts);
@@ -464,7 +464,6 @@ Possible options:
     -dryrun                 Don't generate fonts, only log what would be done
     -logfile="FILE"         Write log to "FILE" (default: <fontfamily>.log)
     -verbose                Print more data to log file
-                            (repeat for even higher verbosity)
     -version                Print version number and exit
 
     font[s]                 The fonts (.otf or .ttf format) to install.
@@ -1999,8 +1998,6 @@ sub log_worklist {
     }
     printf {$logfile} "\n";
 
-    return if $ARGV{verbose} < 1;
-
     my ($prevfn, $prevsty, $prevenc) = ('') x 3;
     my @cmds;
     for my $item (@worklist) {
@@ -2033,7 +2030,7 @@ END_FONTINFO
         push @cmds, $item->{cmdline};
     }
 
-    return if $ARGV{verbose} < 2;
+    return if $ARGV{verbose} < 1;
     print {$logfile} "\n\n";
     print {$logfile} join "\n\n", @cmds;
     print {$logfile} "\n";
@@ -2896,7 +2893,7 @@ it doesn't overwrite an existing file.
 
 =item B<-verbose>
 
-Add more details to the log file. Repeat this option for even more info.
+Add more details to the log file.
 
 =item B<-encoding>=I<encoding[,encoding]>
 
