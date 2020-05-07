@@ -1901,6 +1901,8 @@ sub create_logfile {
 
 @{[ POSIX::strftime("[%F %T]", localtime time) ]}  $0, version $VERSION
 
+Command was:
+
     "$ARGV{cmdline}"
 
 ----------------------------------------------------------------------------
@@ -1937,9 +1939,11 @@ I'm using the following options:
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
-    @{[ $ARGV{dryrun} ? 'DRY RUN' : '' ]}
-
 END_ARGUMENTS
+
+    if ($ARGV{dryrun}) {
+        print {$log} "    DRY RUN\n\n";
+    }
 
     return $log;
 }
@@ -1949,12 +1953,12 @@ END_ARGUMENTS
 #   Logs command line options and the results of font info parsing.
 # --------------------------------------------------------------------------
 sub log_parsing {
-    my ($logfile, @fonts) = @_;
+    my ($log, @fonts) = @_;
 
-    print {$logfile} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
+    print {$log} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
     for my $font (@fonts) {
-        print {$logfile} <<"END_PARSE_FONT";
+        print {$log} <<"END_PARSE_FONT";
 
     $font->{filename}
         Name:       $font->{name}
@@ -1977,7 +1981,7 @@ END_PARSE_FONT
 #   Logs NFSS mappings and all fonts we're going to create.
 # --------------------------------------------------------------------------
 sub log_worklist {
-    my ($logfile, $choice, @items) = @_;
+    my ($log, $choice, @items) = @_;
 
     my @worklist
         = sort { $a->{font}{filename}    cmp $b->{font}{filename}
@@ -1986,23 +1990,24 @@ sub log_worklist {
                }
                @items;
 
-    print {$logfile} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
+    print {$log} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
     for my $weight (NFSS::get_all_nfss_weights()) {
-        printf {$logfile} "    %-3s =>  %s\n",
-                $weight || 'm', $choice->{weight}{$weight}[0] || '';
+        printf {$log} "    %-3s =>  %s\n",
+                      $weight || 'm',
+                      $choice->{weight}{$weight}[0] || '';
     }
-    printf {$logfile} "\n";
+    printf {$log} "\n";
     for my $width (NFSS::get_all_nfss_widths()) {
-        printf {$logfile} "    %-3s =>  %s\n",
-                $width || 'm', $choice->{width}{$width}[0] || '';
+        printf {$log} "    %-3s =>  %s\n",
+                      $width || 'm',
+                      $choice->{width}{$width}[0] || '';
     }
-    printf {$logfile} "\n";
 
-    my ($prevfn, $prevsty, $prevenc) = ('') x 3;
+    my $prevfn = q{};
     my @cmds;
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
-            print {$logfile} <<"END_FONTINFO";
+            print {$log} <<"END_FONTINFO";
 
     ------------------------------------------------------------------------
 
@@ -2010,30 +2015,24 @@ sub log_worklist {
 
         Generating these encodings, figure styles and shapes:
 
-        ENC     STYLE   SHAPE   FEATURES USED
+            ENC     STYLE   SHAPE   FEATURES USED
+
 END_FONTINFO
         }
-        if ($prevenc ne $item->{encoding}
-            || $prevsty ne $item->{figurestyle}) {
-            print {$logfile} "\n";
-        }
-        printf {$logfile} "        %-3s     %-4s    %-4s    %s\n",
+        printf {$log} "            %-3s     %-4s    %-4s    %s\n",
                       $item->{encoding},
                       $item->{figurestyle},
                       $item->{fdshape},
-                      join(', ', @{$item->{features}}),
-                      ;
+                      join(', ', @{$item->{features}});
         $prevfn  = $item->{font}{filename};
-        $prevsty = $item->{figurestyle};
-        $prevenc = $item->{encoding};
 
         push @cmds, $item->{cmdline};
     }
 
     return if $ARGV{verbose} < 1;
-    print {$logfile} "\n\n";
-    print {$logfile} join "\n\n", @cmds;
-    print {$logfile} "\n";
+    print {$log} "\n\n";
+    print {$log} join "\n\n", @cmds;
+    print {$log} "\n";
 
     return;
 }
