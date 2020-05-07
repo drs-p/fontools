@@ -49,12 +49,11 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 
 # --------------------------------------------------------------------------
-#
+#   The main routine; this drives everything.
 # --------------------------------------------------------------------------
 sub main {
     print "autoinst, version $VERSION\n";
 
-    # Parse and process command line options.
     Options::parse_options();
     Tables::process_options();
 
@@ -108,8 +107,6 @@ sub main {
 #-----------------------------------------------------------------------
 sub get_targetdirs {
     my ($family, @fonts) = @_;
-    # my @fonts = @_;
-    # my $family = $fonts[0]->{family};
 
     my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
 
@@ -145,7 +142,7 @@ sub get_targetdirs {
 }
 
 
-# The official names for various coding schemes
+# The official names for various coding schemes.
 my %SCHEME = (
     fontools_ot1 => 'TEX TEXT',
     fontools_t1  => 'EXTENDED TEX FONT ENCODING - LATIN',
@@ -158,7 +155,6 @@ my %SCHEME = (
     fontools_t3  => 'TEX IPA ENCODING',
     fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
 );
-
 
 # --------------------------------------------------------------------------
 #   Generates a command for otftotfm from a work item.
@@ -247,6 +243,9 @@ END_OTFTOTFM_WARNING
 
 package Font;
 
+# --------------------------------------------------------------------------
+#   Collects all needed info about a font file.
+# --------------------------------------------------------------------------
 sub get_fontinfo {
     my $filename = shift;
 
@@ -271,7 +270,7 @@ sub get_fontinfo {
 }
 
 
-# Error messages, used in assert_unique()
+# Error messages, used in assert_unique().
 my $ERR_DETAIL =<<'END_ERR_DETAIL';
 [ERROR]     I've parsed both %s
                          and %s as
@@ -367,6 +366,9 @@ sub new {
 }
 
 
+# --------------------------------------------------------------------------
+#   Returns a boolean indicating if this font has the wanted feature.
+# --------------------------------------------------------------------------
 sub has_feature {
     my ($self, $feat) = @_;
 
@@ -728,12 +730,12 @@ sub get_nfss_classification {
 package LaTeX;
 
 # --------------------------------------------------------------------------
-#   ...
+#   Creates .sty and .fd files for LaTeX.
 # --------------------------------------------------------------------------
 sub create_support_files {
     my ($family, $nfss_mapping, @worklist) = @_;
 
-    # Organize the worklist by family, encoding, style, series and shape
+    # Organize the worklist by family, encoding, style, series and shape.
     my %fddata;
     for my $item (@worklist) {
         my $encoding    = $item->{encoding};
@@ -747,12 +749,10 @@ sub create_support_files {
             [ $minsize, $maxsize, $item->{fontname} ];
     }
 
-    # Create the LaTeX support files
-    write_stylefile($family, \%fddata);
+    create_stylefile($family, \%fddata);
     while (my ($enc, $encdata) = each %fddata) {
         while (my ($sty, $stydata) = each %$encdata) {
-            write_fdfile(
-                $nfss_mapping, $family, $enc, $sty, $stydata);
+            create_fdfile($nfss_mapping, $family, $enc, $sty, $stydata);
         }
     }
 
@@ -769,13 +769,13 @@ my %SSUB_SHAPE = (
     scit    =>  'scsl',
 );
 
-#-----------------------------------------------------------------------
-# Create a LaTeX style file
-#-----------------------------------------------------------------------
-sub write_stylefile {
+# --------------------------------------------------------------------------
+#   Creates a LaTeX style file.
+# --------------------------------------------------------------------------
+sub create_stylefile {
     my ($fam, $data) = @_;
 
-    my %seen = %{ get_keys($data) };
+    my %seen = %{ Util::get_keys($data) };
 
     my $fn = sprintf "%s.sty", $fam;
     my $dir = File::Spec->catdir(
@@ -963,26 +963,10 @@ END_STYLE_REST
 }
 
 
-#-----------------------------------------------------------------------
-# Walk a nested dictionary, return lookup table with all keys
-#-----------------------------------------------------------------------
-sub get_keys {
-    my $dict = shift;
-    my $seen = shift || {};
-
-    while (my ($k, $v) = each %$dict) {
-        $seen->{$k} = 1;
-        get_keys($v, $seen) if ref $v eq 'HASH';
-    }
-
-    return $seen;
-}
-
-
-#-----------------------------------------------------------------------
-# Create a .fd file for NFSS
-#-----------------------------------------------------------------------
-sub write_fdfile {
+# --------------------------------------------------------------------------
+#   Creates a .fd file for LaTeX.
+# --------------------------------------------------------------------------
+sub create_fdfile {
     my ($nfss_mapping, $fam, $enc, $sty, $data) = @_;
 
     my $fn = sprintf "%s%s-%s.fd", $enc, $fam, $sty;
@@ -1130,9 +1114,9 @@ sub new {
 #   Writes a message to the log file.
 # --------------------------------------------------------------------------
 sub log {
-    my ($this, $msg) = @_;
+    my ($self, $msg) = @_;
 
-    print {$this} $msg;
+    print {$self} $msg;
 }
 
 
@@ -1140,9 +1124,9 @@ sub log {
 #   Closes the logfile associated with this Log object.
 # --------------------------------------------------------------------------
 sub close {
-    my $this = shift;
+    my $self = shift;
 
-    close $this;
+    close $self;
 }
 
 
@@ -1150,9 +1134,9 @@ sub close {
 #   Logs the command line options.
 # --------------------------------------------------------------------------
 sub log_arguments {
-    my $this = shift;
+    my $self = shift;
 
-    print {$this} <<"END_ARGUMENTS";
+    print {$self} <<"END_ARGUMENTS";
 
 
 ############################################################################
@@ -1201,7 +1185,7 @@ I'm using the following options:
 END_ARGUMENTS
 
     if ($ARGV{dryrun}) {
-        print {$this} "    DRY RUN\n\n";
+        print {$self} "    DRY RUN\n\n";
     }
 
     return;
@@ -1212,12 +1196,12 @@ END_ARGUMENTS
 #   Logs command line options and the results of font info parsing.
 # --------------------------------------------------------------------------
 sub log_parsing {
-    my ($this, @fonts) = @_;
+    my ($self, @fonts) = @_;
 
-    print {$this} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
+    print {$self} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
     for my $font (@fonts) {
-        print {$this} <<"END_PARSE_FONT";
+        print {$self} <<"END_PARSE_FONT";
 
     $font->{filename}
         Name:       $font->{name}
@@ -1240,17 +1224,17 @@ END_PARSE_FONT
 #   Logs the mapping of NFSS codes to weights and widths.
 # --------------------------------------------------------------------------
 sub log_nfss_mapping {
-    my ($this, $nfss_mapping) = @_;
+    my ($self, $nfss_mapping) = @_;
 
-    print {$this} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
+    print {$self} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
     for my $weight (NFSS::get_all_nfss_weights()) {
-        printf {$this} "    %-3s =>  %s\n",
+        printf {$self} "    %-3s =>  %s\n",
                        $weight || 'm',
                        $nfss_mapping->{weight}{$weight}[0] || '';
     }
-    printf {$this} "\n";
+    printf {$self} "\n";
     for my $width (NFSS::get_all_nfss_widths()) {
-        printf {$this} "    %-3s =>  %s\n",
+        printf {$self} "    %-3s =>  %s\n",
                        $width || 'm',
                        $nfss_mapping->{width}{$width}[0] || '';
     }
@@ -1263,7 +1247,7 @@ sub log_nfss_mapping {
 #   Logs all fonts we're going to create.
 # --------------------------------------------------------------------------
 sub log_worklist {
-    my ($this, @items) = @_;
+    my ($self, @items) = @_;
 
     my @worklist
         = sort { $a->{font}{filename}    cmp $b->{font}{filename}
@@ -1275,7 +1259,7 @@ sub log_worklist {
     my $prevfn = q{};
     for my $item (@worklist) {
         if ($prevfn ne $item->{font}{filename}) {
-            print {$this} <<"END_FONTINFO";
+            print {$self} <<"END_FONTINFO";
 
     ------------------------------------------------------------------------
 
@@ -1287,7 +1271,7 @@ sub log_worklist {
 
 END_FONTINFO
         }
-        printf {$this} "            %-3s     %-4s    %-4s    %s\n",
+        printf {$self} "            %-3s     %-4s    %-4s    %s\n",
                        $item->{encoding},
                        $item->{figurestyle},
                        $item->{fdshape},
@@ -1303,11 +1287,11 @@ END_FONTINFO
 #   Logs all generated otftotfm commands.
 # --------------------------------------------------------------------------
 sub log_commands {
-    my ($this, @commands) = @_;
+    my ($self, @commands) = @_;
 
-    print {$this} "\n\n";
-    print {$this} join "\n\n", @commands;
-    print {$this} "\n";
+    print {$self} "\n\n";
+    print {$self} join "\n\n", @commands;
+    print {$self} "\n";
 
     return;
 }
@@ -1473,7 +1457,7 @@ sub unabbreviate {
 }
 
 
-#   Auxiliary table that reverses FULL_FORM; maps full forms to abbrevs.
+# Auxiliary table that reverses FULL_FORM; maps full forms to abbrevs.
 my %abbrev;
 while ( my ($k, $v) = each %FULL_FORM ) {
     push @{$abbrev{$v}}, $k;
@@ -1498,7 +1482,7 @@ sub get_abbreviated_forms {
 my %WEIGHT = @WEIGHT;
 @WEIGHT = grep { !ref } @WEIGHT;
 
-# Add abbreviated forms, using the %ABBREV table constructed earlier
+# Add abbreviated forms, using the %ABBREV table constructed earlier.
 for my $code (@WEIGHT) {
     $WEIGHT{$code}
         = [ map { get_abbreviated_forms($_) } @{$WEIGHT{$code}} ];
@@ -1549,7 +1533,7 @@ sub get_all_weights {
 my %WIDTH = @WIDTH;
 @WIDTH = grep { !ref } @WIDTH;
 
-# Add abbreviated forms, using the %ABBREV table constructed earlier
+# Add abbreviated forms, using the %ABBREV table constructed earlier.
 for my $code (@WIDTH) {
     $WIDTH{$code}
         = [ map { get_abbreviated_forms($_) } @{$WIDTH{$code}} ];
@@ -1597,7 +1581,7 @@ sub get_all_widths {
 }
 
 
-#   Add abbreviated forms to %SHAPE table
+# Add abbreviated forms to %SHAPE table.
 for my $full (keys %abbrev) {
     if (defined $SHAPE{$full}) {
         for my $abbrev (get_abbreviated_forms($full)) {
@@ -2395,6 +2379,22 @@ sub sort_desc_length {
 }
 
 
+# --------------------------------------------------------------------------
+#   Walks a (nested) dictionary and returns a lookup table with all keys.
+# --------------------------------------------------------------------------
+sub get_keys {
+    my $dict = shift;
+    my $seen = shift // {};
+
+    while (my ($k, $v) = each %$dict) {
+        $seen->{$k} = 1;
+        get_keys($v, $seen) if ref $v eq 'HASH';
+    }
+
+    return $seen;
+}
+
+
 ############################################################################
 
 
@@ -2402,24 +2402,26 @@ package Work;
 
 
 # --------------------------------------------------------------------------
-#   ...
+#   Decides which styles, figure styles and encodings to generate
+#   for the given fonts.
 # --------------------------------------------------------------------------
 sub generate_worklist {
     my @fonts = @_;
 
-    # Figure out which styles, figure styles and encodings to generate.
-    # This is a four-step process:
-    #   1.  for each font, decide which figure styles should be created;
-    #   2.  for each (font, figure style) pair,
-    #       decide which styles should be created;
-    #   3.  for each (font, figure style, style) tuple,
-    #       decide which encodings should be created;
-    #   4.  finally, some miscellaneous finishing touches.
     my @worklist = map { { font => $_ } } @fonts;
 
+    #   1.  For each font, decide which figure styles should be created.
     @worklist = map { expand_figurestyles($_) } @worklist;
-    @worklist = map { expand_styles($_)       } @worklist;
-    @worklist = map { expand_encodings($_)    } @worklist;
+
+    #   2.  For each (font, figure style) combination,
+    #       decide which styles should be created.
+    @worklist = map { expand_styles($_) } @worklist;
+
+    #   3.  For each (font, figure style, style) combination,
+    #       decide which encodings should be created.
+    @worklist = map { expand_encodings($_) } @worklist;
+
+    #   4.  Some miscellaneous finishing touches.
     @worklist = grep { $_ } map { cleanup($_) } @worklist;
 
     return @worklist;
@@ -2524,14 +2526,14 @@ sub cleanup {
         }
     }
 
-    # Generate unique name for this font.
+    # Generate a unique name for this font.
     $workitem->{fontname}
             = join '-', grep { $_ } $font->{name},
                                     lc $figurestyle,
                                     lc Tables::get_name($style),
                                     lc $encoding;
 
-    # look up NFSS code for font's shape
+    # Look up the NFSS code for this font's shape.
     $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
 
     # Compile list of OpenType features to use with this font.
