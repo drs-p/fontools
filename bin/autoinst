@@ -210,13 +210,13 @@ sub assert_unique {
 
     my (%seen, $err_details);
     for my $font (@{$fontlist}) {
-        my $key = join "\x00", @{$font}{ @attributes };
+        my $key = join "\x00", @{$font}{@attributes};
 
         if ($seen{$key}) {
             $err_details .= sprintf $ERR_DETAIL,
                                     $seen{$key}{filename},
                                     $font->{filename},
-                                    @{$font}{ @attributes };
+                                    @{$font}{@attributes};
         }
         else {
              $seen{$key} = $font;
@@ -353,20 +353,21 @@ sub process_basicinfo {
     # Some font families put different shapes into separate families;
     # we merge these into the 'main' family.
     my $shapes = join '|', Util::sort_desc_length(qw(it italic));
-    if ( $self->{family} =~ m/(.+?) ($shapes) \z/xmsi
-            and ( $self->{shape} eq 'regular'
-                    or $self->{shape} eq NFSS::unabbreviate(lc($2))
-                )
-       ) {
+    if ($self->{family} =~ m/(.+?) ($shapes) \z/xmsi
+            and ($self->{shape} eq 'regular'
+                    or $self->{shape} eq NFSS::unabbreviate(lc($2)))) {
         $self->{family} = $1;
         $self->{shape}  = NFSS::unabbreviate(lc($2));
     }
+    # Ditto for the smallcaps shape; here we have to test both 'family'
+    # and 'name' for hints that this is a small caps font, as some fonts
+    # (e.g., Dolly) only mention this in their name.
     $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
-    if ( $self->{family} =~ m/(.+?) -? (?: $shapes) \z/xmsi ) {
+    if ($self->{family} =~ m/(.+?) -? (?: $shapes) \z/xmsi) {
         $self->{family}       = $1;
         $self->{is_smallcaps} = 1;
     }
-    if ( $self->{name} =~ m/(.+?) -? (?: $shapes) \z/xmsi ) {
+    if ($self->{name} =~ m/(.+?) -? (?: $shapes) \z/xmsi) {
         $self->{name}         = $1;
         $self->{is_smallcaps} = 1;
     }
@@ -374,11 +375,9 @@ sub process_basicinfo {
     # Some font families put different widths into separate families;
     # we merge these into the 'main' font family.
     my $widths = join '|', NFSS::get_all_widths();
-    if ( $self->{family} =~ m/(.+?) ($widths) \z/xmsi
-            and ( $self->{width} eq 'regular'
-                    or $self->{width} eq NFSS::unabbreviate(lc($2))
-                )
-       ) {
+    if ($self->{family} =~ m/(.+?) ($widths) \z/xmsi
+            and ($self->{width} eq 'regular'
+                    or $self->{width} eq NFSS::unabbreviate(lc($2)))) {
         $self->{family} = $1;
         $self->{width}  = NFSS::unabbreviate(lc($2));
     }
@@ -388,14 +387,12 @@ sub process_basicinfo {
     # careful with the word 'Text': this might be part of the family name
     # (i.e., Libre Caslon Text) and should not be mistaken for a weight.
     my $weights = join '|', NFSS::get_all_weights();
-    if ( $self->{family} =~ m/text \z/xmsi ) {
+    if ($self->{family} =~ m/text \z/xmsi) {
         $weights =~ s/text[|]?//xms;
     }
-    if ( $self->{family} =~ m/(.+?) ($weights) \z/xmsi
-            and ( $self->{weight} eq 'regular'
-                    or $self->{weight} eq NFSS::unabbreviate(lc($2))
-                )
-       ) {
+    if ($self->{family} =~ m/(.+?) ($weights) \z/xmsi
+            and ($self->{weight} eq 'regular'
+                    or $self->{weight} eq NFSS::unabbreviate(lc($2)))) {
         $self->{family} = $1;
         $self->{weight} = NFSS::unabbreviate(lc($2));
     }
@@ -525,16 +522,17 @@ sub get_basicinfo {
 sub get_os2_table {
     my $filename = shift;
 
+    my $os2_table;
     eval {
         my $cmd = qq(otfinfo --dump-table "OS/2" "$filename");
         open my $otfinfo, '-|:raw', $cmd
             or die "could not fork(): $!";
-        my $os2_table = do { local $/; <$otfinfo> };
+        $os2_table = do { local $/; <$otfinfo> };
         close $otfinfo
             or die "'$cmd' failed";
-
-        return $os2_table;
     } or warn "[WARNING]   $@";
+
+    return $os2_table;
 }
 
 
@@ -593,6 +591,7 @@ sub get_sizedata {
 sub get_nfss_classification {
     my $filename = shift;
 
+    my $classification;
     eval {
         my $cmd = qq(otfinfo --dump-table "post" "$filename");
         open my $otfinfo, '-|:raw', $cmd
@@ -603,14 +602,14 @@ sub get_nfss_classification {
 
         my $is_fixed_pitch = unpack '@12N', $post_table;
 
-        my $classification = $is_fixed_pitch                  ? 'tt'
-                           : $filename =~ m/mono(?!type)/xmsi ? 'tt'
-                           : $filename =~ m/sans/xmsi         ? 'sf'
-                           :                                    'rm'
-                           ;
-
-        return $classification;
+        $classification = $is_fixed_pitch                  ? 'tt'
+                        : $filename =~ m/mono(?!type)/xmsi ? 'tt'
+                        : $filename =~ m/sans/xmsi         ? 'sf'
+                        :                                    'rm'
+                        ;
     } or warn "[WARNING]   $@";
+
+    return $classification;
 }
 
 
@@ -627,16 +626,16 @@ sub create_support_files {
 
     # Organize the worklist by family, encoding, style, series and shape.
     my %fddata;
-    for my $item (@{$worklist}) {
-        my $encoding    = $item->{encoding};
-        my $figurestyle = $item->{figurestyle};
-        my $series      = $item->{font}{series};
-        my $shape       = $item->{fdshape};
-        my $minsize     = $item->{font}{minsize};
-        my $maxsize     = $item->{font}{maxsize};
+    for my $workitem (@{$worklist}) {
+        my $encoding    = $workitem->{encoding};
+        my $figurestyle = $workitem->{figurestyle};
+        my $series      = $workitem->{font}{series};
+        my $shape       = $workitem->{fdshape};
+        my $minsize     = $workitem->{font}{minsize};
+        my $maxsize     = $workitem->{font}{maxsize};
 
         push @{$fddata{$encoding}{$figurestyle}{$series}{$shape}},
-            [ $minsize, $maxsize, $item->{fontname} ];
+             [ $minsize, $maxsize, $workitem->{fontname} ];
     }
 
     create_stylefile($family, \%fddata);
@@ -665,15 +664,16 @@ my %SSUB_SHAPE = (
 sub create_stylefile {
     my ($fam, $data) = @_;
 
-    my %seen = %{ Util::get_keys($data) };
+    my %seen = %{Util::get_keys($data)};
 
     my $fn = sprintf "%s.sty", $fam;
     my $dir = File::Spec->catdir(
         $ARGV{target}, 'tex', 'latex', $ARGV{typeface} || $fam);
     File::Path::make_path($dir);
     $fn = File::Spec->catfile($dir, $fn);
-    open my $STY, '>', $fn
-        or die "[ERROR]     Can't create '$fn': $!";
+    open my $STY, '>', $fn or die "[ERROR]     Can't create '$fn': $!";
+    # We use binmode since TeX expects these files to have
+    # Unix-style line ends even on Windows.
     binmode $STY;
 
     print {$STY} <<"END_STY_HEADER";
@@ -934,16 +934,16 @@ END_COMMENT
     for my $nfssweight (NFSS::get_all_nfss_weights()) {
         NFSSWIDTH:
         for my $nfsswidth (NFSS::get_all_nfss_widths()) {
-            my $nfssseries = ( $nfssweight . $nfsswidth) || 'm';
+            my $nfssseries = ($nfssweight . $nfsswidth) || 'm';
 
-            for my $weight ( @{$nfss_mapping->{weight}{$nfssweight}} ) {
+            for my $weight (@{$nfss_mapping->{weight}{$nfssweight}}) {
                 $weight = '' if $weight eq 'regular';
-                for my $width ( @{$nfss_mapping->{width}{$nfsswidth}} ) {
+                for my $width (@{$nfss_mapping->{width}{$nfsswidth}}) {
                     $width = '' if $width eq 'regular';
-                    my $series = ( $weight . $width ) || 'regular';
+                    my $series = ($weight . $width) || 'regular';
                     if ( exists $data->{$series} ) {
                         print {$FD} "\n%   $nfssseries --> $series\n\n";
-                        for my $shape ( keys %{$data->{$series}} ) {
+                        for my $shape (keys %{$data->{$series}}) {
                             print {$FD} <<"END_SSUB_SERIES";
 \\DeclareFontShape{$enc}{$fam-$sty}{$nfssseries}{$shape}{
       <-> alias * $fam-$sty/$series/$shape
@@ -960,8 +960,8 @@ END_SSUB_SERIES
     }
 
     # Add ssub rules to map bx to b
-    for my $shape ( keys %{$seen{b}} ) {
-        if ( !exists $seen{bx}{$shape} ) {
+    for my $shape (keys %{$seen{b}}) {
+        if (!exists $seen{bx}{$shape}) {
             print {$FD} <<"END_SSUB_BX";
 \\DeclareFontShape{$enc}{$fam-$sty}{bx}{$shape}{
       <-> ssub * $fam-$sty/b/$shape
@@ -1007,6 +1007,8 @@ sub log {
     my ($self, $msg) = @_;
 
     print {$self} $msg;
+
+    return;
 }
 
 
@@ -1017,6 +1019,8 @@ sub close {
     my $self = shift;
 
     close $self;
+
+    return;
 }
 
 
@@ -1102,7 +1106,7 @@ sub log_parsing {
         Shape:      $font->{shape} @{[ $font->{is_smallcaps}
                                             ? 'smallcaps' : '' ]}
         Size:       $font->{minsize}-$font->{maxsize}
-        Features:   @{[ join ', ', sort keys %{$font->{feature}} ]}
+        Features:   @{[ join q(, ), sort keys %{$font->{feature}} ]}
 END_PARSE_FONT
     }
 
@@ -1147,13 +1151,13 @@ sub log_worklist {
                @{$worklist};
 
     my $prevfn = q{};
-    for my $item (@workitems) {
-        if ($prevfn ne $item->{font}{filename}) {
+    for my $workitem (@workitems) {
+        if ($prevfn ne $workitem->{font}{filename}) {
             print {$self} <<"END_FONTINFO";
 
     ------------------------------------------------------------------------
 
-    $item->{font}{filename}
+    $workitem->{font}{filename}
 
         Generating these encodings, figure styles and shapes:
 
@@ -1162,11 +1166,11 @@ sub log_worklist {
 END_FONTINFO
         }
         printf {$self} "            %-3s     %-4s    %-4s    %s\n",
-                       $item->{encoding},
-                       $item->{figurestyle},
-                       $item->{fdshape},
-                       join(', ', @{$item->{features}});
-        $prevfn  = $item->{font}{filename};
+                       $workitem->{encoding},
+                       $workitem->{figurestyle},
+                       $workitem->{fdshape},
+                       join(q(, ), @{$workitem->{features}});
+        $prevfn  = $workitem->{font}{filename};
     }
 
     return;
@@ -1302,8 +1306,8 @@ my @WIDTH = (
     ''  =>  [ qw( regular ) ],
     sx  =>  [ qw( semiextended semiexpanded ) ],
     x   =>  [ qw( extended expanded wide ) ],
-    ex  =>  [ ],
-    ux  =>  [ ],
+    ex  =>  [],
+    ux  =>  [],
 );
 
 =begin Comment
@@ -1349,7 +1353,7 @@ sub unabbreviate {
 
 # Auxiliary table that reverses FULL_FORM; maps full forms to abbrevs.
 my %abbrev;
-while ( my ($k, $v) = each %FULL_FORM ) {
+while (my ($k, $v) = each %FULL_FORM) {
     push @{$abbrev{$v}}, $k;
 }
 for my $full (keys %abbrev) {
@@ -1407,10 +1411,10 @@ sub get_all_nfss_weights {
     return @WEIGHT;
 }
 
-my @allweights = grep { $_ !~ m/ regular | medium /xms }
-                   map { @{$_} } values %WEIGHT;
-@allweights = (Util::sort_desc_length(@allweights), qw(medium regular));
 
+my @allweights = grep { $_ !~ m/ regular | medium /xms }
+                      map { @{$_} } values %WEIGHT;
+@allweights = (Util::sort_desc_length(@allweights), qw(medium regular));
 
 # --------------------------------------------------------------------------
 #   Returns a list of all known weight names,
@@ -1529,27 +1533,26 @@ sub map_nfss_codes {
     #     than the weight mapped to ul (ub), we map Thin (Heavy) to ul (ub)
     # 2.  otherwise we move the ul/ub weight to the el/eb position,
     #     unless that weight is the Ultralight/Ultrabold weight
-    if ( !$ARGV{el} and !$ARGV{ul} ) {
-        if ( @{$mapping->{weight}{ul}} and !@{$mapping->{weight}{el}} ) {
-            if ( $weight{thin}
-                    and $weight{thin} > $weight{$mapping->{weight}{ul}[0]} ) {
-                $mapping->{weight}{el} = [ 'thin', ];
+    if (!$ARGV{el} and !$ARGV{ul}) {
+        if (@{$mapping->{weight}{ul}} and !@{$mapping->{weight}{el}}) {
+            if ($weight{thin}
+                    and $weight{thin} > $weight{$mapping->{weight}{ul}[0]}) {
+                $mapping->{weight}{el} = ['thin',];
             }
-            elsif ( $mapping->{weight}{ul}[0] ne 'ultralight' ) {
+            elsif ($mapping->{weight}{ul}[0] ne 'ultralight') {
                 $mapping->{weight}{el} = [ shift @{$mapping->{weight}{ul}} ];
             }
         }
     }
-    if ( !$ARGV{eb} and !$ARGV{ub} ) {
-        if ( @{$mapping->{weight}{ub}} and !@{$mapping->{weight}{eb}} ) {
-            if (    $weight{heavy}
-                and $weight{heavy} < $weight{$mapping->{weight}{ub}[0]}
-            ) {
-                $mapping->{weight}{eb} = [ 'heavy', ]
+    if (!$ARGV{eb} and !$ARGV{ub}) {
+        if (@{$mapping->{weight}{ub}} and !@{$mapping->{weight}{eb}}) {
+            if ($weight{heavy}
+                    and $weight{heavy} < $weight{$mapping->{weight}{ub}[0]}) {
+                $mapping->{weight}{eb} = ['heavy',]
                     unless @{$mapping->{weight}{b}}
                        and $weight{$mapping->{weight}{b}[0]} > $weight{heavy};
             }
-            elsif ( $mapping->{weight}{ub}[0] ne 'ultrabold' ) {
+            elsif ($mapping->{weight}{ub}[0] ne 'ultrabold') {
                 $mapping->{weight}{eb} = [ shift @{$mapping->{weight}{ub}} ];
             }
         }
@@ -1557,10 +1560,10 @@ sub map_nfss_codes {
 
     # Special case: if we don't have Regular but we *do* have Medium,
     # move Medium from the "sb" list to the "m" (i.e., Regular) one.
-    if ( !@{$mapping->{weight}{''}} ) {
+    if (!@{$mapping->{weight}{''}}) {
         my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
         if ($alternate) {
-            $mapping->{weight}{''} = [ $alternate ];
+            $mapping->{weight}{''} = [$alternate];
             $mapping->{weight}{sb}
                 = [ grep { $_ ne $alternate } @{$mapping->{weight}{sb}} ];
         }
@@ -1568,18 +1571,17 @@ sub map_nfss_codes {
 
     # Some more trickery to map the sl code to Book or Text (but of course
     # only if sl is empty and Book/Text is lighter than Regular)
-    if ( !@{$mapping->{weight}{sl}} ) {
+    if (!@{$mapping->{weight}{sl}}) {
         $mapping->{weight}{sl}
             = [ grep { $weight{$_} < $weight{$mapping->{weight}{''}[0]} }
-                     @{$mapping->{weight}{''}}
-            ];
+                     @{$mapping->{weight}{''}} ];
     }
 
     NFSSWIDTH:
     for my $nfsswidth (NFSS::get_all_nfss_widths()) {
         for my $width ( NFSS::get_widths($nfsswidth) ) {
-            if ( $width{$width} ) {
-                $mapping->{width}{$nfsswidth} = [ $width ];
+            if ($width{$width}) {
+                $mapping->{width}{$nfsswidth} = [$width];
                 next NFSSWIDTH;
             }
         }
@@ -1754,8 +1756,9 @@ sub parse_options {
     or die "$USAGE";
 
     if (!@ARGV) {
-        die "$USAGE\n"
-            . "[ERROR]     No font arguments given, nothing to do!\n";
+        Pod::Usage::pod2usage(
+            -msg => '[ERROR] No font files given, nothing to do!',
+            -verbose => 1);
     }
 
     return;
@@ -1781,11 +1784,11 @@ sub get_targetdirs {
     if ($has_fonttype{truetype}) { push @filetypes, qw(truetype) }
 
     my %dir = map { ( $_ => File::Spec->catdir(
-                            $ARGV{target},
-                            'fonts',
-                            $_,
-                            $ARGV{vendor},
-                            $ARGV{typeface} || $family) )
+                                $ARGV{target},
+                                'fonts',
+                                $_,
+                                $ARGV{vendor},
+                                $ARGV{typeface} || $family) )
                   }
                   @filetypes;
 
@@ -1826,24 +1829,27 @@ my %SCHEME = (
 #   Generates a command for otftotfm from a work item.
 # --------------------------------------------------------------------------
 sub create_command {
-    my ($item, $targetdirs) = @_;
+    my ($workitem, $targetdirs) = @_;
 
+    # Make sure we're not passing the 'liga' feature
+    # if the user doesn't want ligatures.
     if (!$ARGV{ligatures}) {
-        @{$item->{features}} = grep { $_ ne 'liga' } @{$item->{features}};
+        @{$workitem->{features}}
+            = grep { $_ ne 'liga' } @{$workitem->{features}};
     }
 
     return join q( ), 'otftotfm',
                       ($ARGV{manual} ? '--pl' : '--automatic'),
-                      "--encoding=$item->{enc_file}",
+                      "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
-                      ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
+                      ($workitem->{font}{filename} =~ m/[.]ttf\z/xmsi
                          ? '--no-type1'
                          : q()),
-                      ($SCHEME{$item->{encoding}}
-                         ? qq(--coding-scheme="$SCHEME{$item->{encoding}}")
+                      ($SCHEME{$workitem->{encoding}}
+                         ? qq(--coding-scheme="$SCHEME{$workitem->{encoding}}")
                          : q()),
-                      (map { "--feature=$_" } @{$item->{features}}),
+                      (map { "--feature=$_" } @{$workitem->{features}}),
                       ($ARGV{ligatures}
                          ? ( '--ligkern="f i =: fi"',
                              '--ligkern="f l =: fl"',
@@ -1851,11 +1857,11 @@ sub create_command {
                              '--ligkern="ff i =: ffi"',
                              '--ligkern="ff l =: ffl"' )
                          : q()),
-                      Tables::get_extra($item->{figurestyle}),
-                      Tables::get_extra($item->{style}),
+                      Tables::get_extra($workitem->{figurestyle}),
+                      Tables::get_extra($workitem->{style}),
                       $ARGV{extra},
-                      qq("$item->{font}{filename}"),
-                      $item->{fontname},
+                      qq("$workitem->{font}{filename}"),
+                      $workitem->{fontname},
                       ;
 }
 
@@ -1946,7 +1952,7 @@ package Tables;
 my %STYLE = (
     normal => {
         code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [ ],
+        reqd  => [],
         nice  => [ 'kern', 'liga' ],
         extra => '',
         name  => '',
@@ -1969,7 +1975,7 @@ my %STYLE = (
     },
     textcomp => {
         code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [ ],
+        reqd  => [],
         nice  => [ 'onum' ],
         extra => '',
         name  => '',
@@ -2007,50 +2013,50 @@ my %STYLE = (
 
 my %FIGURESTYLE = (
     TLF => {
-        reqd   => [ ],
-        nice   => [ ],
+        reqd   => [],
+        nice   => [],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     LF => {
-        reqd   => [ ],
-        nice   => [ ],
+        reqd   => [],
+        nice   => [],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     TOsF => {
-        reqd   => [ ],
-        nice   => [ ],
+        reqd   => [],
+        nice   => [],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     OsF => {
-        reqd   => [ ],
-        nice   => [ ],
+        reqd   => [],
+        nice   => [],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     Sup => {
         reqd   => [ 'sups' ],
-        nice   => [ ],
+        nice   => [],
         extra  => '--ligkern="* {KL} *"',
         styles => [ 'normal' ],
     },
     Inf => {
-        reqd   => [ ],
-        nice   => [ ],
+        reqd   => [],
+        nice   => [],
         extra  => '--ligkern="* {KL} *"',
         styles => [ 'normal' ],
     },
     Numr => {
         reqd   => [ 'numr'],
-        nice   => [ ],
+        nice   => [],
         extra  => '--ligkern="* {KL} *"',
         styles => [ 'normal' ],
     },
     Dnom => {
         reqd   => [ 'dnom' ],
-        nice   => [ ],
+        nice   => [],
         extra  => '--ligkern="* {KL} *"',
         styles => [ 'normal' ],
     },
@@ -2062,7 +2068,7 @@ my %FIGURESTYLE = (
     },
     Orn => {
         reqd   => [ 'ornm' ],
-        nice   => [ ],
+        nice   => [],
         extra  => '--ligkern="* {KL} *"',
         styles => [ 'normal' ],
     },
@@ -2335,7 +2341,7 @@ END_WARNING_KPSEWHICH
 END_WARNING_DUMPING_FILES
     }
 
-    if ($ARGV{target} =~ m/[ ]/xms) {
+    if ($ARGV{target} =~ m/\s/xms) {
         warn <<"END_WARNING_SPACES_IN_PATHS";
 [WARNING]   The pathname of your target directory contains spaces:
                 "$ARGV{target}"
@@ -2400,6 +2406,8 @@ sub choose_inferiors {
     # delete the 'Inf' entry from the %FIGURESTYLE table
     # to indicate we don't want to generate this style.
     delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
+
+    return;
 }
 
 
@@ -2648,7 +2656,7 @@ for installing and using OpenType fonts in LaTeX.
 
 =head1 SYNOPSIS
 
-B<autoinst> [I<options>] B<fontfile(s)>
+B<autoinst> [I<options>] B<font(s)>
 
 
 =head1 DESCRIPTION
@@ -3352,7 +3360,8 @@ When present, use encoding files in the current working directory
 in preference of the ones that come with B<autoinst>.
 Changed the way ornament fonts are created; ornament glyphs are now
 always included in the position chosen by the font's designer.
-Spring cleaning: reorganized the code for better maintainability.
+Spring cleaning: reorganized and simplified the code
+for better maintainability.
 
 =item I<2020-04-28>
 
