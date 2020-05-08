@@ -1078,6 +1078,19 @@ I'm using the following options:
 
 END_ARGUMENTS
 
+    if ($ARGV{fig_height} or $ARGV{fig_width}) {
+        print {$self} <<"END_FIGURE_DEFAULTS";
+    default figures:    @{[
+                            $ARGV{fig_width}  eq 'pnum' ? 'proportional'
+                                :                         'tabular'
+                        ]} @{[
+                            $ARGV{fig_height} eq 'onum' ? 'oldstyle'
+                                :                         'lining'
+                        ]}
+
+END_FIGURE_DEFAULTS
+    }
+
     if ($ARGV{dryrun}) {
         print {$self} "    DRY RUN\n\n";
     }
@@ -1673,8 +1686,8 @@ END_USAGE
     fractions       => '0',     # 0 = no, 1 = yes
     ligatures       => '2',     # 0 = no, 1 = yes, 2 = ('tt' ? no : yes)
     nfss            => '',
-    fig_height      => 'lnum',
-    fig_width       => 'tnum',
+    fig_height      => '',
+    fig_width       => '',
     extra           => '',
     target          => '',
     vendor          => 'lcdftools',
@@ -2198,30 +2211,31 @@ sub process_styles_options {
     }
 
     # Fix the %FIGURESTYLE table to take 'default' figure styles into account.
-    if ($ARGV{fig_height} eq 'lnum') {
-            push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
-        }
     if ($ARGV{fig_height} eq 'onum') {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'onum';
-        }
-    if ($ARGV{fig_width} eq 'tnum') {
-            push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
-        }
+        push @{$FIGURESTYLE{TLF}{reqd}},  'lnum';
+        push @{$FIGURESTYLE{LF}{reqd}},   'lnum';
+        push @{$FIGURESTYLE{TOsF}{nice}}, 'onum';
+        push @{$FIGURESTYLE{OsF}{nice}},  'onum';
+    }
+    else {
+        push @{$FIGURESTYLE{TLF}{nice}},  'lnum';
+        push @{$FIGURESTYLE{LF}{nice}},   'lnum';
+        push @{$FIGURESTYLE{TOsF}{reqd}}, 'onum';
+        push @{$FIGURESTYLE{OsF}{reqd}},  'onum';
+    }
+
     if ($ARGV{fig_width} eq 'pnum') {
-            push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
-            push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
-            push @{$FIGURESTYLE{LF}{nice}},   'pnum';
-            push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
-        }
+        push @{$FIGURESTYLE{TLF}{reqd}},  'tnum';
+        push @{$FIGURESTYLE{TOsF}{reqd}}, 'tnum';
+        push @{$FIGURESTYLE{LF}{nice}},   'pnum';
+        push @{$FIGURESTYLE{OsF}{nice}},  'pnum';
+    }
+    else {
+        push @{$FIGURESTYLE{TLF}{nice}},  'tnum';
+        push @{$FIGURESTYLE{TOsF}{nice}}, 'tnum';
+        push @{$FIGURESTYLE{LF}{reqd}},   'pnum';
+        push @{$FIGURESTYLE{OsF}{reqd}},  'pnum';
+    }
 
     delete @FIGURESTYLE{qw(LF TLF)}    unless $ARGV{lining};
     delete @FIGURESTYLE{qw(OsF TOsF)}  unless $ARGV{oldstyle};
