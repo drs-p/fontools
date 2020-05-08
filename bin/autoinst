@@ -110,7 +110,7 @@ sub main {
         Tables::process_family_dependent_options($fontlist);
 
         my $log = Log->new($ARGV{logfile});
-        $log->log_arguments();
+        $log->log_options();
         $log->log_parsing($fontlist);
 
         # We defer asserting that all fonts were parsed in a unique way
@@ -1027,7 +1027,7 @@ sub close {
 # --------------------------------------------------------------------------
 #   Logs the command line options.
 # --------------------------------------------------------------------------
-sub log_arguments {
+sub log_options {
     my $self = shift;
 
     print {$self} <<"END_ARGUMENTS";
