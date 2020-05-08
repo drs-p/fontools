@@ -1844,12 +1844,9 @@ my %SCHEME = (
 sub create_command {
     my ($workitem, $targetdirs) = @_;
 
-    # Make sure we're not passing the 'liga' feature
-    # if the user doesn't want ligatures.
-    if (!$ARGV{ligatures}) {
-        @{$workitem->{features}}
-            = grep { $_ ne 'liga' } @{$workitem->{features}};
-    }
+    my $want_ligkerns
+        = ( $ARGV{ligatures} == 1 )
+            || Util::any( map { $_ eq 'liga' } @{$workitem->{features}} );
 
     return join q( ), 'otftotfm',
                       ($ARGV{manual} ? '--pl' : '--automatic'),
@@ -1863,7 +1860,7 @@ sub create_command {
                          ? qq(--coding-scheme="$SCHEME{$workitem->{encoding}}")
                          : q()),
                       (map { "--feature=$_" } @{$workitem->{features}}),
-                      ($ARGV{ligatures}
+                      ($want_ligkerns
                          ? ( '--ligkern="f i =: fi"',
                              '--ligkern="f l =: fl"',
                              '--ligkern="f f =: ff"',
@@ -1966,14 +1963,14 @@ my %STYLE = (
     normal => {
         code  => { n => 'n', it => 'it', sl => 'sl' },
         reqd  => [],
-        nice  => [ 'kern', 'liga' ],
+        nice  => [],
         extra => '',
         name  => '',
     },
     smallcaps => {
         code  => { n => 'sc', it => 'scit', sl => 'scsl' },
         reqd  => [ 'smcp' ],
-        nice  => [ 'kern', 'liga' ],
+        nice  => [],
         extra => '--unicoding="germandbls =: SSsmall"',
         name  => 'sc',
     },
@@ -1982,7 +1979,7 @@ my %STYLE = (
     swash => {
         code  => { n => 'nw', it => 'sw' },
         reqd  => [ 'swsh' ],
-        nice  => [ 'kern', 'liga', 'dlig' ],
+        nice  => [ 'dlig' ],
         extra => '--include-alternates="*.swash" --feature=aalt',
         name  => 'swash',
     },
@@ -2027,25 +2024,25 @@ my %STYLE = (
 my %FIGURESTYLE = (
     TLF => {
         reqd   => [],
-        nice   => [],
+        nice   => [ 'kern', 'liga' ],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     LF => {
         reqd   => [],
-        nice   => [],
+        nice   => [ 'kern', 'liga' ],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     TOsF => {
         reqd   => [],
-        nice   => [],
+        nice   => [ 'kern', 'liga' ],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
     OsF => {
         reqd   => [],
-        nice   => [],
+        nice   => [ 'kern', 'liga' ],
         extra  => '',
         styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
     },
@@ -2379,8 +2376,8 @@ sub process_family_dependent_options {
     }
     # If the user didn't explicitly say anything about ligatures,
     # activate them unless the font is a typewriter font.
-    if ($ARGV{ligatures} == 2) {
-        $ARGV{ligatures} = $ARGV{nfss} eq 'tt' ? 0 : 1;
+    if ($ARGV{ligatures} == 2 and $ARGV{nfss} eq 'tt') {
+        $ARGV{ligatures} = 0;
     }
 
     # We can only handle the '-inferiors=auto' option now;
@@ -2591,8 +2588,8 @@ sub expand_encodings {
 sub cleanup {
     my $workitem = shift;
 
-    my ($font, $figurestyle, $style, $encoding)
-        = @{$workitem}{qw(font figurestyle style encoding)};
+    my ($font, $figurestyle, $style)
+        = @{$workitem}{qw(font figurestyle style)};
 
     # Don't generate smallcaps version of TS1-encoded fonts,
     # as these contain the same glyphs as the regular version.
@@ -2604,13 +2601,6 @@ sub cleanup {
             $style = 'smallcaps';
         }
     }
-
-    # Generate a unique name for this font.
-    $workitem->{fontname}
-            = join '-', grep { $_ } $font->{name},
-                                    lc $figurestyle,
-                                    lc Tables::get_name($style),
-                                    lc $encoding;
 
     # Look up the NFSS code for this font's shape.
     $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
@@ -2625,7 +2615,11 @@ sub cleanup {
         ($workitem->{enc_file} = $workitem->{encoding})
             =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_\L$1\E/xmsi;
     }
-    $workitem->{encoding} = uc $workitem->{encoding};
+
+    # Ornaments have no text encoding, and don't need kerning and ligatures.
+    if ($figurestyle eq 'Orn') {
+        $workitem->{encoding} = 'u';
+    }
 
     # Compile list of OpenType features to use with this font.
     my %feature = map { ($_ => 1) }
@@ -2636,13 +2630,23 @@ sub cleanup {
         delete $feature{lnum};
     }
 
-    # Ornaments have no text encoding, and don't need kerning and ligatures.
-    if ($figurestyle eq 'Orn') {
-        $workitem->{encoding} = 'U';
-        delete @feature{qw(kern liga)};
-    }
+    # Don't create ligatures if the user doesn't want them.
+    delete $feature{liga} if !$ARGV{ligatures};
+
+    # Don't create kerns and ligatures for TS* fonts.
+    delete @feature{qw(kern liga)}
+        if $workitem->{encoding} =~ m/\A TS\d \z/xmsi;
 
     $workitem->{features} = [ sort keys %feature ];
+
+    # Generate a unique name for this font.
+    $workitem->{fontname}
+            = join '-', grep { $_ } $font->{name},
+                                    lc $figurestyle,
+                                    lc Tables::get_name($style),
+                                    lc $workitem->{encoding};
+
+    $workitem->{encoding} = uc $workitem->{encoding};
 
     return $workitem;
 }
