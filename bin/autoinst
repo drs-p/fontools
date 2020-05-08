@@ -2615,16 +2615,6 @@ sub cleanup {
     # Look up the NFSS code for this font's shape.
     $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
 
-    # Compile list of OpenType features to use with this font.
-    my %feature = map { ($_ => 1) }
-                      grep { $font->{feature}{$_} }
-                           ( Tables::get_features($figurestyle),
-                             Tables::get_features($style) );
-    if ($feature{lnum} && $feature{onum}) {
-        delete $feature{lnum};
-    }
-    $workitem->{features} = [ sort keys %feature ];
-
     # Figure out which encoding file to use for this font.
     my $try = Cwd::abs_path($workitem->{encoding});
     $try .= '.enc' if $try !~ m/[.]enc\z/xms;
@@ -2636,6 +2626,23 @@ sub cleanup {
             =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_\L$1\E/xmsi;
     }
     $workitem->{encoding} = uc $workitem->{encoding};
+
+    # Compile list of OpenType features to use with this font.
+    my %feature = map { ($_ => 1) }
+                      grep { $font->{feature}{$_} }
+                           ( Tables::get_features($figurestyle),
+                             Tables::get_features($style) );
+    if ($feature{lnum} && $feature{onum}) {
+        delete $feature{lnum};
+    }
+
+    # Ornaments have no text encoding, and don't need kerning and ligatures.
+    if ($figurestyle eq 'Orn') {
+        $workitem->{encoding} = 'U';
+        delete @feature{qw(kern liga)};
+    }
+
+    $workitem->{features} = [ sort keys %feature ];
 
     return $workitem;
 }
