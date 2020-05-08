@@ -105,26 +105,25 @@ sub main {
     }
 
     while (my ($family, $fontlist) = each %fontfamily) {
-        my @fonts = @$fontlist;
 
         local %ARGV = %ARGV;
-        Tables::process_family_dependent_options(@fonts);
+        Tables::process_family_dependent_options($fontlist);
 
         my $log = Log->new($ARGV{logfile});
         $log->log_arguments();
-        $log->log_parsing(@fonts);
+        $log->log_parsing($fontlist);
 
         # We defer asserting that all fonts were parsed in a unique way
-        # until after the results of the parsing are logged.
-        Font::assert_unique($log, @fonts);
+        # until after the results of the parsing have been logged.
+        Font::assert_unique($log, $fontlist);
 
-        my $nfss_mapping = NFSS::map_nfss_codes(@fonts);
+        my $nfss_mapping = NFSS::map_nfss_codes($fontlist);
         $log->log_nfss_mapping($nfss_mapping);
 
-        my @worklist = Work::generate_worklist(@fonts);
+        my @worklist = Work::generate_worklist($fontlist);
         $log->log_worklist(@worklist);
 
-        my $targetdirs = Otftotfm::get_targetdirs($family, @fonts);
+        my $targetdirs = Otftotfm::get_targetdirs($family, $fontlist);
         my @commands = map { Otftotfm::create_command($targetdirs, $_) }
                            @worklist;
         $log->log_commands(@commands) if $ARGV{verbose} >= 1;
@@ -203,14 +202,14 @@ END_ERR_PARSE
 #   Asserts all parsed fonts are unique.
 # --------------------------------------------------------------------------
 sub assert_unique {
-    my ($log, @fonts) = @_;
+    my ($log, $fontlist) = @_;
 
     # These attributes should uniquely identify each font.
     my @attributes
         = qw(family weight width shape minsize maxsize is_smallcaps);
 
     my (%seen, $err_details);
-    for my $font (@fonts) {
+    for my $font (@{$fontlist}) {
         my $key = join "\x00", @{$font}{ @attributes };
 
         if ($seen{$key}) {
@@ -1087,11 +1086,11 @@ END_ARGUMENTS
 #   Logs command line options and the results of font info parsing.
 # --------------------------------------------------------------------------
 sub log_parsing {
-    my ($self, @fonts) = @_;
+    my ($self, $fontlist) = @_;
 
     print {$self} '-' x 76 . "\n\n" . "Results of font info parsing:\n";
 
-    for my $font (@fonts) {
+    for my $font (@{$fontlist}) {
         print {$self} <<"END_PARSE_FONT";
 
     $font->{filename}
@@ -1506,10 +1505,12 @@ sub get_all_shapes {
 #   Returns a mapping of NFSS codes to weight and width names.
 # --------------------------------------------------------------------------
 sub map_nfss_codes {
-    my ( %weight, %width );
-    for my $font (@_) {
+    my $fontlist = shift;
+
+    my (%weight, %width);
+    for my $font (@{$fontlist}) {
         $weight{ $font->{weight} } //= $font->{weight_class};
-        $width{ $font->{width} } //= $font->{width_class};
+        $width{ $font->{width} }   //= $font->{width_class};
     }
 
     my $mapping = {
@@ -1771,9 +1772,9 @@ package Otftotfm;
 #   Also creates directories that don't exist yet.
 # --------------------------------------------------------------------------
 sub get_targetdirs {
-    my ($family, @fonts) = @_;
+    my ($family, $fontlist) = @_;
 
-    my %has_fonttype = map { ($_->{fonttype} => 1) } @fonts;
+    my %has_fonttype = map { ($_->{fonttype} => 1) } @{$fontlist};
 
     my @filetypes = qw(tfm vf);
     if ($has_fonttype{opentype}) { push @filetypes, qw(type1) }
@@ -2350,10 +2351,10 @@ END_WARNING_SPACES_IN_PATHS
 #   Processes command line options with font family-specific defaults.
 # --------------------------------------------------------------------------
 sub process_family_dependent_options {
-    my @fonts = @_;
+    my $fontlist = shift;
 
     if (!$ARGV{nfss}) {
-        $ARGV{nfss} = $fonts[0]->{nfss};
+        $ARGV{nfss} = $fontlist->[0]{nfss};
     }
     # If the user didn't explicitly say anything about ligatures,
     # activate them unless the font is a typewriter font.
@@ -2365,10 +2366,10 @@ sub process_family_dependent_options {
     # since we need to know which inferior figures this font supports,
     # we have to do the font info parsing first.
     if ($ARGV{inferiors} eq 'auto') {
-        choose_inferiors(@fonts);
+        choose_inferiors($fontlist);
     }
 
-    $ARGV{logfile} ||= sprintf "%s.log", lc $fonts[0]->{family};
+    $ARGV{logfile} ||= sprintf "%s.log", lc $fontlist->[0]{family};
 
     return;
 }
@@ -2381,8 +2382,10 @@ sub process_family_dependent_options {
 #   by all fonts in this family).
 # --------------------------------------------------------------------------
 sub choose_inferiors {
+    my $fontlist = shift;
+
     FONT:
-    for my $font (@_) {
+    for my $font (@{$fontlist}) {
         for my $inf (qw(subs sinf dnom)) {
             if (exists $font->{feature}{$inf}) {
                 $ARGV{inferiors} = "auto ($inf)";
@@ -2455,9 +2458,9 @@ package Work;
 #   for the given fonts.
 # --------------------------------------------------------------------------
 sub generate_worklist {
-    my @fonts = @_;
+    my $fontlist = shift;
 
-    my @worklist = map { { font => $_ } } @fonts;
+    my @worklist = map { { font => $_ } } @{$fontlist};
 
     #   1.  For each font, decide which figure styles should be created.
     @worklist = map { expand_figurestyles($_) } @worklist;
