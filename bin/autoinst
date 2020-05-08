@@ -2416,10 +2416,18 @@ sub choose_inferiors {
 package Util;
 
 # --------------------------------------------------------------------------
-#   Sorts its arguments so that longer strings come before shorter ones.
+#   Tests if all given predicates are true.
 # --------------------------------------------------------------------------
-sub sort_desc_length {
-    return reverse sort { length($a) <=> length($b) } @_;
+sub all {
+    return !( grep { !$_ } @_ );
+}
+
+
+# --------------------------------------------------------------------------
+#   Tests if any of the given predicates are true.
+# --------------------------------------------------------------------------
+sub any {
+    return grep { $_ } @_;
 }
 
 
@@ -2436,6 +2444,14 @@ sub get_keys {
     }
 
     return $seen;
+}
+
+
+# --------------------------------------------------------------------------
+#   Sorts its arguments so that longer strings come before shorter ones.
+# --------------------------------------------------------------------------
+sub sort_desc_length {
+    return reverse sort { length($a) <=> length($b) } @_;
 }
 
 
@@ -2486,8 +2502,8 @@ sub expand_figurestyles {
     my @results;
     for my $figurestyle (Tables::get_all_figurestyles()) {
         my @reqd = Tables::get_reqd_features($figurestyle);
-        my $ok = !( grep { !$font->has_feature($_) } @reqd );
-        if ($ok) {
+        my $has_all_reqd = Util::all(map { $font->{feature}{$_} } @reqd);
+        if ($has_all_reqd) {
             my %new_workitem = %{$workitem};
             $new_workitem{figurestyle} = $figurestyle;
             push @results, \%new_workitem;
@@ -2512,9 +2528,10 @@ sub expand_styles {
     my @results;
     for my $style (Tables::get_styles($figurestyle)) {
         my @reqd = Tables::get_reqd_features($style);
-        my $ok = (scalar @reqd == 0)
-                 || grep { $font->has_feature($_) } @reqd;
-        if ($ok) {
+        my $has_any_reqd
+                = (scalar @reqd == 0)
+                  || Util::any(map { $font->{feature}{$_} } @reqd);
+        if ($has_any_reqd) {
             my %new_workitem = %{$workitem};
             $new_workitem{style} = $style;
             push @results, \%new_workitem;
