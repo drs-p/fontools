@@ -2419,7 +2419,10 @@ sub choose_inferiors {
     # If we didn't find any inferior figures,
     # delete the 'Inf' entry from the %FIGURESTYLE table
     # to indicate we don't want to generate this style.
-    delete $FIGURESTYLE{Inf} if $ARGV{inferiors} eq 'auto';
+    if ($ARGV{inferiors} eq 'auto') {
+        delete $FIGURESTYLE{Inf};
+        $ARGV{inferiors} = "auto (none)";
+    }
 
     return;
 }
