@@ -2409,7 +2409,7 @@ sub choose_inferiors {
     for my $font (@{$fontlist}) {
         for my $inf (qw(sinf subs dnom)) {
             if (exists $font->{feature}{$inf}) {
-                $ARGV{inferiors} = "auto ($inf)";
+                $ARGV{inferiors} = "auto (-> $inf)";
                 $FIGURESTYLE{Inf}{reqd} = [$inf];
                 last FONT;
             }
@@ -2421,7 +2421,7 @@ sub choose_inferiors {
     # to indicate we don't want to generate this style.
     if ($ARGV{inferiors} eq 'auto') {
         delete $FIGURESTYLE{Inf};
-        $ARGV{inferiors} = "auto (none)";
+        $ARGV{inferiors} = "auto (-> none)";
     }
 
     return;
