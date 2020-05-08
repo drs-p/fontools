@@ -9,6 +9,7 @@
 | dolly               | SC font has SmallCaps in name, but not in familyname      |
 | firasans            | Book maps to sl                                           |
 | franklingothic      | many widths; should also test with -nfssweight=m=medium   |
+| garamondlibre       | tripped over -inferiors; contains ornaments               |
 | go                  | small caps in separate family                             |
 | ibmplexsans         | broken by -mergewidths; Text weight                       |
 | lato                | Hairline, Thin and Heavy map to ul, el and eb             |
