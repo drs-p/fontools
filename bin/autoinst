@@ -2407,7 +2407,7 @@ sub choose_inferiors {
 
     FONT:
     for my $font (@{$fontlist}) {
-        for my $inf (qw(subs sinf dnom)) {
+        for my $inf (qw(sinf subs dnom)) {
             if (exists $font->{feature}{$inf}) {
                 $ARGV{inferiors} = "auto ($inf)";
                 $FIGURESTYLE{Inf}{reqd} = [$inf];
@@ -3174,7 +3174,7 @@ as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
 This option allows the user to determine which of these styles B<autoinst>
 should use for the inferior characters.
 Alternatively, the value "auto" tells B<autoinst> to use the first value
-in "subs", "sinf" or "dnom" that is supported by the font.
+in "sinf", "subs" or "dnom" that is supported by the font.
 Saying just B<-inferiors> is equivalent to B<-inferiors=auto>;
 otherwise the default is B<-noinferiors>.
 
