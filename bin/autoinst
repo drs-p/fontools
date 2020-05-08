@@ -1974,13 +1974,11 @@ my %STYLE = (
         extra => '--unicoding="germandbls =: SSsmall"',
         name  => 'sc',
     },
-    # '--feature=aalt' is in 'extra' instead of 'nice' because 'extra'
-    # comes last in the command line; else 'aalt' might be overridden
     swash => {
         code  => { n => 'nw', it => 'sw' },
         reqd  => [ 'swsh' ],
         nice  => [ 'dlig' ],
-        extra => '--include-alternates="*.swash" --feature=aalt',
+        extra => '--include-alternates="*.swash"',
         name  => 'swash',
     },
     textcomp => {
