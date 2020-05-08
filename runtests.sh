@@ -12,8 +12,9 @@ else
         $AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -inferiors "$dirname"/*.[ot]tf
     done
 fi
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -noupdmap -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -noupdmap -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -noupdmap $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular')
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -noupdmap $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular|medium')
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -defaultproportional ../testfiles/cormorantgaramond/*.[ot]tf
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -nfssweight=m=medium ../testfiles/franklingothic/*.[ot]tf
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -inferiors=subs ../testfiles/lato/*.[ot]tf
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular')
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular|medium')
 cd ../..
