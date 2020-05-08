@@ -124,7 +124,7 @@ sub main {
         $log->log_worklist(@worklist);
 
         my $targetdirs = Otftotfm::get_targetdirs($family, $fontlist);
-        my @commands = map { Otftotfm::create_command($targetdirs, $_) }
+        my @commands = map { Otftotfm::create_command($_, $targetdirs) }
                            @worklist;
         $log->log_commands(@commands) if $ARGV{verbose} >= 1;
 
@@ -1810,52 +1810,53 @@ sub get_targetdirs {
 
 # The official names for various coding schemes.
 my %SCHEME = (
-    fontools_ot1 => 'TEX TEXT',
-    fontools_t1  => 'EXTENDED TEX FONT ENCODING - LATIN',
-    fontools_ts1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
-    fontools_ly1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
-    fontools_lgr => 'GREEK FONT ENCODING - LGR',
-    fontools_t2a => 'TEX CYRILLIC FONT ENCODING - T2A',
-    fontools_t2b => 'TEX CYRILLIC FONT ENCODING - T2B',
-    fontools_t2c => 'TEX CYRILLIC FONT ENCODING - T2C',
-    fontools_t3  => 'TEX IPA ENCODING',
-    fontools_ts3 => 'TEX IPA SYMBOL ENCODING',
+    OT1 => 'TEX TEXT',
+    T1  => 'EXTENDED TEX FONT ENCODING - LATIN',
+    TS1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
+    LY1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
+    LGR => 'GREEK FONT ENCODING - LGR',
+    T2A => 'TEX CYRILLIC FONT ENCODING - T2A',
+    T2B => 'TEX CYRILLIC FONT ENCODING - T2B',
+    T2C => 'TEX CYRILLIC FONT ENCODING - T2C',
+    T3  => 'TEX IPA ENCODING',
+    TS3 => 'TEX IPA SYMBOL ENCODING',
 );
 
 # --------------------------------------------------------------------------
 #   Generates a command for otftotfm from a work item.
 # --------------------------------------------------------------------------
 sub create_command {
-    my ($targetdirs, $item) = @_;
+    my ($item, $targetdirs) = @_;
 
     if (!$ARGV{ligatures}) {
         @{$item->{features}} = grep { $_ ne 'liga' } @{$item->{features}};
     }
-    return join ' ', 'otftotfm',
-                     ($ARGV{manual} ? '--pl' : '--automatic'),
-                     "--encoding=$item->{enc_file}",
-                     $targetdirs,
-                     '--no-updmap',
-                     ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
-                        ? '--no-type1'
-                        : ''),
-                     ($SCHEME{$item->{enc_file}}
-                        ? qq(--coding-scheme="$SCHEME{$item->{enc_file}}")
-                        : ''),
-                     (map { "--feature=$_" } @{$item->{features}}),
-                     ($ARGV{ligatures}
-                        ? ( '--ligkern="f i =: fi"',
-                            '--ligkern="f l =: fl"',
-                            '--ligkern="f f =: ff"',
-                            '--ligkern="ff i =: ffi"',
-                            '--ligkern="ff l =: ffl"' )
-                        : ''),
-                     Tables::get_extra($item->{figurestyle}),
-                     Tables::get_extra($item->{style}),
-                     $ARGV{extra},
-                     qq("$item->{font}{filename}"),
-                     $item->{fontname},
-                     ;
+
+    return join q( ), 'otftotfm',
+                      ($ARGV{manual} ? '--pl' : '--automatic'),
+                      "--encoding=$item->{enc_file}",
+                      $targetdirs,
+                      '--no-updmap',
+                      ($item->{font}{filename} =~ m/[.]ttf\z/xmsi
+                         ? '--no-type1'
+                         : q()),
+                      ($SCHEME{$item->{encoding}}
+                         ? qq(--coding-scheme="$SCHEME{$item->{encoding}}")
+                         : q()),
+                      (map { "--feature=$_" } @{$item->{features}}),
+                      ($ARGV{ligatures}
+                         ? ( '--ligkern="f i =: fi"',
+                             '--ligkern="f l =: fl"',
+                             '--ligkern="f f =: ff"',
+                             '--ligkern="ff i =: ffi"',
+                             '--ligkern="ff l =: ffl"' )
+                         : q()),
+                      Tables::get_extra($item->{figurestyle}),
+                      Tables::get_extra($item->{style}),
+                      $ARGV{extra},
+                      qq("$item->{font}{filename}"),
+                      $item->{fontname},
+                      ;
 }
 
 
