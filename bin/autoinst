@@ -52,14 +52,14 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 ----------------------------------------------------------------------------
 
-    Autoinst is built as a number of packages:
+    Autoinst consists of a number of parts:
 
         main        Contains just the main() routine.
 
         Options     Parses the command-line options.
                     Note that the *processing* of the user's choices
-                    is mostly delegated to the `Tables` package,
-                    since this processing involves adapting the tables.
+                    is mostly taken care of by the `Tables` package,
+                    since this processing involves adapting those tables.
 
         Log         Logs the font parsing and creation process.
 
@@ -69,19 +69,20 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
                     Font::Info      Extracts font info from raw data.
 
         Tables      Contains tables that drive the font creation process
-                    (especially the decisions which files to create).
+                    (especially the decisions which fonts to create).
 
         Work        Generates all font files, driven by data from `Tables`.
 
         NFSS        Contains tables and routines that map
                     font characteristics (weight, width, shape)
-                    to NFSS attributes.
+                    to NFSS attributes. This data is also used by
+                    `Font::Info`, to avoid duplication.
 
         LaTeX       Creates LaTeX support (.sty and .fd files).
 
         Otftotfm    Drives `otftotfm` to actually generate the fonts.
 
-        Util        A few utility functions.
+        Util        Some miscellaneous utility functions.
 
 ----------------------------------------------------------------------------
 
@@ -239,7 +240,7 @@ sub assert_unique {
 package Font::Info;
 
 # --------------------------------------------------------------------------
-#   Constructor: returns a new Font::Info object, with default values.
+#   Constructor: returns a new (mostly empty) Font::Info object.
 # --------------------------------------------------------------------------
 sub new {
     my ($cls, $filename) = @_;
@@ -269,17 +270,7 @@ sub new {
 
 
 # --------------------------------------------------------------------------
-#   Returns a boolean indicating if this font has the wanted feature.
-# --------------------------------------------------------------------------
-sub has_feature {
-    my ($self, $feat) = @_;
-
-    return exists $self->{feature}{$feat};
-}
-
-
-# --------------------------------------------------------------------------
-#   Processes the basic info (list of key-value pairs) for a font.
+#   Processes the basic info (given as a list of key-value pairs) for a font.
 # --------------------------------------------------------------------------
 sub process_basicinfo {
     my ($self, $data) = @_;
@@ -365,13 +356,12 @@ sub process_basicinfo {
     my $shapes = join '|', Util::sort_desc_length(qw(it italic));
     if ( $self->{family} =~ m/(.+?) ($shapes) \z/xmsi
             and ( $self->{shape} eq 'regular'
-                or $self->{shape} eq NFSS::unabbreviate(lc($2))
-            )
-    ) {
+                    or $self->{shape} eq NFSS::unabbreviate(lc($2))
+                )
+       ) {
         $self->{family} = $1;
         $self->{shape}  = NFSS::unabbreviate(lc($2));
     }
-
     $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
     if ( $self->{family} =~ m/(.+?) -? (?: $shapes) \z/xmsi ) {
         $self->{family}       = $1;
@@ -387,27 +377,26 @@ sub process_basicinfo {
     my $widths = join '|', NFSS::get_all_widths();
     if ( $self->{family} =~ m/(.+?) ($widths) \z/xmsi
             and ( $self->{width} eq 'regular'
-                or $self->{width} eq NFSS::unabbreviate(lc($2))
-            )
-    ) {
+                    or $self->{width} eq NFSS::unabbreviate(lc($2))
+                )
+       ) {
         $self->{family} = $1;
         $self->{width}  = NFSS::unabbreviate(lc($2));
     }
 
-    # Some font families put extreme weights into separate families;
-    # we merge these into the 'main' font family.
+    # Some font families put unusual weights into separate families;
+    # we merge these into the 'main' font family. But we have to be
+    # careful with the word 'Text': this might be part of the family name
+    # (i.e., Libre Caslon Text) and should not be mistaken for a weight.
     my $weights = join '|', NFSS::get_all_weights();
-    # Be careful with the word 'Text': this might be part of
-    # the font family name (i.e., Libre Caslon Text) and should
-    # not be mistaken for a weight.
     if ( $self->{family} =~ m/text \z/xmsi ) {
         $weights =~ s/text[|]?//xms;
     }
     if ( $self->{family} =~ m/(.+?) ($weights) \z/xmsi
             and ( $self->{weight} eq 'regular'
-                or $self->{weight} eq NFSS::unabbreviate(lc($2))
-            )
-    ) {
+                    or $self->{weight} eq NFSS::unabbreviate(lc($2))
+                )
+       ) {
         $self->{family} = $1;
         $self->{weight} = NFSS::unabbreviate(lc($2));
     }
@@ -2599,7 +2588,7 @@ sub cleanup {
 
     # Compile list of OpenType features to use with this font.
     my %feature = map { ($_ => 1) }
-                      grep { $font->has_feature($_) }
+                      grep { $font->{feature}{$_} }
                            ( Tables::get_features($figurestyle),
                              Tables::get_features($style) );
     if ($feature{lnum} && $feature{onum}) {
