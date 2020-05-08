@@ -120,17 +120,17 @@ sub main {
         my $nfss_mapping = NFSS::map_nfss_codes($fontlist);
         $log->log_nfss_mapping($nfss_mapping);
 
-        my @worklist = Work::generate_worklist($fontlist);
-        $log->log_worklist(@worklist);
+        my @workitems = Work::generate_worklist($fontlist);
+        $log->log_worklist(\@workitems);
 
         my $targetdirs = Otftotfm::get_targetdirs($family, $fontlist);
         my @commands = map { Otftotfm::create_command($_, $targetdirs) }
-                           @worklist;
-        $log->log_commands(@commands) if $ARGV{verbose} >= 1;
+                           @workitems;
+        $log->log_commands(\@commands) if $ARGV{verbose} >= 1;
 
         if (!$ARGV{dryrun}) {
-            LaTeX::create_support_files($family, $nfss_mapping, @worklist);
-            Otftotfm::run_commands($log, $family, @commands);
+            LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
+            Otftotfm::run_commands(\@commands, $family, $log);
         }
 
         $log->close();
@@ -623,11 +623,11 @@ package LaTeX;
 #   Creates .sty and .fd files for LaTeX.
 # --------------------------------------------------------------------------
 sub create_support_files {
-    my ($family, $nfss_mapping, @worklist) = @_;
+    my ($worklist, $family, $nfss_mapping) = @_;
 
     # Organize the worklist by family, encoding, style, series and shape.
     my %fddata;
-    for my $item (@worklist) {
+    for my $item (@{$worklist}) {
         my $encoding    = $item->{encoding};
         my $figurestyle = $item->{figurestyle};
         my $series      = $item->{font}{series};
@@ -1137,17 +1137,17 @@ sub log_nfss_mapping {
 #   Logs all fonts we're going to create.
 # --------------------------------------------------------------------------
 sub log_worklist {
-    my ($self, @items) = @_;
+    my ($self, $worklist) = @_;
 
-    my @worklist
+    my @workitems
         = sort { $a->{font}{filename}    cmp $b->{font}{filename}
                     || $a->{encoding}    cmp $b->{encoding}
                     || $a->{figurestyle} cmp $b->{figurestyle}
                }
-               @items;
+               @{$worklist};
 
     my $prevfn = q{};
-    for my $item (@worklist) {
+    for my $item (@workitems) {
         if ($prevfn ne $item->{font}{filename}) {
             print {$self} <<"END_FONTINFO";
 
@@ -1177,10 +1177,10 @@ END_FONTINFO
 #   Logs all generated otftotfm commands.
 # --------------------------------------------------------------------------
 sub log_commands {
-    my ($self, @commands) = @_;
+    my ($self, $commandlist) = @_;
 
     print {$self} "\n\n";
-    print {$self} join "\n\n", @commands;
+    print {$self} join "\n\n", @{$commandlist};
     print {$self} "\n";
 
     return;
@@ -1864,22 +1864,22 @@ sub create_command {
 #   Executes (or saves to file, when $ARGV{manual} is true) all commands.
 # --------------------------------------------------------------------------
 sub run_commands {
-    my ($log, $family, @commands) = @_;
+    my ($commandlist, $family, $log) = @_;
 
     # Make sure the last command *does* call updmap.
-    $commands[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
+    $commandlist->[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
 
     if ($ARGV{manual}) {
         open my $BAT, '>', 'autoinst.bat'
             or die "[ERROR]     Can't create 'autoinst.bat': $!";
-        print {$BAT} "$_\n" for @commands;
+        print {$BAT} "$_\n" for @{$commandlist};
         close $BAT;
     }
     else {
         my $oops = 0;
         $| = 1;     # turn on autoflush, to make a poor man's progress bar
         print "[INFO]      Generating fonts for $family ";
-        for my $command (@commands) {
+        for my $command (@{$commandlist}) {
             print '.';
             open my $otftotfm, '-|', "$command 2>&1"
                 or die "could not fork(): $!";
