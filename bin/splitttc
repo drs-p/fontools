@@ -33,6 +33,7 @@
 use strict;
 use warnings;
 
+use Encode;
 use File::Basename;
 use Getopt::Long;
 use Pod::Usage;
@@ -47,8 +48,7 @@ use constant {
 };
 
 my $filename_in = $ARGV[0];
-my ($basename_out, undef, undef) = fileparse($filename_in, qw(.ttc .otc));
-my $output_prefix = $ARGV{output_prefix} // $basename_out;
+my ($basename, undef, undef) = fileparse($filename_in, qw(.ttc .otc));
 
 open my $fh, '<:raw', $filename_in
     or die "[ERROR] cannot open $filename_in: $!";
@@ -79,7 +79,7 @@ for my $i_font (1..$num_fonts) {
                  : $sfnt_version eq "\x00\x01\x00\x00" ? 'ttf'
                  :                                       die
                  ;
-    my $filename_out = sprintf "%s%d.%s", $output_prefix, $i_font, $file_ext;
+    my $filename_out = sprintf "%s%d.%s", $basename, $i_font, $file_ext;
 
     # unpack Table Records and create list of tables
     my $table_records
@@ -108,6 +108,13 @@ for my $i_font (1..$num_fonts) {
     for my $table_record (@table_records) {
         $table_record->{offset} = $file_pos;
         $file_pos += length $table_record->{table};
+
+        if ($table_record->{table_tag} eq 'name') {
+            my $postscript_name = get_postscript_name($table_record->{table});
+            if ($postscript_name) {
+                $filename_out = $postscript_name . q(.) . $file_ext;
+            }
+        }
     }
 
     open my $filehandle_out, '>:raw', $filename_out
@@ -126,9 +133,10 @@ for my $i_font (1..$num_fonts) {
         or die "[ERROR] something went wrong when closing $filename_out: $!";
 }
 
-#-----------------------------------------------------------------------
-# Read the command-line options
-#-----------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+#   Reads the command-line options.
+# --------------------------------------------------------------------------
 sub parse_commandline {
     Getopt::Long::GetOptions(
         'help|?'            =>  sub { pod2usage(-verbose => 1) },
@@ -138,6 +146,53 @@ sub parse_commandline {
     or pod2usage(-verbose => 0);
 
     pod2usage(-verbose => 0) if @ARGV != 1;
+
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Parses the 'name' table and returns the font's PostScript name.
+# --------------------------------------------------------------------------
+sub get_postscript_name {
+    my $name_table = shift;
+
+    my ($version, $count, $string_offset) = unpack '@0n3', $name_table;
+    if ($version > 1) {
+        # Don't try to parse future versions
+        return;
+    }
+
+    my @name_records = unpack "\@6(a12)$count", $name_table;
+    for my $name_record (@name_records) {
+        my ($platform_id, $encoding_id, $language_id,
+            $name_id, $length, $offset) = unpack 'n6', $name_record;
+
+        if ($name_id != 6) {
+            next;
+        }
+
+        my $postscript_data
+            = substr $name_table, $string_offset + $offset, $length;
+        my $postscript_name;
+        if ($platform_id == 3
+                and $encoding_id == 1
+                and $language_id == 0x409) {
+            $postscript_name = Encode::decode('UTF-16BE', $postscript_data);
+        }
+        elsif ($platform_id == 1
+                and $encoding_id == 0
+                and $language_id == 0) {
+            $postscript_name = Encode::decode('MacRoman', $postscript_data);
+        }
+        else {
+            # According to the 'Recommendations' in the OpenType spec,
+            # any PostScript names other than the above two may be ignored.
+            next;
+        }
+
+        return $postscript_name;
+    }
 
     return;
 }
@@ -166,7 +221,6 @@ splitttc - split an OpenType Collection F<ttc> or F<otc> file
 =item B<splitttc>
 [B<-help>]
 [B<-version>]
-[B<-output-prefix>=I<< <prefix> >>]
 B<< <ttc-or-otc-file> >>
 
 =back
@@ -187,6 +241,7 @@ cannot handle such OpenType Collections; they only work for individual fonts.
 B<splitttc> takes an OpenType Collection file
 and splits it into its constituent parts.
 
+
 =head1 OPTIONS AND ARGUMENTS
 
 =over 4
@@ -199,12 +254,6 @@ Print a short description of the syntax and exit.
 
 Print version number and exit.
 
-=item B<-output-prefix>=I<< <prefix> >>
-
-Write the individual fonts to files named I<< <prefix> >>1.ttf,
-I<< <prefix> >>2.ttf etc.
-The default is to take the prefix from the filename of the input file.
-
 =item B<< <ttc-or-otc-file> >>
 
 The F<ttc> or F<otc> file to be split.
@@ -213,6 +262,15 @@ The F<ttc> or F<otc> file to be split.
 
 You may use either one or two dashes before options,
 and option names may be shortened to a unique prefix.
+
+
+=head1 OUTPUT
+
+B<splitttc> tries to determine the 'PostScript name' of the resulting fonts
+and uses this to name the output files.
+If it cannot determine the PostScript name, it uses the basename of the input
+font collection file plus a three-digit sequence number:
+F<<< I<< <input> >>001.otf>>>, F<<< I<< <input> >>002.otf>>> etc.
 
 
 =head1 AUTHOR
@@ -254,16 +312,13 @@ This document describes B<splitttc> version __VERSION__.
 
 =over 12
 
+=item I<2020-05-11>
+
+Use the 'PostScript name' to name the output fonts.
+
 =item I<2019-06-25>
 
 First release.
-
-=back
-
-
-=begin Really_old_history
-
-=over 12
 
 =back
 
