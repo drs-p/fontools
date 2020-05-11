@@ -3380,14 +3380,12 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-08>
+=item I<2020-05-11>
 
 When present, use encoding files in the current working directory
 in preference of the ones that come with B<autoinst>.
 Changed the way ornament fonts are created; ornament glyphs are now
 always included in the position chosen by the font's designer.
-Spring cleaning: reorganized and simplified the code
-for better maintainability.
 
 =item I<2020-04-28>
 
