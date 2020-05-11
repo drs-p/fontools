@@ -270,7 +270,7 @@ B<splitttc> tries to determine the 'PostScript name' of the resulting fonts
 and uses this to name the output files.
 If it cannot determine the PostScript name, it uses the basename of the input
 font collection file plus a three-digit sequence number:
-F<<< I<< <input> >>001.otf>>>, F<<< I<< <input> >>002.otf>>> etc.
+F<<< I<< <input> >> 001.otf >>>, F<<< I<< <input> >> 002.otf >>> etc.
 
 
 =head1 AUTHOR
