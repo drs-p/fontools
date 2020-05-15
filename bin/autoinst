@@ -2101,9 +2101,8 @@ sub get_all_figurestyles {
 sub get_styles {
     my $figurestyle = shift;
 
-    my $result = $FIGURESTYLE{$figurestyle}{styles} // [];
-
-    return @{$result};
+    return grep { defined $STYLE{$_} }
+                @{$FIGURESTYLE{$figurestyle}{styles}};
 }
 
 
