@@ -3266,6 +3266,18 @@ unless the user specified the I<-typewriter> option.
 Specify B<-noligatures> to disable the generation of ligatures even for fonts
 that do contain a "liga" feature.
 
+=item B<-math>
+
+B<< I<EXPERIMENTAL!> >>
+Tells B<autoinst> to create basic math fonts for this family,
+and to add a C<[math]> option to the generated style file.
+
+Note that "basic" is the operative word here;
+currently this is limited to OT1 and OML encoded fonts
+(i.e. digits and Latin and Greek letters).
+If your try to use a math character that isn't support by your fonts,
+the result will be a missing glyph in your document; so use with care!
+
 =item B<-defaultlining>/B<-defaultoldstyle>
 
 =item B<-defaulttabular>/B<-defaultproportional>
