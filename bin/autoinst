@@ -826,6 +826,15 @@ END_STY_XKEYVAL
 }
 END_STY_MAINFONT
 
+    if ($ARGV{math}) {
+        print {$STY} <<"END_STY_MATH";
+\\DeclareOptionX{math}{
+    \\DeclareSymbolFont{operators}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{m}{n}
+    \\DeclareSymbolFont{letters}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{m}{it}
+}
+END_STY_MATH
+    }
+
     my $defaults
         = $seen{OsF}  ? 'oldstyle,proportional'
         : $seen{TOsF} ? 'oldstyle,tabular'
