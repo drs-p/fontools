@@ -1098,7 +1098,7 @@ I'm using the following options:
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
-    math:               @{[ join q{, }, grep { $ARGV{$_} } qw(oml oms omx) ]}
+    math:               @{[ $ARGV{math}         ? 'yes'     : 'no'     ]}
 
 END_ARGUMENTS
 
@@ -1688,9 +1688,7 @@ Possible options:
     -verbose                Print more data to log file
     -version                Print version number and exit
 
-    -oml                    **EXPERIMENTAL** Generate math italic fonts
-    -oms                    **EXPERIMENTAL** Generate math symbol fonts
-    -omx                    **EXPERIMENTAL** Generate math extension fonts
+    -math                   **EXPERIMENTAL**  Generate math italic fonts
 
     font[s]                 The fonts (.otf or .ttf format) to install.
 
@@ -1728,9 +1726,7 @@ END_USAGE
     verbose         => 0,
     nfsswidth       => [],
     nfssweight      => [],
-    oml             => 0,
-    oms             => 0,
-    omx             => 0,
+    math            => 0,
 );
 
 
@@ -1796,9 +1792,7 @@ sub parse_options {
                                      NFSS::set_widths($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
-        'oml!'                => \$ARGV{oml},
-        'oms!'                => \$ARGV{oms},
-        'omx!'                => \$ARGV{omx},
+        'math!'               => \$ARGV{math},
     )
     or die "$USAGE";
 
@@ -2026,24 +2020,10 @@ my %STYLE = (
         name  => '',
     },
     oml => {
-        code  => { n => 'n', it => 'it', sl => 'sl' },
+        code  => { it => 'it', sl => 'sl' },
         reqd  => [],
         nice  => [ 'onum' ],
         extra => '--math-spacing=127',
-        name  => '',
-    },
-    oms => {
-        code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [],
-        nice  => [ 'swsh' ],
-        extra => '--math-spacing=48',
-        name  => '',
-    },
-    omx => {
-        code  => { n => 'n', it => 'it', sl => 'sl' },
-        reqd  => [],
-        nice  => [],
-        extra => '',
         name  => '',
     },
 );
@@ -2082,25 +2062,25 @@ my %FIGURESTYLE = (
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
+        styles => [ qw(normal smallcaps swash textcomp oml) ],
     },
     LF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
+        styles => [ qw(normal smallcaps swash textcomp oml) ],
     },
     TOsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
+        styles => [ qw(normal smallcaps swash textcomp oml) ],
     },
     OsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
+        styles => [ qw(normal smallcaps swash textcomp oml) ],
     },
     Sup => {
         reqd   => [ 'sups' ],
@@ -2343,9 +2323,14 @@ sub process_encoding_options {
         delete $STYLE{textcomp};
     }
 
-    if (!$ARGV{oml}) { delete $STYLE{oml} }
-    if (!$ARGV{oms}) { delete $STYLE{oms} }
-    if (!$ARGV{omx}) { delete $STYLE{omx} }
+    if ($ARGV{math}) {
+        if (!( grep { $_ eq 'OT1' } @{$ARGV{encoding}} )) {
+            $ARGV{encoding} = [ 'OT1', @{$ARGV{encoding}} ];
+        }
+    }
+    else {
+        delete $STYLE{math}
+    }
 
     return;
 }
@@ -2628,8 +2613,6 @@ sub expand_encodings {
     my @encodings = $style eq 'textcomp'  ? qw(ts1)
                   : $figurestyle eq 'Orn' ? qw(ly1)
                   : $style eq 'oml'       ? qw(oml)
-                  : $style eq 'oms'       ? qw(oms)
-                  : $style eq 'omx'       ? qw(omx)
                   :                         @{$ARGV{encoding}}
                   ;
 
