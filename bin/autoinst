@@ -1098,6 +1098,8 @@ I'm using the following options:
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
+    math:               @{[ join q{, }, grep { $ARGV{$_} } qw(oml oms omx) ]}
+
 END_ARGUMENTS
 
     if ($ARGV{fig_height} or $ARGV{fig_width}) {
@@ -1204,7 +1206,7 @@ END_FONTINFO
                        $workitem->{encoding},
                        $workitem->{figurestyle},
                        $workitem->{fdshape},
-                       join(q(, ), @{$workitem->{features}});
+                       join(q{, }, @{$workitem->{features}});
         $prevfn  = $workitem->{font}{filename};
     }
 
@@ -1686,6 +1688,10 @@ Possible options:
     -verbose                Print more data to log file
     -version                Print version number and exit
 
+    -oml                    **EXPERIMENTAL** Generate math italic fonts
+    -oms                    **EXPERIMENTAL** Generate math symbol fonts
+    -omx                    **EXPERIMENTAL** Generate math extension fonts
+
     font[s]                 The fonts (.otf or .ttf format) to install.
 
 Please report any bugs or suggestions to <marcpenninga@gmail.com>.
@@ -1722,6 +1728,9 @@ END_USAGE
     verbose         => 0,
     nfsswidth       => [],
     nfssweight      => [],
+    oml             => 0,
+    oms             => 0,
+    omx             => 0,
 );
 
 
@@ -1787,6 +1796,9 @@ sub parse_options {
                                      NFSS::set_widths($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
+        'oml!'                => \$ARGV{oml},
+        'oms!'                => \$ARGV{oms},
+        'omx!'                => \$ARGV{omx},
     )
     or die "$USAGE";
 
@@ -2013,6 +2025,27 @@ my %STYLE = (
         extra => '',
         name  => '',
     },
+    oml => {
+        code  => { n => 'n', it => 'it', sl => 'sl' },
+        reqd  => [],
+        nice  => [ 'onum' ],
+        extra => '--math-spacing=127',
+        name  => '',
+    },
+    oms => {
+        code  => { n => 'n', it => 'it', sl => 'sl' },
+        reqd  => [],
+        nice  => [ 'swsh' ],
+        extra => '--math-spacing=48',
+        name  => '',
+    },
+    omx => {
+        code  => { n => 'n', it => 'it', sl => 'sl' },
+        reqd  => [],
+        nice  => [],
+        extra => '',
+        name  => '',
+    },
 );
 
 =begin Comment
@@ -2049,25 +2082,25 @@ my %FIGURESTYLE = (
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
     },
     LF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
     },
     TOsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
     },
     OsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ 'normal', 'smallcaps', 'swash', 'textcomp' ],
+        styles => [ qw(normal smallcaps swash textcomp oml oms omx) ],
     },
     Sup => {
         reqd   => [ 'sups' ],
@@ -2309,6 +2342,10 @@ sub process_encoding_options {
     else {
         delete $STYLE{textcomp};
     }
+
+    if (!$ARGV{oml}) { delete $STYLE{oml} }
+    if (!$ARGV{oms}) { delete $STYLE{oms} }
+    if (!$ARGV{omx}) { delete $STYLE{omx} }
 
     return;
 }
@@ -2590,6 +2627,9 @@ sub expand_encodings {
         = @{$workitem}{qw(font figurestyle style)};
     my @encodings = $style eq 'textcomp'  ? qw(ts1)
                   : $figurestyle eq 'Orn' ? qw(ly1)
+                  : $style eq 'oml'       ? qw(oml)
+                  : $style eq 'oms'       ? qw(oms)
+                  : $style eq 'omx'       ? qw(omx)
                   :                         @{$ARGV{encoding}}
                   ;
 
