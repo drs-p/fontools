@@ -1,0 +1,292 @@
+% A version of the OMS encoding, intended for use with otftotfm.
+% CODINGSCHEME TEX MATH SYMBOLS
+/otftotfmOMSEncoding [
+% 0x00
+/minus
+/periodcentered
+/multiply
+/asteriskmath
+/divide
+/diamondmath
+/plusminus
+/minusplus
+% 0x08
+/circleplus
+/circleminus
+/circlemultiply
+/circledivide
+/circledot
+/circlecopyrt
+/openbullet
+/bullet
+% 0x10
+/equivasymptotic
+/equivalence
+/reflexsubset
+/reflexsuperset
+/lessequal
+/greaterequal
+/precedesequal
+/followsequal
+% 0x18
+/similar
+/approxequal
+/propersubset
+/propersuperset
+/lessmuch
+/greatermuch
+/precedes % was curlyless
+/follows % was curlygreater
+% 0x20
+/arrowleft
+/arrowright
+/arrowup
+/arrowdown
+/arrowboth
+/arrownortheast
+/arrowsoutheast
+/similarequal
+% 0x28
+/arrowdblleft
+/arrowdblright
+/arrowdblup
+/arrowdbldown
+/arrowdblboth
+/arrownorthwest
+/arrowsouthwest
+/proportional
+% 0x30
+/prime
+/infinity
+/element
+/owner
+/triangle
+/triangleinv
+/negationslash
+/mapstochar
+% 0x38
+/universal
+/existential
+/logicalnot
+/emptysetstress
+/Rfraktur
+/Ifraktur
+/latticetop
+/perpendicular
+% 0x40
+/aleph
+/A
+/B
+/C
+/D
+/E
+/F
+/G
+% 0x48
+/H
+/I
+/J
+/K
+/L
+/M
+/N
+/O
+% 0x50
+/P
+/Q
+/R
+/S
+/T
+/U
+/V
+/W
+% 0x58
+/X
+/Y
+/Z
+/union
+/intersection
+/unionmulti
+/logicaland
+/logicalor
+% 0x60
+/turnstileleft
+/turnstileright
+/floorleft
+/floorright
+/ceilingleft
+/ceilingright
+/braceleft
+/braceright
+% 0x68
+/angleleft
+/angleright
+/bar
+/bardbl
+/arrowbothv
+/arrowdblbothv
+/backslash
+/wreathproduct
+% 0x70
+/radicallow
+/coproduct
+/gradient
+/integral
+/unionsq
+/intersectionsq
+/subsetsqequal
+/supersetsqequal
+% 0x78
+/section
+/dagger
+/daggerdbl
+/paragraph
+/club
+/diamond
+/heart
+/spade
+% 0x80
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0x88
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0x90
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0x98
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xA0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xA8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xB0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xB8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xC0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xC8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xD0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xD8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xE0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xE8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xF0
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+% 0xF8
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+/.notdef
+] def

@@ -908,7 +908,10 @@ sub create_fdfile {
 \\fi
 
 \\DeclareFontFamily{$enc}{$fam-$sty}{@{[
-    $ARGV{nfss} eq 'tt' ? '\hyphenchar\font=-1' : ""
+    $ARGV{nfss} eq 'tt' ? '\hyphenchar\font=-1'
+    : $enc eq 'OML'     ? '\skewchar\font=127'
+    : $enc eq 'OMS'     ? '\skewchar\font=48'
+    :                     q{}
 ]}}
 
 END_FD_HEADER
@@ -1846,6 +1849,9 @@ sub get_targetdirs {
 # The official names for various coding schemes.
 my %SCHEME = (
     OT1 => 'TEX TEXT',
+    OML => 'TEX MATH ITALIC',
+    OMS => 'TEX MATH SYMBOLS',
+    OMX => 'TEX MATH EXTENSION',
     T1  => 'EXTENDED TEX FONT ENCODING - LATIN',
     TS1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
     LY1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
@@ -2633,7 +2639,8 @@ sub cleanup {
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
-            =~ s/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/fontools_\L$1\E/xmsi;
+            =~ s{ \A (OT1|OML|OMS|OMX|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3) \z }
+                {fontools_\L$1\E}xmsi;
     }
 
     # Ornaments have no text encoding, and don't need kerning and ligatures.
@@ -2653,9 +2660,9 @@ sub cleanup {
     # Don't create ligatures if the user doesn't want them.
     delete $feature{liga} if !$ARGV{ligatures};
 
-    # Don't create kerns and ligatures for TS* fonts.
+    # Don't create kerns and ligatures for symbol or math fonts.
     delete @feature{qw(kern liga)}
-        if $workitem->{encoding} =~ m/\A TS\d \z/xmsi;
+        if $workitem->{encoding} =~ m/\A ( TS\d | OM[LSX] ) \z/xmsi;
 
     $workitem->{features} = [ sort keys %feature ];
 
