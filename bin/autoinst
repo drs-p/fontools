@@ -2603,8 +2603,12 @@ sub cleanup {
         }
     }
 
-    # Look up the NFSS code for this font's shape.
+    # Look up the NFSS code for this font's shape...
     $workitem->{fdshape} = Tables::get_fdshape($style, $font->{basicshape});
+    # ... but drop this workitem if we shouldn't generate this shape.
+    if (!defined $workitem->{fdshape}) {
+        return;
+    }
 
     # Figure out which encoding file to use for this font.
     my $try = Cwd::abs_path($workitem->{encoding});
