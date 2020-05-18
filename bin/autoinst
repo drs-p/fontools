@@ -847,32 +847,50 @@ END_STY_MAINFONT
 
     \\SetMathAlphabet{\\mathbf}{normal} {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
     \\SetMathAlphabet{\\mathbf}{bold}   {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\DeclareSymbolFont{cmletters}{OML}{cmm}{m}{it}
+    \\SetSymbolFont{cmletters}{bold}{OML}{cmm}{bx}{it}
+    \\re\@DeclareMathSymbol{\\leftharpoonup}    {\\mathrel}{cmletters}{40}
+    \\re\@DeclareMathSymbol{\\leftharpoondown}  {\\mathrel}{cmletters}{41}
+    \\re\@DeclareMathSymbol{\\rightharpoonup}   {\\mathrel}{cmletters}{42}
+    \\re\@DeclareMathSymbol{\\rightharpoondown} {\\mathrel}{cmletters}{43}
+    \\re\@DeclareMathSymbol{\\lhook}            {\\mathrel}{cmletters}{44}
+    \\re\@DeclareMathSymbol{\\rhook}            {\\mathrel}{cmletters}{45}
+    \\re\@DeclareMathSymbol{\\triangleright}    {\\mathbin}{cmletters}{46}
+    \\re\@DeclareMathSymbol{\\triangleleft}     {\\mathbin}{cmletters}{47}
+    \\re\@DeclareMathSymbol{\\flat}             {\\mathord}{cmletters}{91}
+    \\re\@DeclareMathSymbol{\\natural}          {\\mathord}{cmletters}{92}
+    \\re\@DeclareMathSymbol{\\sharp}            {\\mathord}{cmletters}{93}
+    \\re\@DeclareMathSymbol{\\smile}            {\\mathrel}{cmletters}{94}
+    \\re\@DeclareMathSymbol{\\frown}            {\\mathrel}{cmletters}{95}
+    \\re\@DeclareMathSymbol{\\ell}              {\\mathord}{cmletters}{96}
+    \\re\@DeclareMathSymbol{\\wp}               {\\mathord}{cmletters}{125}
 }
 \\DeclareOptionX{TeXgreek}{
-    \\re\@DeclareMathSymbol{\\Gamma}    {\\mathalpha}   {operators} {"0}
-    \\re\@DeclareMathSymbol{\\Delta}    {\\mathalpha}   {operators} {"1}
-    \\re\@DeclareMathSymbol{\\Theta}    {\\mathalpha}   {operators} {"2}
-    \\re\@DeclareMathSymbol{\\Lambda}   {\\mathalpha}   {operators} {"3}
-    \\re\@DeclareMathSymbol{\\Xi}       {\\mathalpha}   {operators} {"4}
-    \\re\@DeclareMathSymbol{\\Pi}       {\\mathalpha}   {operators} {"5}
-    \\re\@DeclareMathSymbol{\\Sigma}    {\\mathalpha}   {operators} {"6}
-    \\re\@DeclareMathSymbol{\\Upsilon}  {\\mathalpha}   {operators} {"7}
-    \\re\@DeclareMathSymbol{\\Phi}      {\\mathalpha}   {operators} {"8}
-    \\re\@DeclareMathSymbol{\\Psi}      {\\mathalpha}   {operators} {"9}
-    \\re\@DeclareMathSymbol{\\Omega}    {\\mathalpha}   {operators} {"A}
+    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathalpha}{operators} {0}
+    \\re\@DeclareMathSymbol{\\Delta}            {\\mathalpha}{operators} {1}
+    \\re\@DeclareMathSymbol{\\Theta}            {\\mathalpha}{operators} {2}
+    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathalpha}{operators} {3}
+    \\re\@DeclareMathSymbol{\\Xi}               {\\mathalpha}{operators} {4}
+    \\re\@DeclareMathSymbol{\\Pi}               {\\mathalpha}{operators} {5}
+    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathalpha}{operators} {6}
+    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathalpha}{operators} {7}
+    \\re\@DeclareMathSymbol{\\Phi}              {\\mathalpha}{operators} {8}
+    \\re\@DeclareMathSymbol{\\Psi}              {\\mathalpha}{operators} {9}
+    \\re\@DeclareMathSymbol{\\Omega}            {\\mathalpha}{operators} {10}
 }
 \\DeclareOptionX{ISOgreek}{
-    \\re\@DeclareMathSymbol{\\Gamma}    {\\mathalpha}   {letters}   {"0}
-    \\re\@DeclareMathSymbol{\\Delta}    {\\mathalpha}   {letters}   {"1}
-    \\re\@DeclareMathSymbol{\\Theta}    {\\mathalpha}   {letters}   {"2}
-    \\re\@DeclareMathSymbol{\\Lambda}   {\\mathalpha}   {letters}   {"3}
-    \\re\@DeclareMathSymbol{\\Xi}       {\\mathalpha}   {letters}   {"4}
-    \\re\@DeclareMathSymbol{\\Pi}       {\\mathalpha}   {letters}   {"5}
-    \\re\@DeclareMathSymbol{\\Sigma}    {\\mathalpha}   {letters}   {"6}
-    \\re\@DeclareMathSymbol{\\Upsilon}  {\\mathalpha}   {letters}   {"7}
-    \\re\@DeclareMathSymbol{\\Phi}      {\\mathalpha}   {letters}   {"8}
-    \\re\@DeclareMathSymbol{\\Psi}      {\\mathalpha}   {letters}   {"9}
-    \\re\@DeclareMathSymbol{\\Omega}    {\\mathalpha}   {letters}   {"A}
+    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathalpha}{letters}   {0}
+    \\re\@DeclareMathSymbol{\\Delta}            {\\mathalpha}{letters}   {1}
+    \\re\@DeclareMathSymbol{\\Theta}            {\\mathalpha}{letters}   {2}
+    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathalpha}{letters}   {3}
+    \\re\@DeclareMathSymbol{\\Xi}               {\\mathalpha}{letters}   {4}
+    \\re\@DeclareMathSymbol{\\Pi}               {\\mathalpha}{letters}   {5}
+    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathalpha}{letters}   {6}
+    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathalpha}{letters}   {7}
+    \\re\@DeclareMathSymbol{\\Phi}              {\\mathalpha}{letters}   {8}
+    \\re\@DeclareMathSymbol{\\Psi}              {\\mathalpha}{letters}   {9}
+    \\re\@DeclareMathSymbol{\\Omega}            {\\mathalpha}{letters}   {10}
 }
 END_STY_MATH
 
