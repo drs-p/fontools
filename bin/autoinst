@@ -2747,7 +2747,7 @@ __END__
 
     To create the documentation:
 
-    pod2man --center="Marc Penninga" --release="fontools" --section=1 \
+    pod2man --center='Marc Penninga' --release='fontools' --section=1 \
         autoinst - | groff -Tps -man - | ps2pdf - autoinst.pdf
 
 
@@ -2813,7 +2813,7 @@ Swash
 
 =item I<nw>
 
-"Upright swash"
+`Upright swash'
 
 =back
 
@@ -2831,11 +2831,11 @@ in roman, italic and slanted shapes.
 
 =item -
 
-Families with "Titling" characters;
-these "... replace the default glyphs
+Families with `Titling' characters;
+these `... replace the default glyphs
 with corresponding forms designed specifically for titling.
 These may be all-capital and/or larger on the body,
-and adjusted for viewing at larger sizes"
+and adjusted for viewing at larger sizes'
 (according to the OpenType Specification).
 
 =item -
@@ -2849,7 +2849,7 @@ An ornament family, also in roman, italic and slanted shapes.
 Of course, if your fonts don't contain italics, oldstyle digits, small caps
 etc., the corresponding shapes and families are not created.
 In addition, the creation of most families and shapes can be controlled
-by the user (see L</"COMMAND-LINE OPTIONS"> below).
+by the user (see L</COMMAND-LINE OPTIONS> below).
 
 These families use the I<FontPro> project's naming scheme:
 I<< <FontFamily>-<Suffix> >>, where I<< <Suffix> >> is:
@@ -2903,9 +2903,9 @@ denominators
 
 The individual fonts are named I<< <FontName>-<suffix>-<shape>-<enc> >>,
 where I<< <suffix> >> is the same as above (but in lowercase),
-I<< <shape> >> is either empty, "sc" or "swash",
+I<< <shape> >> is either empty, `sc' or `swash',
 and I<< <enc> >> is the encoding (also in lowercase).
-A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
+A typical name in this scheme would be `FiraSans-Light-osf-sc-ly1'.
 
 
 =head2 About the log file
@@ -2913,7 +2913,7 @@ A typical name in this scheme would be "FiraSans-Light-osf-sc-ly1".
 B<autoinst> writes some info about what it thinks it's doing to a log file.
 By default this is called F<< <fontfamily>.log >>,
 but this choice can be overridden by the user;
-see the I<-logfile> command-line option in L</"COMMAND-LINE OPTIONS"> below.
+see the I<-logfile> command-line option in L</COMMAND-LINE OPTIONS> below.
 If this log file already exists, B<autoinst> will append its data to the end
 rather than overwrite it.
 Use the I<-verbose> command-line option to ask for more detailed info.
@@ -2929,7 +2929,7 @@ that it cannot find the F<kpsewhich> program and move all generated files
 into a subdirectory C<./autoinst_output/> of the current directory.
 If you use such a TeX distribution, you should either move these files
 to their correct destinations by hand, or use the I<-target> option
-(see L</"COMMAND-LINE OPTIONS"> below) to manually specify a TEXMF tree.
+(see L</COMMAND-LINE OPTIONS> below) to manually specify a TEXMF tree.
 
 Also, some OpenType fonts contain so many kerning pairs that the resulting
 F<pl> and F<vpl> files are too big for MiKTeX's F<pltotf> and F<vptovf>;
@@ -2976,7 +2976,7 @@ yourself.
 =item C<lining>, C<oldstyle>, C<tabular>, C<proportional>
 
 Choose which figure style to use.
-The defaults are "oldstyle" and "proportional" (if available).
+The defaults are `oldstyle' and `proportional' (if available).
 
 =item C<<< scale=I<< <number> >> >>>
 
@@ -2989,12 +2989,12 @@ This option is only available when you have the F<xkeyval> package installed.
 
 =item C<medium>, C<book>, C<text>, C<regular>
 
-Select the weight that LaTeX will use as the "regular" weight;
+Select the weight that LaTeX will use as the `regular' weight;
 the default is C<regular>.
 
 =item C<heavy>, C<black>, C<extrabold>, C<demibold>, C<semibold>, C<bold>
 
-Select the weight that LaTeX will use as the "bold" weight;
+Select the weight that LaTeX will use as the `bold' weight;
 the default is C<bold>.
 
 =back
@@ -3037,21 +3037,21 @@ standard NFSS (C<\fontfamily>, C<\fontseries>, C<\fontshape> etc.).
 By default, B<autoinst> generates text fonts with OT1, LY1 and T1
 encodings, and the generated style files use T1 as the default text encoding.
 Other encodings can be chosen using the I<-encoding> option
-(see L</"COMMAND-LINE OPTIONS"> below).
+(see L</COMMAND-LINE OPTIONS> below).
 
 
 =head3 ORNAMENTS
 
 Ornament fonts are regular LY1-encoded fonts, with a number of
-'regular' characters replaced by ornament glyphs.
+`regular' characters replaced by ornament glyphs.
 The OpenType specification says that fonts should only put their
-ornaments in place of the lowercase ASCII letters or the 'bullet'
+ornaments in place of the lowercase ASCII letters or the `bullet'
 character, but some fonts put them in other positions (such as those
 of the digits) as well.
 
 Ornament glyphs can be accessed like C<{\ornaments abc}> and
-C<{\ornaments\char"61}>, or equivalently
-C<\textornaments{abc}> and C<\textornaments{\char"61}>.
+C<{\ornaments\char'61}>, or equivalently
+C<\textornaments{abc}> and C<\textornaments{\char'61}>.
 To see which ornaments a font contains (and at which positions),
 run LaTeX on the file F<nfssfont.tex> (which is included in any
 standard LaTeX installation), supply the name of the ornament font
@@ -3066,27 +3066,27 @@ are not compatible with files generated by newer versions.
 =head3 MATHS
 
 B<autoinst> can generate basic math fonts as well
-(this is still somewhat experimental; specify the I<-math> option
+(this is still somewhat experimental; use the I<-math> option
 to activate this feature).
 
 To access these fonts, it adds a C<[math]> option to the generated style file
 (and, if the fonts contain swash characters, also a C<[mathcal]> option
-to use these swash characters as the C<\mathcal> alphabet).
+that uses these as the C<\mathcal> alphabet).
 
-Note that this only changes the "operators" and "letters" alphabets;
+Note that this only changes the `operators' and `letters' alphabets;
 it won't use any of the other mathematical symbols that might be present
-in your fonts. The reason for this is that TeX's "symbols" and
-"largesymbols" alphabets require additional C<\fontdimen>s,
+in your fonts. The reason for this is that TeX's `symbols' and
+`largesymbols' alphabets require additional C<\fontdimen>s,
 which F<otftotfm> doesn't create (and cannot create,
 since the values needed to set up these C<\fontdimen>s are
-missing from most text fonts).
+missing from nearly all text fonts).
 
 Also note that this option doesn't check if your fonts actually contain
-all characters needed for the "operators" and "letters" alpabets;
+all characters needed for the `operators' and `letters' alpabets;
 this may lead to errors in your documents with  missing glyphs.
-The recommended solution for this is to load the F<newtxmath> package
-before loading the style file that was generated by B<autoinst>,
-and then use F<newtxmath>'s C<\re@DeclareMathSymbol> command to get any
+The recommended solution for this is to load the F<newtxmath> package first,
+and (after loading the style file that was generated by B<autoinst>),
+use F<newtxmath>'s C<\re@DeclareMathSymbol> command to get any
 missing glyphs from Computer Modern:
 
     \re@DeclareMathSymbol{\wp}{\mathord}{cmletters}{"7d}
@@ -3121,16 +3121,16 @@ The mapping of shapes to NFSS codes is done using the following table:
     Oblique, Slant(ed), Incline(d)      sl
 
 (I<Exception:> Adobe Silentium Pro contains two Roman shapes;
-we map the first of these to "n", for the second one we (ab)use the "it" code
+we map the first of these to `n', for the second one we (ab)use the `it' code
 as this family doesn't contain an Italic shape.)
 
 The mapping of weights and widths to NFSS codes is a more complex,
 two-step proces.
-In the first step, all fonts are assigned a "series" name that is simply
+In the first step, all fonts are assigned a `series' name that is simply
 the concatenation of its weight and width
 (after expanding any abbreviations and converting to lowercase).
-A font with "Cond" width and "Ultra" weight will then be known
-as "ultrablackcondensed".
+A font with `Cond' width and `Ultra' weight will then be known
+as `ultrablackcondensed'.
 
 In the second step, B<autoinst> tries to map all combinations of NFSS codes
 (ul, el, l, sl, m, sb, b, eb and ub for weights;
@@ -3141,11 +3141,11 @@ and conversely it may not be possible to assign every existing font
 a unique code in a sane way (especially for the weights, some font families
 offer more choices or finer granularity than NFSS's codes can handle;
 e.g., Fira Sans contains fifteen(!) different weights,
-including an additional "Medium" weight between Regular and Semibold).
+including an additional `Medium' weight between Regular and Semibold).
 
 B<autoinst> tries hard to ensure that the most common NFSS codes
 (and high-level commands such as C<\bfseries>,
-which are built on top of those codes) will "just work".
+which are built on top of those codes) will `just work'.
 
 To see exactly which NFSS codes map to which fonts, see the log file
 (pro tip: run B<autoinst> with the I<-dryrun> option
@@ -3199,7 +3199,7 @@ Add more details to the log file.
 
 Generate the specified encoding(s) for the text fonts.
 Multiple encodings may be specified as a comma-separated list
-(without spaces!); the default choice of encodings is "OT1,LY1,T1".
+(without spaces!); the default choice of encodings is `OT1,LY1,T1'.
 
 For each specified encoding XYZ, B<autoinst> will first see if there is
 an encoding file F<XYZ.enc> in the current directory, and if found it will
@@ -3207,7 +3207,7 @@ use that; otherwise it will use one of its built-in encoding files.
 Currently B<autoinst> comes with support for the OT1, T1/TS1, LY1, LGR,
 T2A/B/C and T3/TS3 encodings.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
-with other packages; the "fontools_" prefix may be omitted.)
+with other packages; the `fontools_' prefix may be omitted.)
 
 =item B<-ts1>/B<-nots1>
 
@@ -3230,10 +3230,10 @@ This latter effect cannot be disabled in B<autoinst>;
 if you want typewriter text to be hyphenated, use the F<hyphenat> package.
 
 If none of these options is specified, B<autoinst> tries to guess:
-if the font's filename contains the string "mono"
+if the font's filename contains the string `mono'
 or if the field C<isFixedPitch> in the font's I<post> table is True,
 it will select B<-typewriter>;
-else if the filename contains "sans" it selects B<-sanserif>;
+else if the filename contains `sans' it selects B<-sanserif>;
 and otherwise it will opt for B<-serif>.
 
 =item B<-lining>/B<-nolining>
@@ -3279,12 +3279,12 @@ The default is B<-superiors>.
 =item B<-inferiors> [= B<none> | B<auto> | B<subs> | B<sinf> | B<dnom> ]
 
 The OpenType standard defines several kinds of digits that might be used
-as inferiors or subscripts: "Subscripts" (OpenType feature "subs"),
-"Scientific Inferiors" ("sinf"), and "Denominators" ("dnom").
+as inferiors or subscripts: `Subscripts' (OpenType feature `subs'),
+`Scientific Inferiors' ('sinf'), and `Denominators' ('dnom').
 This option allows the user to determine which of these styles B<autoinst>
 should use for the inferior characters.
-Alternatively, the value "auto" tells B<autoinst> to use the first value
-in "sinf", "subs" or "dnom" that is supported by the font.
+Alternatively, the value `auto' tells B<autoinst> to use the first value
+in `sinf', `subs' or `dnom' that is supported by the font.
 Saying just B<-inferiors> is equivalent to B<-inferiors=auto>;
 otherwise the default is B<-noinferiors>.
 
@@ -3304,14 +3304,14 @@ Control the creation of ornament fonts. The default is B<-ornaments>.
 =item B<-ligatures>/B<-noligatures>
 
 Some fonts create glyphs for the standard f-ligatures (ff, fi, fl, ffi, ffl),
-but don't provide a "liga" feature to access these.
+but don't provide a `liga' feature to access these.
 This option tells B<autoinst> to add extra C<LIGKERN> rules to
 the generated fonts to enable the use of these ligatures.
 The default is B<-ligatures>,
 unless the user specified the I<-typewriter> option.
 
 Specify B<-noligatures> to disable the generation of ligatures even for fonts
-that do contain a "liga" feature.
+that do contain a `liga' feature.
 
 =item B<-math>
 
@@ -3346,9 +3346,9 @@ Map the NFSS code I<code> to the given weight or width,
 overriding the built-in tables.
 Each of these options may be given multiple times,
 to override more than one NFSS code.
-Example: to map the "ul" code to the "Thin" weight,
+Example: to map the `ul' code to the `Thin' weight,
 use C<-nfssweight=ul=thin>.
-To inhibit the use of the "ul" code completely,
+To inhibit the use of the `ul' code completely,
 use C<-nfssweight=ul=>.
 
 =item B<-extra>=I<text>
@@ -3413,9 +3413,9 @@ F<texhash> and F<updmap> or similar).
 =item B<-typeface>=I<TYPEFACE>
 
 These options are equivalent to F<otftotfm>'s I< --vendor> and I< --typeface>
-options: they change the "vendor" and "typeface" parts of the names of the
+options: they change the `vendor' and `typeface' parts of the names of the
 subdirectories in the TEXMF tree where generated files will be stored.
-The default values are "lcdftools" and the font's FontFamily name.
+The default values are `lcdftools' and the font's FontFamily name.
 
 Note that these options change I<only> directory names,
 not the names of any generated files.
@@ -3598,13 +3598,13 @@ Added the I<-version> option.
 =item I<2019-05-17>
 
 Changed the way the F<-ligatures> option works:
-F<-ligatures> enables f-ligatures (even without a "liga" feature),
-F<-noligatures> now disables f-ligatures (overriding a "liga" feature).
+F<-ligatures> enables f-ligatures (even without a `liga' feature),
+F<-noligatures> now disables f-ligatures (overriding a `liga' feature).
 
 =item I<2019-05-11>
 
 Separate small caps families are now also recognised when the family name
-ends with "SC" (previously B<autoinst> only looked for "SmallCaps").
+ends with `SC' (previously B<autoinst> only looked for `SmallCaps').
 
 =item I<2019-04-22>
 
@@ -3619,7 +3619,7 @@ Fixed a bug that affected -mergesmallcaps with multiple encodings.
 Added the <-mergesmallcaps> option, to handle cases where
 the small caps fonts are in separate font families.
 Titling shape is now treated as a separate family instead of a distinct shape;
-it is generated only for fonts with the 'titl' feature.
+it is generated only for fonts with the `titl' feature.
 Only add f-ligatures to fonts when explicitly asked to (I<-ligatures>).
 
 =item I<2019-04-11>
@@ -3641,7 +3641,7 @@ In manual mode, or when we can't find a user-writable TEXMF tree,
 put all generated files into a subdirectory C<./autoinst_output/>
 instead of all over the current working directory.
 
-Added "auto" value to the I<inferiors> option,
+Added `auto' value to the I<inferiors> option,
 to tell B<autoinst> to use whatever inferior characters are available.
 
 =item I<2019-03-14>
@@ -3649,9 +3649,9 @@ to tell B<autoinst> to use whatever inferior characters are available.
 Overhauled the mapping of fonts (more specifically of weights and widths;
 the mapping of shapes didn't change) to NFSS codes.
 Instead of inventing our own codes to deal with every possible weight
-and width out there, we now create "long" codes based on the names
+and width out there, we now create `long' codes based on the names
 in the font metadata.
-Then we add "ssub" rules to the F<fd> files to map the standard NFSS codes
+Then we add `ssub' rules to the F<fd> files to map the standard NFSS codes
 to our fancy names (see the section B<NFSS codes>;
 based on discussions with Frank Mittelbach and Bob Tennent).
 
@@ -3672,26 +3672,26 @@ Added the I<-(no)mergewidths> option; tried to improve the documentation.
 
 =item I<2018-03-26>
 
-Added the "Text" weight and the I<-(no)mergewidths> option.
-Changed the NFSS codes for "Thin" and "Book" to "i" and "o", respectively.
+Added the `Text' weight and the I<-(no)mergewidths> option.
+Changed the NFSS codes for `Thin' and `Book' to `i' and `o', respectively.
 Tried to improve the documentation.
 
 =item I<2018-01-09>
 
-Added the "sl" weight for font families (such as Fira Sans) that contain both
-"Book" and "Regular" weights (reported by Bob Tennent).
-Added the "Two", "Four", "Eight" and "Hair" weights (for Fira Sans).
+Added the `sl' weight for font families (such as Fira Sans) that contain both
+`Book' and `Regular' weights (reported by Bob Tennent).
+Added the `Two', `Four', `Eight' and `Hair' weights (for Fira Sans).
 
 =item I<2017-06-16>
 
 Changed the I<-inferiors> option from a binary yes-or-no choice to allow
-the user to choose one of the "subs", "sinf" and "dnom" features.
+the user to choose one of the `subs', `sinf' and `dnom' features.
 B<autoinst> now always creates a log file.
 
 =item I<2017-03-21>
 
-Updated the F<fontools_ot1.enc> encoding file to include the "Lslash"
-and "lslash" glyphs (thanks to Bob Tennent).
+Updated the F<fontools_ot1.enc> encoding file to include the `Lslash'
+and `lslash' glyphs (thanks to Bob Tennent).
 
 =item I<2015-11-22>
 
@@ -3707,8 +3707,8 @@ Fixed a bug in the font info parsing code.
 
 =item I<2014-01-21>
 
-"Oblique" or "slanted" fonts are now mapped to NFSS code "sl" instead
-of "it"; added "ssub" rules to the F<fd> files to substitute slanted fonts
+`Oblique' or `slanted' fonts are now mapped to NFSS code `sl' instead
+of `it'; added `ssub' rules to the F<fd> files to substitute slanted fonts
 for italic ones if the latter are missing. Fixed a few bugs.
 
 =item I<2014-01-03>
@@ -3737,16 +3737,16 @@ Added C<scale> as an alias for the package option C<scaled>.
 =item I<2013-02-06>
 
 Bugfix: the directory names for map and encoding files contained
-the "vendor" instead of the "typeface".
+the `vendor' instead of the `typeface'.
 
 =item I<2013-01-03>
 
-Added extra "ssub" rules to the F<fd> files that substitute "b" for "bx".
+Added extra `ssub' rules to the F<fd> files that substitute `b' for `bx'.
 Verbose mode now also prints all generated commands before they're executed.
 
 =item I<2012-10-25>
 
-Added extra "ssub" rules to the F<fd> files that substitute italic
+Added extra `ssub' rules to the F<fd> files that substitute italic
 shapes for slanted ones.
 
 =item I<2012-09-25>
@@ -3759,7 +3759,7 @@ Documentation update.
 
 =item I<2012-03-06>
 
-Implemented the "splitting the font family into multiple subfamilies"
+Implemented the `splitting the font family into multiple subfamilies'
 emergency strategy when font info parsing fails.
 Added recognition for a number of unusual widths, weights and shapes.
 
@@ -3767,8 +3767,8 @@ Added recognition for a number of unusual widths, weights and shapes.
 
 Fixed a bug in the font parsing code,
 where possible widths, weights and shapes where tested in the wrong order;
-this led to "ExtraLight" fonts being recognised as "Light".
-Added recognition for "Narrow" and "Wide" widths.
+this led to `ExtraLight' fonts being recognised as `Light'.
+Added recognition for `Narrow' and `Wide' widths.
 Also added the I<-(no)figurekern> command-line option.
 
 =item I<2012-02-01>
@@ -3784,7 +3784,7 @@ Updated the documentation.
 =item I<2011-06-15>
 
 Fixed the font info parsing code for some fonts that are
-too lazy to spell out "Italic" in full.
+too lazy to spell out `Italic' in full.
 
 =item I<2010-04-29>
 
@@ -3830,13 +3830,13 @@ in some extended families, different combinations of
 weight and width were mapped to the same series.
 Added a work-around for incorrect size info in some Kepler fonts.
 Fixed a small bug in the generated commands for otftotfm
-(sometimes, the "onum" feature was included twice).
+(sometimes, the `onum' feature was included twice).
 Added encoding file for OT1 to the I<fontools> collection.
 
 =item I<2007-07-27>
 
 Two bugfixes: a closing brace was missing in the generated style file,
-and the NFSS series was formed as "width plus weight" instead of the reverse.
+and the NFSS series was formed as `width plus weight' instead of the reverse.
 
 =item I<2007-06-10>
 
@@ -3851,7 +3851,7 @@ Added the I< --no-updmap> option to all generated commands for F<otftotfm>
 families (suggested by Steven E. Harris).
 Tweaked the font info parsing to work around a bug in the naming of
 some FontFont fonts, where every font is in a family of its own.
-Added the "scaled" option (including the loading of F<xkeyval>)
+Added the `scaled' option (including the loading of F<xkeyval>)
 to the generated style file.
 Extended the output of the I<-verbose> option.
 
@@ -3872,14 +3872,14 @@ Filenames with spaces now work as well.
 
 =item I<2006-08-31>
 
-Made the generated style files try to include "fontaxes.sty";
+Made the generated style files try to include `fontaxes.sty';
 changed the names of the generated fonts and families
 (to make the previous change possible);
 added command-line options for most font styles and shapes;
 tweaked the filename parsing code for Cronos Pro and Gill Sans Pro;
 added runtime generation of encoding vectors for ornament fonts
 (because GaramondPremier's ornament names differ from other fonts);
-changed the NFSS-code for italic small caps and titling to "scit" and "tlit"
+changed the NFSS-code for italic small caps and titling to `scit' and `tlit'
 (to work with F<fontaxes>);
 and edited (and hopefully improved) the documentation.
 
@@ -3911,25 +3911,25 @@ and improved the layout of the generated files.
 The generated commands weren't actually executed, only printed...
 Also added a small hack to cater for fonts
 (such as some recent versions of MinionPro)
-that contain swash characters but don't provide a "swsh" feature.
+that contain swash characters but don't provide a `swsh' feature.
 
 =item I<2005-08-10>
 
-Dropped the "fontname" scheme in favor of a more verbose naming scheme,
+Dropped the `fontname' scheme in favor of a more verbose naming scheme,
 since many filenames were still more than eight characters long anyway.
 Added F<nfssext.sty>-like commands to the generated style file.
-Changed the default encoding to LY1 and added the "inferior" shape.
+Changed the default encoding to LY1 and added the `inferior' shape.
 
 =item I<2005-08-01>
 
 Rewrote (and hopefully improved) the user interface;
 changed the program to by default execute the generated F<otftotfm> command
 lines rather than writing them to a file;
-added automatic determination of the "fontname" code for the font family;
-changed the NFSS code for italic small caps to "si"; added titling shapes;
+added automatic determination of the `fontname' code for the font family;
+changed the NFSS code for italic small caps to `si'; added titling shapes;
 changed the generated style
 file to include an interface for the ornaments and to load Lehman's NFSS
-extensions F<nfssext.sty> if this is installed; corrected the "fontname" codes
+extensions F<nfssext.sty> if this is installed; corrected the `fontname' codes
 for OT1, T1, LY1 and user-specific encodings; extended the output generated by
 the I<-verbose> option; and rewrote and extended the documentation.
 
