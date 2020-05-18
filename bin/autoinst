@@ -829,10 +829,31 @@ END_STY_MAINFONT
     if ($ARGV{math}) {
         print {$STY} <<"END_STY_MATH";
 \\DeclareOptionX{math}{
-    \\DeclareSymbolFont{operators}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{m}{n}
-    \\DeclareSymbolFont{letters}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{m}{it}
+    \\SetSymbolFont{operators}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{operators}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\SetSymbolFont{letters}{normal}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetSymbolFont{letters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+
+    \\DeclareSymbolFontAlphabet{\\mathnormal}{letters}
+    \\DeclareSymbolFontAlphabet{\\mathrm}{operators}
+
+    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+
+    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 }
 END_STY_MATH
+
+        if ($seen{sw}) {
+            print {$STY} <<"END_STY_MATHCAL";
+\\DeclareOptionX{mathcal}{
+    \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{sw}
+    \\SetMathAlphabet{\\mathcal}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{sw}
+}
+END_STY_MATHCAL
+        }
     }
 
     my $defaults
@@ -919,7 +940,6 @@ sub create_fdfile {
 \\DeclareFontFamily{$enc}{$fam-$sty}{@{[
     $ARGV{nfss} eq 'tt' ? '\hyphenchar\font=-1'
     : $enc eq 'OML'     ? '\skewchar\font=127'
-    : $enc eq 'OMS'     ? '\skewchar\font=48'
     :                     q{}
 ]}}
 
@@ -1697,7 +1717,7 @@ Possible options:
     -verbose                Print more data to log file
     -version                Print version number and exit
 
-    -math                   **EXPERIMENTAL**  Generate math italic fonts
+    -math                   Generate basic math fonts
 
     font[s]                 The fonts (.otf or .ttf format) to install.
 
@@ -1865,8 +1885,6 @@ sub get_targetdirs {
 my %SCHEME = (
     OT1 => 'TEX TEXT',
     OML => 'TEX MATH ITALIC',
-    OMS => 'TEX MATH SYMBOLS',
-    OMX => 'TEX MATH EXTENSION',
     T1  => 'EXTENDED TEX FONT ENCODING - LATIN',
     TS1 => 'TEX TEXT COMPANION SYMBOLS 1---TS1',
     LY1 => 'TEX TYPEWRITER AND WINDOWS ANSI',
@@ -2028,7 +2046,7 @@ my %STYLE = (
         extra => '',
         name  => '',
     },
-    oml => {
+    math => {
         code  => { it => 'it', sl => 'sl' },
         reqd  => [],
         nice  => [ 'onum' ],
@@ -2071,25 +2089,25 @@ my %FIGURESTYLE = (
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     LF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     TOsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     OsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp oml) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     Sup => {
         reqd   => [ 'sups' ],
@@ -2621,7 +2639,7 @@ sub expand_encodings {
         = @{$workitem}{qw(font figurestyle style)};
     my @encodings = $style eq 'textcomp'  ? qw(ts1)
                   : $figurestyle eq 'Orn' ? qw(ly1)
-                  : $style eq 'oml'       ? qw(oml)
+                  : $style eq 'math'      ? qw(oml)
                   :                         @{$ARGV{encoding}}
                   ;
 
@@ -2671,7 +2689,7 @@ sub cleanup {
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
-            =~ s{ \A (OT1|OML|OMS|OMX|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3) \z }
+            =~ s{ \A (OT1|OML|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3) \z }
                 {fontools_\L$1\E}xmsi;
     }
 
@@ -2694,7 +2712,7 @@ sub cleanup {
 
     # Don't create kerns and ligatures for symbol or math fonts.
     delete @feature{qw(kern liga)}
-        if $workitem->{encoding} =~ m/\A ( TS\d | OM[LSX] ) \z/xmsi;
+        if $workitem->{encoding} =~ m/\A ( TS\d | OML ) \z/xmsi;
 
     $workitem->{features} = [ sort keys %feature ];
 
@@ -3268,15 +3286,22 @@ that do contain a "liga" feature.
 
 =item B<-math>
 
-B<< I<EXPERIMENTAL!> >>
-Tells B<autoinst> to create basic math fonts for this family,
-and to add a C<[math]> option to the generated style file.
+Tells B<autoinst> to create basic math fonts for this family.
+To access these fonts, it adds a C<[math]> option to the generated style file
+(and, if your fonts contain swash characters, also a C<[mathcal]> option
+that uses these swash characters for the C<\mathcal> alphabet.)
 
-Note that "basic" is the operative word here;
-currently this is limited to OT1 and OML encoded fonts
-(i.e. digits and Latin and Greek letters).
-If your try to use a math character that isn't support by your fonts,
-the result will be a missing glyph in your document; so use with care!
+Note that this only changes the "operators" and "letters" alphabets;
+it won't use any of the other mathematical symbols that might be present
+in your fonts. The reason for this is that TeX's "symbols" and
+"largesymbols" alphabets require additional C<\fontdimen>s,
+which F<otftotfm> doesn't create (and cannot create,
+since only -- rare -- "Math" OpenType fonts contain the values needed
+to set up these C<\fontdimen>s; they're missing from regular text fonts).
+
+Also note that this option doesn't check if your fonts actually contain
+Greek characters, but just assumes that they do; this may lead to errors
+in your documents when these glyphs are missing.
 
 =item B<-defaultlining>/B<-defaultoldstyle>
 
@@ -3453,11 +3478,12 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-15>
+=item I<2020-05-18>
 
 The generated style files now use C<\textsup> and C<\textinf>
 instead of the more cryptic C<\textsu> and C<\textin> (though
 the old forms are retained for backward compatibility).
+Added basic math support.
 
 =item I<2020-05-11>
 
