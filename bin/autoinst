@@ -702,6 +702,7 @@ END_STY_HEADER
 
     print {$STY} "\\RequirePackage{fontenc}\n";
     print {$STY} "\\RequirePackage{textcomp}\n" if $seen{TS1};
+    print {$STY} "\\RequirePackage{newtxmath}\n" if $ARGV{math};
 
     print {$STY} <<'END_STY_FONTAXES_START';
 \IfFileExists{mweights.sty}{\RequirePackage{mweights}}{}
@@ -829,20 +830,49 @@ END_STY_MAINFONT
     if ($ARGV{math}) {
         print {$STY} <<"END_STY_MATH";
 \\DeclareOptionX{math}{
-    \\SetSymbolFont{operators}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{n}
-    \\SetSymbolFont{operators}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{operators}  {normal}{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{letters}    {normal}{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
 
-    \\SetSymbolFont{letters}{normal}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetSymbolFont{letters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+    \\SetSymbolFont{operators}  {bold}  {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{letters}    {bold}  {OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{it}
 
-    \\DeclareSymbolFontAlphabet{\\mathnormal}{letters}
+    \\DeclareFontSubstitution{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
+    \\DeclareFontSubstitution{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
+
     \\DeclareSymbolFontAlphabet{\\mathrm}{operators}
+    \\DeclareSymbolFontAlphabet{\\mathnormal}{letters}
 
-    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetMathAlphabet{\\mathit}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{normal} {OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{bold}   {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{it}
 
-    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
-    \\SetMathAlphabet{\\mathbf}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{normal} {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{bold}   {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+}
+\\DeclareOptionX{TeXgreek}{
+    \\re\@DeclareMathSymbol{\\Gamma}    {\\mathalpha}   {operators} {"0}
+    \\re\@DeclareMathSymbol{\\Delta}    {\\mathalpha}   {operators} {"1}
+    \\re\@DeclareMathSymbol{\\Theta}    {\\mathalpha}   {operators} {"2}
+    \\re\@DeclareMathSymbol{\\Lambda}   {\\mathalpha}   {operators} {"3}
+    \\re\@DeclareMathSymbol{\\Xi}       {\\mathalpha}   {operators} {"4}
+    \\re\@DeclareMathSymbol{\\Pi}       {\\mathalpha}   {operators} {"5}
+    \\re\@DeclareMathSymbol{\\Sigma}    {\\mathalpha}   {operators} {"6}
+    \\re\@DeclareMathSymbol{\\Upsilon}  {\\mathalpha}   {operators} {"7}
+    \\re\@DeclareMathSymbol{\\Phi}      {\\mathalpha}   {operators} {"8}
+    \\re\@DeclareMathSymbol{\\Psi}      {\\mathalpha}   {operators} {"9}
+    \\re\@DeclareMathSymbol{\\Omega}    {\\mathalpha}   {operators} {"A}
+}
+\\DeclareOptionX{ISOgreek}{
+    \\re\@DeclareMathSymbol{\\Gamma}    {\\mathalpha}   {letters}   {"0}
+    \\re\@DeclareMathSymbol{\\Delta}    {\\mathalpha}   {letters}   {"1}
+    \\re\@DeclareMathSymbol{\\Theta}    {\\mathalpha}   {letters}   {"2}
+    \\re\@DeclareMathSymbol{\\Lambda}   {\\mathalpha}   {letters}   {"3}
+    \\re\@DeclareMathSymbol{\\Xi}       {\\mathalpha}   {letters}   {"4}
+    \\re\@DeclareMathSymbol{\\Pi}       {\\mathalpha}   {letters}   {"5}
+    \\re\@DeclareMathSymbol{\\Sigma}    {\\mathalpha}   {letters}   {"6}
+    \\re\@DeclareMathSymbol{\\Upsilon}  {\\mathalpha}   {letters}   {"7}
+    \\re\@DeclareMathSymbol{\\Phi}      {\\mathalpha}   {letters}   {"8}
+    \\re\@DeclareMathSymbol{\\Psi}      {\\mathalpha}   {letters}   {"9}
+    \\re\@DeclareMathSymbol{\\Omega}    {\\mathalpha}   {letters}   {"A}
 }
 END_STY_MATH
 
@@ -861,7 +891,8 @@ END_STY_MATHCAL
         : $seen{TOsF} ? 'oldstyle,tabular'
         : $seen{LF}   ? 'lining,proportional'
         : $seen{TLF}  ? 'lining,tabular'
-        :               die "[ERROR]     Internal bug, please report!";
+        :               die "[ERROR]     Internal bug, please report!"
+        ;
 
     my $default_bold;
     for my $series (qw(heavy black extrabold demibold semibold bold)) {
@@ -884,6 +915,10 @@ END_STY_MATHCAL
         }
     }
     $defaults .= ",$default_regular" if $default_regular;
+
+    if ($ARGV{math}) {
+        $defaults .= ',TeXgreek';
+    }
 
     print {$STY} <<"END_STYLE_REST";
 \\ExecuteOptionsX{$defaults}
@@ -3084,13 +3119,18 @@ missing from nearly all text fonts).
 Also note that this option doesn't check if your fonts actually contain
 all characters needed for the `operators' and `letters' alpabets;
 this may lead to errors in your documents with  missing glyphs.
-The recommended solution for this is to load the F<newtxmath> package first,
-and (after loading the style file that was generated by B<autoinst>),
-use F<newtxmath>'s C<\re@DeclareMathSymbol> command to get any
-missing glyphs from Computer Modern:
+The recommended solution for this is to use
+the C<\re@DeclareMathSymbol> command from the F<newtxmath> package
+(which is loaded by the generated style file)
+to get any missing glyphs from Computer Modern:
 
     \re@DeclareMathSymbol{\wp}{\mathord}{cmletters}{"7d}
 
+The generated style file knows two further (mutually exclusive) options,
+which influence the shape of any greek characters:
+C<[TeXgree]> and C<[ISOgreek]>. The first one follows TeX's standard
+of upright greek capitals and italic lowercase, whereas the second one
+implements the ISO standard that all greek should be italic.
 
 =head2 NFSS codes
 
@@ -3494,10 +3534,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2020-05-18>
 
+Added basic math support.
 The generated style files now use C<\textsup> and C<\textinf>
 instead of the more cryptic C<\textsu> and C<\textin> (though
 the old forms are retained for backward compatibility).
-Added basic math support.
 
 =item I<2020-05-11>
 
