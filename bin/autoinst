@@ -702,6 +702,7 @@ END_STY_HEADER
 
     print {$STY} "\\RequirePackage{fontenc}\n";
     print {$STY} "\\RequirePackage{textcomp}\n" if $seen{TS1};
+    print {$STY} "\\RequirePackage{ifthen}\n";
     print {$STY} "\\RequirePackage{newtxmath}\n" if $ARGV{math};
 
     print {$STY} <<'END_STY_FONTAXES_START';
@@ -791,16 +792,10 @@ END_STY_FONTAXES_DNOM
     print {$STY} "}{}\n\n";
 
     print {$STY} <<"END_STY_XKEYVAL";
-\\IfFileExists{xkeyval.sty}{
-    \\newcommand*{\\$fam\@scale}{1}
-    \\RequirePackage{xkeyval}
-    \\DeclareOptionX{scale}{\\renewcommand*{\\$fam\@scale}{##1}}
-    \\DeclareOptionX{scaled}{\\renewcommand*{\\$fam\@scale}{##1}}
-}{
-    \\let\\DeclareOptionX\\DeclareOption
-    \\let\\ExecuteOptionsX\\ExecuteOptions
-    \\let\\ProcessOptionsX\\ProcessOptions
-}
+\\RequirePackage{xkeyval}
+\\newcommand*{\\$fam\@scale}{1}
+\\DeclareOptionX{scale}{\\renewcommand*{\\$fam\@scale}{#1}}
+\\DeclareOptionX{scaled}{\\renewcommand*{\\$fam\@scale}{#1}}
 
 END_STY_XKEYVAL
 
@@ -831,9 +826,9 @@ END_STY_MAINFONT
         print {$STY} <<"END_STY_MATH";
 \\DeclareOptionX{math}{
     \\SetSymbolFont{operators}  {normal}{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
-    \\SetSymbolFont{letters}    {normal}{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
-
     \\SetSymbolFont{operators}  {bold}  {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\SetSymbolFont{letters}    {normal}{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
     \\SetSymbolFont{letters}    {bold}  {OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{it}
 
     \\DeclareFontSubstitution{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
@@ -850,48 +845,30 @@ END_STY_MAINFONT
 
     \\DeclareSymbolFont{cmletters}{OML}{cmm}{m}{it}
     \\SetSymbolFont{cmletters}{bold}{OML}{cmm}{bx}{it}
-    \\re\@DeclareMathSymbol{\\leftharpoonup}    {\\mathrel}{cmletters}{40}
-    \\re\@DeclareMathSymbol{\\leftharpoondown}  {\\mathrel}{cmletters}{41}
-    \\re\@DeclareMathSymbol{\\rightharpoonup}   {\\mathrel}{cmletters}{42}
-    \\re\@DeclareMathSymbol{\\rightharpoondown} {\\mathrel}{cmletters}{43}
-    \\re\@DeclareMathSymbol{\\lhook}            {\\mathrel}{cmletters}{44}
-    \\re\@DeclareMathSymbol{\\rhook}            {\\mathrel}{cmletters}{45}
-    \\re\@DeclareMathSymbol{\\triangleright}    {\\mathbin}{cmletters}{46}
-    \\re\@DeclareMathSymbol{\\triangleleft}     {\\mathbin}{cmletters}{47}
-    \\re\@DeclareMathSymbol{\\flat}             {\\mathord}{cmletters}{91}
-    \\re\@DeclareMathSymbol{\\natural}          {\\mathord}{cmletters}{92}
-    \\re\@DeclareMathSymbol{\\sharp}            {\\mathord}{cmletters}{93}
-    \\re\@DeclareMathSymbol{\\smile}            {\\mathrel}{cmletters}{94}
-    \\re\@DeclareMathSymbol{\\frown}            {\\mathrel}{cmletters}{95}
-    \\re\@DeclareMathSymbol{\\ell}              {\\mathord}{cmletters}{96}
-    \\re\@DeclareMathSymbol{\\wp}               {\\mathord}{cmletters}{125}
+    \\re\@DeclareMathSymbol{\\leftharpoonup}    {\\mathrel}  {cmletters} {"28}
+    \\re\@DeclareMathSymbol{\\leftharpoondown}  {\\mathrel}  {cmletters} {"29}
+    \\re\@DeclareMathSymbol{\\rightharpoonup}   {\\mathrel}  {cmletters} {"2A}
+    \\re\@DeclareMathSymbol{\\rightharpoondown} {\\mathrel}  {cmletters} {"2B}
+    \\re\@DeclareMathSymbol{\\lhook}            {\\mathrel}  {cmletters} {"2C}
+    \\re\@DeclareMathSymbol{\\rhook}            {\\mathrel}  {cmletters} {"2D}
+    \\re\@DeclareMathSymbol{\\triangleright}    {\\mathbin}  {cmletters} {"2E}
+    \\re\@DeclareMathSymbol{\\triangleleft}     {\\mathbin}  {cmletters} {"2F}
+    \\re\@DeclareMathSymbol{\\star}             {\\mathbin}  {cmletters} {"3F}
+    \\re\@DeclareMathSymbol{\\partial}          {\\mathord}  {cmletters} {"40}
+    \\re\@DeclareMathSymbol{\\flat}             {\\mathord}  {cmletters} {"5B}
+    \\re\@DeclareMathSymbol{\\natural}          {\\mathord}  {cmletters} {"5C}
+    \\re\@DeclareMathSymbol{\\sharp}            {\\mathord}  {cmletters} {"5D}
+    \\re\@DeclareMathSymbol{\\smile}            {\\mathrel}  {cmletters} {"5E}
+    \\re\@DeclareMathSymbol{\\frown}            {\\mathrel}  {cmletters} {"5F}
+    \\re\@DeclareMathSymbol{\\ell}              {\\mathord}  {cmletters} {"60}
+    \\re\@DeclareMathSymbol{\\wp}               {\\mathord}  {cmletters} {"7D}
+    \\re\@DeclareMathAccent{\\vec}              {\\mathord}  {cmletters} {"7E}
+    \\re\@DeclareMathAccent{\\tie}              {\\mathord}  {cmletters} {"7F}
 }
-\\DeclareOptionX{TeXgreek}{
-    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathalpha}{operators} {0}
-    \\re\@DeclareMathSymbol{\\Delta}            {\\mathalpha}{operators} {1}
-    \\re\@DeclareMathSymbol{\\Theta}            {\\mathalpha}{operators} {2}
-    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathalpha}{operators} {3}
-    \\re\@DeclareMathSymbol{\\Xi}               {\\mathalpha}{operators} {4}
-    \\re\@DeclareMathSymbol{\\Pi}               {\\mathalpha}{operators} {5}
-    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathalpha}{operators} {6}
-    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathalpha}{operators} {7}
-    \\re\@DeclareMathSymbol{\\Phi}              {\\mathalpha}{operators} {8}
-    \\re\@DeclareMathSymbol{\\Psi}              {\\mathalpha}{operators} {9}
-    \\re\@DeclareMathSymbol{\\Omega}            {\\mathalpha}{operators} {10}
-}
-\\DeclareOptionX{ISOgreek}{
-    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathalpha}{letters}   {0}
-    \\re\@DeclareMathSymbol{\\Delta}            {\\mathalpha}{letters}   {1}
-    \\re\@DeclareMathSymbol{\\Theta}            {\\mathalpha}{letters}   {2}
-    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathalpha}{letters}   {3}
-    \\re\@DeclareMathSymbol{\\Xi}               {\\mathalpha}{letters}   {4}
-    \\re\@DeclareMathSymbol{\\Pi}               {\\mathalpha}{letters}   {5}
-    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathalpha}{letters}   {6}
-    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathalpha}{letters}   {7}
-    \\re\@DeclareMathSymbol{\\Phi}              {\\mathalpha}{letters}   {8}
-    \\re\@DeclareMathSymbol{\\Psi}              {\\mathalpha}{letters}   {9}
-    \\re\@DeclareMathSymbol{\\Omega}            {\\mathalpha}{letters}   {10}
-}
+
+\\newcommand*{\\$fam\@mathstyle}{TeX}
+\\DeclareOptionX{math-style}{\\renewcommand*{\\$fam\@mathstyle}{#1}}
+
 END_STY_MATH
 
         if ($seen{sw}) {
@@ -900,6 +877,7 @@ END_STY_MATH
     \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\mdseries\@$ARGV{nfss}}{sw}
     \\SetMathAlphabet{\\mathcal}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@figurestyle}{\\bfseries\@$ARGV{nfss}}{sw}
 }
+
 END_STY_MATHCAL
         }
     }
@@ -934,10 +912,6 @@ END_STY_MATHCAL
     }
     $defaults .= ",$default_regular" if $default_regular;
 
-    if ($ARGV{math}) {
-        $defaults .= ',TeXgreek';
-    }
-
     print {$STY} <<"END_STYLE_REST";
 \\ExecuteOptionsX{$defaults}
 \\ProcessOptionsX\\relax
@@ -946,9 +920,195 @@ END_STY_MATHCAL
     {\\$ARGV{nfss}default}
     {$fam-\\$fam\@figurealign\\$fam\@figurestyle}
 
-\\endinput
 END_STYLE_REST
 
+    if ($ARGV{math}) {
+        print {$STY} <<"END_STY_MATHSTYLE";
+\\newcommand*{\\$fam\@LATIN}{it}
+\\newcommand*{\\$fam\@latin}{it}
+\\newcommand*{\\$fam\@GREEK}{up}
+\\newcommand*{\\$fam\@greek}{it}
+
+\\ifthenelse{\\equal{\\$fam\@mathstyle}{ISO}}
+    {\\renewcommand*{\\$fam\@GREEK}{it}}
+    {}
+\\ifthenelse{\\equal{\\$fam\@mathstyle}{french}}
+    {\\renewcommand*{\\$fam\@LATIN}{up}%
+     \\renewcommand*{\\$fam\@greek}{up}}
+    {}
+\\ifthenelse{\\equal{\\$fam\@mathstyle}{upright}}
+    {\\renewcommand*{\\$fam\@LATIN}{up}%
+     \\renewcommand*{\\$fam\@latin}{up}%
+     \\renewcommand*{\\$fam\@greek}{up}}
+    {}
+
+\\ifthenelse{\\equal{\\$fam\@GREEK}{up}}
+{
+    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathalpha}{operators} {"00}
+    \\re\@DeclareMathSymbol{\\Delta}            {\\mathalpha}{operators} {"01}
+    \\re\@DeclareMathSymbol{\\Theta}            {\\mathalpha}{operators} {"02}
+    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathalpha}{operators} {"03}
+    \\re\@DeclareMathSymbol{\\Xi}               {\\mathalpha}{operators} {"04}
+    \\re\@DeclareMathSymbol{\\Pi}               {\\mathalpha}{operators} {"05}
+    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathalpha}{operators} {"06}
+    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathalpha}{operators} {"07}
+    \\re\@DeclareMathSymbol{\\Phi}              {\\mathalpha}{operators} {"08}
+    \\re\@DeclareMathSymbol{\\Psi}              {\\mathalpha}{operators} {"09}
+    \\re\@DeclareMathSymbol{\\Omega}            {\\mathalpha}{operators} {"0A}
+}
+{
+    \\re\@DeclareMathSymbol{\\Gamma}            {\\mathord}  {letters}   {"00}
+    \\re\@DeclareMathSymbol{\\Delta}            {\\mathord}  {letters}   {"01}
+    \\re\@DeclareMathSymbol{\\Theta}            {\\mathord}  {letters}   {"02}
+    \\re\@DeclareMathSymbol{\\Lambda}           {\\mathord}  {letters}   {"03}
+    \\re\@DeclareMathSymbol{\\Xi}               {\\mathord}  {letters}   {"04}
+    \\re\@DeclareMathSymbol{\\Pi}               {\\mathord}  {letters}   {"05}
+    \\re\@DeclareMathSymbol{\\Sigma}            {\\mathord}  {letters}   {"06}
+    \\re\@DeclareMathSymbol{\\Upsilon}          {\\mathord}  {letters}   {"07}
+    \\re\@DeclareMathSymbol{\\Phi}              {\\mathord}  {letters}   {"08}
+    \\re\@DeclareMathSymbol{\\Psi}              {\\mathord}  {letters}   {"09}
+    \\re\@DeclareMathSymbol{\\Omega}            {\\mathord}  {letters}   {"0A}
+}
+
+\\ifthenelse{\\equal{\\$fam\@greek}{up}}
+{
+    \\DeclareSymbolFont{upletters}{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\re\@DeclareMathSymbol{\\alpha}            {\\mathord}  {upletters} {"0B}
+    \\re\@DeclareMathSymbol{\\beta}             {\\mathord}  {upletters} {"0C}
+    \\re\@DeclareMathSymbol{\\gamma}            {\\mathord}  {upletters} {"0D}
+    \\re\@DeclareMathSymbol{\\delta}            {\\mathord}  {upletters} {"0E}
+    \\re\@DeclareMathSymbol{\\epsilon}          {\\mathord}  {upletters} {"0F}
+    \\re\@DeclareMathSymbol{\\zeta}             {\\mathord}  {upletters} {"10}
+    \\re\@DeclareMathSymbol{\\eta}              {\\mathord}  {upletters} {"11}
+    \\re\@DeclareMathSymbol{\\theta}            {\\mathord}  {upletters} {"12}
+    \\re\@DeclareMathSymbol{\\iota}             {\\mathord}  {upletters} {"13}
+    \\re\@DeclareMathSymbol{\\kappa}            {\\mathord}  {upletters} {"14}
+    \\re\@DeclareMathSymbol{\\lambda}           {\\mathord}  {upletters} {"15}
+    \\re\@DeclareMathSymbol{\\mu}               {\\mathord}  {upletters} {"16}
+    \\re\@DeclareMathSymbol{\\nu}               {\\mathord}  {upletters} {"17}
+    \\re\@DeclareMathSymbol{\\xi}               {\\mathord}  {upletters} {"18}
+    \\re\@DeclareMathSymbol{\\pi}               {\\mathord}  {upletters} {"19}
+    \\re\@DeclareMathSymbol{\\rho}              {\\mathord}  {upletters} {"1A}
+    \\re\@DeclareMathSymbol{\\sigma}            {\\mathord}  {upletters} {"1B}
+    \\re\@DeclareMathSymbol{\\tau}              {\\mathord}  {upletters} {"1C}
+    \\re\@DeclareMathSymbol{\\upsilon}          {\\mathord}  {upletters} {"1D}
+    \\re\@DeclareMathSymbol{\\phi}              {\\mathord}  {upletters} {"1E}
+    \\re\@DeclareMathSymbol{\\chi}              {\\mathord}  {upletters} {"1F}
+    \\re\@DeclareMathSymbol{\\psi}              {\\mathord}  {upletters} {"20}
+    \\re\@DeclareMathSymbol{\\omega}            {\\mathord}  {upletters} {"21}
+    \\re\@DeclareMathSymbol{\\varepsilon}       {\\mathord}  {upletters} {"22}
+    \\re\@DeclareMathSymbol{\\vartheta}         {\\mathord}  {upletters} {"23}
+    \\re\@DeclareMathSymbol{\\varpi}            {\\mathord}  {upletters} {"24}
+    \\re\@DeclareMathSymbol{\\varrho}           {\\mathord}  {upletters} {"25}
+    \\re\@DeclareMathSymbol{\\varsigma}         {\\mathord}  {upletters} {"26}
+    \\re\@DeclareMathSymbol{\\varphi}           {\\mathord}  {upletters} {"27}
+}
+{
+    \\re\@DeclareMathSymbol{\\alpha}            {\\mathord}  {letters}   {"0B}
+    \\re\@DeclareMathSymbol{\\beta}             {\\mathord}  {letters}   {"0C}
+    \\re\@DeclareMathSymbol{\\gamma}            {\\mathord}  {letters}   {"0D}
+    \\re\@DeclareMathSymbol{\\delta}            {\\mathord}  {letters}   {"0E}
+    \\re\@DeclareMathSymbol{\\epsilon}          {\\mathord}  {letters}   {"0F}
+    \\re\@DeclareMathSymbol{\\zeta}             {\\mathord}  {letters}   {"10}
+    \\re\@DeclareMathSymbol{\\eta}              {\\mathord}  {letters}   {"11}
+    \\re\@DeclareMathSymbol{\\theta}            {\\mathord}  {letters}   {"12}
+    \\re\@DeclareMathSymbol{\\iota}             {\\mathord}  {letters}   {"13}
+    \\re\@DeclareMathSymbol{\\kappa}            {\\mathord}  {letters}   {"14}
+    \\re\@DeclareMathSymbol{\\lambda}           {\\mathord}  {letters}   {"15}
+    \\re\@DeclareMathSymbol{\\mu}               {\\mathord}  {letters}   {"16}
+    \\re\@DeclareMathSymbol{\\nu}               {\\mathord}  {letters}   {"17}
+    \\re\@DeclareMathSymbol{\\xi}               {\\mathord}  {letters}   {"18}
+    \\re\@DeclareMathSymbol{\\pi}               {\\mathord}  {letters}   {"19}
+    \\re\@DeclareMathSymbol{\\rho}              {\\mathord}  {letters}   {"1A}
+    \\re\@DeclareMathSymbol{\\sigma}            {\\mathord}  {letters}   {"1B}
+    \\re\@DeclareMathSymbol{\\tau}              {\\mathord}  {letters}   {"1C}
+    \\re\@DeclareMathSymbol{\\upsilon}          {\\mathord}  {letters}   {"1D}
+    \\re\@DeclareMathSymbol{\\phi}              {\\mathord}  {letters}   {"1E}
+    \\re\@DeclareMathSymbol{\\chi}              {\\mathord}  {letters}   {"1F}
+    \\re\@DeclareMathSymbol{\\psi}              {\\mathord}  {letters}   {"20}
+    \\re\@DeclareMathSymbol{\\omega}            {\\mathord}  {letters}   {"21}
+    \\re\@DeclareMathSymbol{\\varepsilon}       {\\mathord}  {letters}   {"22}
+    \\re\@DeclareMathSymbol{\\vartheta}         {\\mathord}  {letters}   {"23}
+    \\re\@DeclareMathSymbol{\\varpi}            {\\mathord}  {letters}   {"24}
+    \\re\@DeclareMathSymbol{\\varrho}           {\\mathord}  {letters}   {"25}
+    \\re\@DeclareMathSymbol{\\varsigma}         {\\mathord}  {letters}   {"26}
+    \\re\@DeclareMathSymbol{\\varphi}           {\\mathord}  {letters}   {"27}
+}
+
+\\ifthenelse{\\equal{\\$fam\@LATIN}{up}}
+{
+    \\re\@DeclareMathSymbol{A}                  {\\mathalpha}{operators} {"41}
+    \\re\@DeclareMathSymbol{B}                  {\\mathalpha}{operators} {"42}
+    \\re\@DeclareMathSymbol{C}                  {\\mathalpha}{operators} {"43}
+    \\re\@DeclareMathSymbol{D}                  {\\mathalpha}{operators} {"44}
+    \\re\@DeclareMathSymbol{E}                  {\\mathalpha}{operators} {"45}
+    \\re\@DeclareMathSymbol{F}                  {\\mathalpha}{operators} {"46}
+    \\re\@DeclareMathSymbol{G}                  {\\mathalpha}{operators} {"47}
+    \\re\@DeclareMathSymbol{H}                  {\\mathalpha}{operators} {"48}
+    \\re\@DeclareMathSymbol{I}                  {\\mathalpha}{operators} {"49}
+    \\re\@DeclareMathSymbol{J}                  {\\mathalpha}{operators} {"4A}
+    \\re\@DeclareMathSymbol{K}                  {\\mathalpha}{operators} {"4B}
+    \\re\@DeclareMathSymbol{L}                  {\\mathalpha}{operators} {"4C}
+    \\re\@DeclareMathSymbol{M}                  {\\mathalpha}{operators} {"4D}
+    \\re\@DeclareMathSymbol{N}                  {\\mathalpha}{operators} {"4E}
+    \\re\@DeclareMathSymbol{O}                  {\\mathalpha}{operators} {"4F}
+    \\re\@DeclareMathSymbol{P}                  {\\mathalpha}{operators} {"50}
+    \\re\@DeclareMathSymbol{Q}                  {\\mathalpha}{operators} {"51}
+    \\re\@DeclareMathSymbol{R}                  {\\mathalpha}{operators} {"52}
+    \\re\@DeclareMathSymbol{S}                  {\\mathalpha}{operators} {"53}
+    \\re\@DeclareMathSymbol{T}                  {\\mathalpha}{operators} {"54}
+    \\re\@DeclareMathSymbol{U}                  {\\mathalpha}{operators} {"55}
+    \\re\@DeclareMathSymbol{V}                  {\\mathalpha}{operators} {"56}
+    \\re\@DeclareMathSymbol{W}                  {\\mathalpha}{operators} {"57}
+    \\re\@DeclareMathSymbol{X}                  {\\mathalpha}{operators} {"58}
+    \\re\@DeclareMathSymbol{Y}                  {\\mathalpha}{operators} {"59}
+    \\re\@DeclareMathSymbol{Z}                  {\\mathalpha}{operators} {"5A}
+}
+{}
+
+\\ifthenelse{\\equal{\\$fam\@latin}{up}}
+{
+    \\DeclareSymbolFont{upletters}{OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\re\@DeclareMathSymbol{a}                  {\\mathord}  {upletters} {"61}
+    \\re\@DeclareMathSymbol{b}                  {\\mathord}  {upletters} {"62}
+    \\re\@DeclareMathSymbol{c}                  {\\mathord}  {upletters} {"63}
+    \\re\@DeclareMathSymbol{d}                  {\\mathord}  {upletters} {"64}
+    \\re\@DeclareMathSymbol{e}                  {\\mathord}  {upletters} {"65}
+    \\re\@DeclareMathSymbol{f}                  {\\mathord}  {upletters} {"66}
+    \\re\@DeclareMathSymbol{g}                  {\\mathord}  {upletters} {"67}
+    \\re\@DeclareMathSymbol{h}                  {\\mathord}  {upletters} {"68}
+    \\re\@DeclareMathSymbol{i}                  {\\mathord}  {upletters} {"69}
+    \\re\@DeclareMathSymbol{j}                  {\\mathord}  {upletters} {"6A}
+    \\re\@DeclareMathSymbol{k}                  {\\mathord}  {upletters} {"6B}
+    \\re\@DeclareMathSymbol{l}                  {\\mathord}  {upletters} {"6C}
+    \\re\@DeclareMathSymbol{m}                  {\\mathord}  {upletters} {"6D}
+    \\re\@DeclareMathSymbol{n}                  {\\mathord}  {upletters} {"6E}
+    \\re\@DeclareMathSymbol{o}                  {\\mathord}  {upletters} {"6F}
+    \\re\@DeclareMathSymbol{p}                  {\\mathord}  {upletters} {"70}
+    \\re\@DeclareMathSymbol{q}                  {\\mathord}  {upletters} {"71}
+    \\re\@DeclareMathSymbol{r}                  {\\mathord}  {upletters} {"72}
+    \\re\@DeclareMathSymbol{s}                  {\\mathord}  {upletters} {"73}
+    \\re\@DeclareMathSymbol{t}                  {\\mathord}  {upletters} {"74}
+    \\re\@DeclareMathSymbol{u}                  {\\mathord}  {upletters} {"75}
+    \\re\@DeclareMathSymbol{v}                  {\\mathord}  {upletters} {"76}
+    \\re\@DeclareMathSymbol{w}                  {\\mathord}  {upletters} {"77}
+    \\re\@DeclareMathSymbol{x}                  {\\mathord}  {upletters} {"78}
+    \\re\@DeclareMathSymbol{y}                  {\\mathord}  {upletters} {"79}
+    \\re\@DeclareMathSymbol{z}                  {\\mathord}  {upletters} {"7A}
+    \\re\@DeclareMathSymbol{\\imath}            {\\mathord}  {upletters} {"7B}
+    \\re\@DeclareMathSymbol{\\jmath}            {\\mathord}  {upletters} {"7C}
+
+}
+{}
+
+END_STY_MATHSTYLE
+    }
+
+    print {$STY} "\\endinput\n";
     close $STY;
 
     return;
@@ -2100,7 +2260,7 @@ my %STYLE = (
         name  => '',
     },
     math => {
-        code  => { it => 'it', sl => 'sl' },
+        code  => { n => 'n', it => 'it', sl => 'sl' },
         reqd  => [],
         nice  => [ 'onum' ],
         extra => '--math-spacing=127',
@@ -3093,7 +3253,7 @@ Other encodings can be chosen using the I<-encoding> option
 (see L</COMMAND-LINE OPTIONS> below).
 
 
-=head3 ORNAMENTS
+=head2 Ornaments
 
 Ornament fonts are regular LY1-encoded fonts, with a number of
 `regular' characters replaced by ornament glyphs.
@@ -3116,14 +3276,13 @@ differently, and fonts and style files generated by those versions
 are not compatible with files generated by newer versions.
 
 
-=head3 MATHS
+=head2 Maths
 
-B<autoinst> can generate basic math fonts as well
-(this is still somewhat experimental; use the I<-math> option
-to activate this feature).
-
-To access these fonts, it adds a C<[math]> option to the generated style file
-(and, if the fonts contain swash characters, also a C<[mathcal]> option
+B<autoinst> can generate basic math fonts as well.
+This is still somewhat experimental, so you need to use the I<-math> option
+to activate this feature.
+To access these fonts, it adds a C<math> option to the generated style file
+(and, if the fonts contain swash characters, also a C<mathcal> option
 that uses these as the C<\mathcal> alphabet).
 
 Note that this only changes the `operators' and `letters' alphabets;
@@ -3131,24 +3290,23 @@ it won't use any of the other mathematical symbols that might be present
 in your fonts. The reason for this is that TeX's `symbols' and
 `largesymbols' alphabets require additional C<\fontdimen>s,
 which F<otftotfm> doesn't create (and cannot create,
-since the values needed to set up these C<\fontdimen>s are
+since the values needed to set up those C<\fontdimen>s are
 missing from nearly all text fonts).
 
 Also note that this option doesn't check if your fonts actually contain
-all characters needed for the `operators' and `letters' alpabets;
+all characters needed for the `operators' and `letters' alphabets;
 this may lead to errors in your documents with  missing glyphs.
-The recommended solution for this is to use
-the C<\re@DeclareMathSymbol> command from the F<newtxmath> package
-(which is loaded by the generated style file)
-to get any missing glyphs from Computer Modern:
+The generated style file redefines a number of math symbols that are likely
+to be missing from ordinary text fonts, to make LaTeX take these from
+Computer Modern instead of from the new math fonts.
 
-    \re@DeclareMathSymbol{\wp}{\mathord}{cmletters}{"7d}
+Finally, the generated style file has an option C<math-style>
+that changes the style of some of the math `letters'.
+With C<math-style=ISO>, all latin and greek letters in math are italic;
+with C<math-style=TeX> (the default), uppercase greek is upright;
+with C<math-style=french>, lowercase greek and uppercase latin are upright
+as well, and with C<math-style=upright> all letters are upright.
 
-The generated style file knows two further (mutually exclusive) options,
-which influence the shape of any greek characters:
-C<[TeXgree]> and C<[ISOgreek]>. The first one follows TeX's standard
-of upright greek capitals and italic lowercase, whereas the second one
-implements the ISO standard that all greek should be italic.
 
 =head2 NFSS codes
 
@@ -3550,7 +3708,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-18>
+=item I<2020-05-19>
 
 Added basic math support.
 The generated style files now use C<\textsup> and C<\textinf>
