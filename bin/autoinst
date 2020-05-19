@@ -863,7 +863,7 @@ END_STY_MAINFONT
     \\re\@DeclareMathSymbol{\\ell}              {\\mathord}  {cmletters} {"60}
     \\re\@DeclareMathSymbol{\\wp}               {\\mathord}  {cmletters} {"7D}
     \\re\@DeclareMathAccent{\\vec}              {\\mathord}  {cmletters} {"7E}
-    \\re\@DeclareMathAccent{\\tie}              {\\mathord}  {cmletters} {"7F}
+    \\re\@DeclareMathAccent{\\t}                {\\mathord}  {cmletters} {"7F}
 }
 
 \\newcommand*{\\$fam\@mathstyle}{TeX}
