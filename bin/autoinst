@@ -3714,10 +3714,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2020-05-19>
 
-Added basic math support.
+Added basic (and still somewhat experimental) math support.
 The generated style files now use C<\textsup> and C<\textinf>
-instead of the more cryptic C<\textsu> and C<\textin> (though
-the old forms are retained for backward compatibility).
+instead of the more cryptic C<\textsu> and C<\textin>
+(though the old forms are retained for backwards compatibility).
 
 =item I<2020-05-11>
 
