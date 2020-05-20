@@ -3154,8 +3154,6 @@ E.g., to increase the size of the font by 5%, use
 C<<< \usepackage[scale=1.05]{I<< <FontFamily> >>} >>>.
 May also be spelled C<scaled>.
 
-This option is only available when you have the F<xkeyval> package installed.
-
 =item C<medium>, C<book>, C<text>, C<regular>
 
 Select the weight that LaTeX will use as the `regular' weight;
@@ -3712,7 +3710,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-19>
+=item I<2020-05-20>
 
 Added basic (and still somewhat experimental) math support.
 The generated style files now use C<\textsup> and C<\textinf>
