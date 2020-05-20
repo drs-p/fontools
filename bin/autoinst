@@ -3228,19 +3228,20 @@ which F<otftotfm> doesn't create (and cannot create,
 since the values needed to set up those C<\fontdimen>s are
 missing from nearly all text fonts).
 
-Also note that this option doesn't check if your fonts actually contain
-all characters needed for the `operators' and `letters' alphabets;
-this may lead to errors in your documents with  missing glyphs.
-The generated style file redefines a number of math symbols that are likely
-to be missing from ordinary text fonts, to make LaTeX take these from
-Computer Modern instead of from the new math fonts.
-
-Finally, the generated style file has an option C<math-style>
+The generated style file also has an option C<math-style=...>
 that changes the style of some of the math `letters'.
 With C<math-style=ISO>, all latin and greek letters in math are italic;
 with C<math-style=TeX> (the default), uppercase greek is upright;
 with C<math-style=french>, lowercase greek and uppercase latin are upright
 as well, and with C<math-style=upright> all letters are upright.
+
+Finally, note that this option doesn't check if your fonts actually contain
+all characters needed for the `operators' and `letters' alphabets;
+this may lead to errors in your documents with  missing glyphs.
+The generated style file redefines a number of math symbols that are likely
+to be missing from ordinary text fonts, to make LaTeX take these from
+Computer Modern instead of from the new math fonts;
+but you may find you need some DIY-work to get an acceptable result.
 
 
 =head2 Ornaments
