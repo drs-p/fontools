@@ -921,7 +921,7 @@ END_STY_MAINFONT
     \\re\@DeclareMathSymbol{\\jmath}{\\mathord}{newletters}{"7C}
 
     \\re\@DeclareMathSymbol{!}{\\mathclose}{newoperators}{"21}
-    \\re\@DeclareMathSymbol{+}{\\mathbin}  {newoperators}{"2B}
+  % \\re\@DeclareMathSymbol{+}{\\mathbin}  {newoperators}{"2B}
     \\re\@DeclareMathSymbol{:}{\\mathrel}  {newoperators}{"3A}
     \\re\@DeclareMathSymbol{;}{\\mathpunct}{newoperators}{"3B}
     \\re\@DeclareMathSymbol{=}{\\mathrel}  {newoperators}{"3D}
