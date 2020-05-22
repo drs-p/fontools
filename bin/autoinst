@@ -156,8 +156,8 @@ sub get_fontinfo {
     my $basicinfo = Font::Raw::get_basicinfo($filename);
     $info->process_basicinfo($basicinfo);
 
-    my $os2_table = Font::Raw::get_os2_table($filename);
-    $info->process_os2_table($os2_table);
+    my $os2_table = Font::Raw::get_classdata($filename);
+    $info->process_classdata($os2_table);
 
     my $featuredata = Font::Raw::get_featuredata($filename);
     $info->process_featuredata($featuredata);
@@ -417,12 +417,13 @@ sub process_basicinfo {
 
 
 # --------------------------------------------------------------------------
-#   Extracts usWeightClass and usWidthClass from the OS/2 table.
+#   Processes the usWeightClass and usWidthClass data.
 # --------------------------------------------------------------------------
-sub process_os2_table {
-    my ($self, $os2_table) = @_;
+sub process_classdata {
+    my ($self, $classdata) = @_;
 
-    @{$self}{qw(weight_class width_class)} = unpack '@4n @6n', $os2_table;
+    $self->{weight_class} = $classdata->{weight_class};
+    $self->{width_class}  = $classdata->{width_class};
 
     return;
 }
@@ -444,34 +445,32 @@ sub process_featuredata {
 #   Extracts 'minsize' and 'maxsize' from the optical design size info.
 # --------------------------------------------------------------------------
 sub process_sizedata {
-    my ($self, $data) = @_;
+    my ($self, $sizedata) = @_;
 
-    if (my ($minsize, $maxsize)
-            = $data =~ m/[(] ([\d.]+) \s* pt, \s*
-                             ([\d.]+) \s* pt  \s* [)]]/xms) {
+    my ($minsize, $maxsize) = @$sizedata;
+
     # fix some known bugs
-        if ($self->{name} eq 'GaramondPremrPro-It'
-            && $minsize == 6 && $maxsize == 8.9) {
-            ($minsize, $maxsize) = (8.9, 14.9);
-        }
-        elsif ($self->{family} eq 'KeplerStd'
-            && $self->{subfamily} =~ m/Caption/xms
-            && $minsize == 8.9 && $maxsize == 13.9) {
-            ($minsize, $maxsize) = (6, 8.9);
-        }
-        elsif ($self->{family} eq 'KeplerStd'
-            && $self->{subfamily} =~ m/Subhead/xms
-            && $minsize == 8.9 && $maxsize == 13.9) {
-            ($minsize, $maxsize) = (13.9, 23);
-        }
-        elsif ($self->{family} eq 'KeplerStd'
-            && $self->{subfamily} =~ m/Display/xms
-            && $minsize == 8.9 && $maxsize == 13.9) {
-            ($minsize, $maxsize) = (23, 72);
-        }
-
-        @{$self}{qw(minsize maxsize)} = ($minsize, $maxsize);
+    if ($self->{name} eq 'GaramondPremrPro-It'
+        && $minsize == 6 && $maxsize == 8.9) {
+        ($minsize, $maxsize) = (8.9, 14.9);
     }
+    elsif ($self->{family} eq 'KeplerStd'
+        && $self->{subfamily} =~ m/Caption/xms
+        && $minsize == 8.9 && $maxsize == 13.9) {
+        ($minsize, $maxsize) = (6, 8.9);
+    }
+    elsif ($self->{family} eq 'KeplerStd'
+        && $self->{subfamily} =~ m/Subhead/xms
+        && $minsize == 8.9 && $maxsize == 13.9) {
+        ($minsize, $maxsize) = (13.9, 23);
+    }
+    elsif ($self->{family} eq 'KeplerStd'
+        && $self->{subfamily} =~ m/Display/xms
+        && $minsize == 8.9 && $maxsize == 13.9) {
+        ($minsize, $maxsize) = (23, 72);
+    }
+
+    @{$self}{qw(minsize maxsize)} = ($minsize, $maxsize);
 
     return;
 }
@@ -517,9 +516,9 @@ sub get_basicinfo {
 
 
 # --------------------------------------------------------------------------
-#   Returns the font's OS/2 table.
+#   Returns usWeightClass and usWidthClass from the OS/2 table.
 # --------------------------------------------------------------------------
-sub get_os2_table {
+sub get_classdata {
     my $filename = shift;
 
     my $os2_table;
@@ -532,7 +531,12 @@ sub get_os2_table {
             or die "'$cmd' failed";
     } or warn "[WARNING]   $@";
 
-    return $os2_table;
+    my ($weight_class, $width_class) = unpack '@4n @6n', $os2_table;
+
+    return {
+        weight_class => $weight_class,
+        width_class  => $width_class,
+    };
 }
 
 
@@ -579,7 +583,13 @@ sub get_sizedata {
     close $otfinfo
         or die "[ERROR]     '$cmd' failed.";
 
-    return $data;
+    my ($minsize, $maxsize)
+        = $data =~ m/[(] ([\d.]+) \s* pt, \s*
+                         ([\d.]+) \s* pt  \s* [])]/xms;
+
+    $minsize //= 0;
+    $maxsize //= 0;
+    return [ $minsize, $maxsize ];
 }
 
 
