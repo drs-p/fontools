@@ -1784,7 +1784,7 @@ sub parse_options {
 
     if (!@ARGV) {
         Pod::Usage::pod2usage(
-            -msg => '[ERROR] No font files given, nothing to do!',
+            -msg => '[ERROR]     No font files given, nothing to do!',
             -verbose => 1);
     }
 
