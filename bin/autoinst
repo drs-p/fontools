@@ -3201,7 +3201,7 @@ normal forms for other characters
 
 =item I<Titl>
 
-Titling characters; see above.
+Titling characters; see above
 
 =item I<Orn>
 
@@ -3250,12 +3250,12 @@ yourself.
 Choose which figure style to use.
 The defaults are `oldstyle' and `proportional' (if available).
 
-=item C<<< scale=I<< <number> >> >>>
+=item C<<< scale=I<< <number> >> >>>, C<<< scaled=I<< <number> >> >>>
 
 Scale the font by a factor of I<< <number> >>.
 E.g., to increase the size of the font by 5%, use
 C<<< \usepackage[scale=1.05]{I<< <FontFamily> >>} >>>.
-May also be spelled C<scaled>.
+C<scale> and C<scaled> are synonyms.
 
 =item C<math>, C<mathcal>, C<<< math-style=I<< <style> >> >>>
 
@@ -3316,10 +3316,10 @@ Other encodings can be chosen using the I<-encoding> option
 
 =head2 Maths
 
-B<< I<WARNING:> >> This is currently still an experimental feature.
+This is an experimental feature; B<USE AT YOUR OWN RISK!>
 Test the results thoroughly before using them in real documents,
-and watch out for non-backward-compatible changes in future versions
-of B<autoinst>!
+and be warned that future versions of B<autoinst> may introduce
+incompatible changes.
 
 The I<-math> option tells B<autoinst> to generate basic math fonts.
 To access these fonts, the generated style file contains a C<math> option
@@ -3333,16 +3333,16 @@ with C<math-style=french>, all greek as well as uppercase latin is upright,
 and with C<math-style=upright> all letters are upright.
 
 Note that this `math' option only changes digits, latin and greek letters,
-plus a few basic operators and punctuation characters;
-all other mathematical symbols, operators, delimiters etc. are left as
-they were before.
+plus a few basic punctuation characters; all other mathematical symbols,
+operators, delimiters etc. are left as they were before.
 If you don't want to use TeX's default versions of those symbols,
 load another math package (such as F<newtxmath>)
-before the generated style file for your font family.
+before loading the B<autoinst>-generated style file.
 
-Finally, note that B<autoinst> doesn't check if your fonts actually contain
-the required greek characters; it just assumes that they do and sets up
-the style file to use them.
+Finally, note that B<autoinst> doesn't check if your fonts actually contains
+any greek; it just assumes that they do and sets up the style file
+accordingly.
+Check the resulting fonts thoroughly for missing characters!
 
 
 =head2 NFSS codes
@@ -3350,9 +3350,7 @@ the style file to use them.
 LaTeX's New Font Selection System (NFSS)
 identifies fonts by a combination of family,
 series (the concatenation of weight and width), shape and size.
-B<autoinst> parses the font's metadata
-(more precisely: the output of C<otfinfo --info>)
-to determine these parameters.
+B<autoinst> parses the font's metadata to determine these parameters.
 When this fails (usually because the font family contains uncommon weights,
 widths or shapes),
 B<autoinst> ends up with different fonts having the I<same> values
@@ -3416,9 +3414,8 @@ one can always use the C<\fontseries> command with the full series name
 Ornament fonts are regular LY1-encoded fonts, with a number of
 `regular' characters replaced by ornament glyphs.
 The OpenType specification says that fonts should only put their
-ornaments in place of the lowercase ASCII letters or the `bullet'
-character, but some fonts put them in other positions (such as those
-of the digits) as well.
+ornaments in place of the lowercase ASCII letters, but some fonts
+put them in other positions (such as those of the digits) as well.
 
 Ornaments can be accessed like C<{\ornaments a}> and
 C<{\ornaments\char"61}>, or equivalently
@@ -3426,7 +3423,7 @@ C<\textornaments{a}> and C<\textornaments{\char"61}>.
 To see which ornaments a font contains (and at which positions),
 run LaTeX on the file F<nfssfont.tex> (which is included in any
 standard LaTeX installation), supply the name of the ornament font
-(i.e., C<GaramondLibre-Regular-orn-u>) and say C<\table\bye>;
+(i.e., C<GaramondLibre-Regular-orn-u>) and give the command C<\table\bye>;
 this will create a table of all glyphs in that font.
 
 Note that versions of B<autoinst> up to 20200428 handled ornaments
@@ -3502,15 +3499,15 @@ Installing the font as a typewriter font will cause two further changes:
 it will - by default - turn off the use of f-ligatures
 (though this can be overridden with the I<-ligatures> option),
 and it will disable hyphenation for this font.
-This latter effect cannot be disabled in B<autoinst>;
+This latter effect cannot be re-enabled in B<autoinst>;
 if you want typewriter text to be hyphenated, use the F<hyphenat> package.
 
 If none of these options is specified, B<autoinst> tries to guess:
 if the font's filename contains the string `mono'
 or if the field C<isFixedPitch> in the font's I<post> table is True,
 it will select B<-typewriter>;
-else if the filename contains `sans' it selects B<-sanserif>;
-and otherwise it will opt for B<-serif>.
+else if the filename contains `sans' it will select B<-sanserif>;
+otherwise it will opt for B<-serif>.
 
 =item B<-lining>/B<-nolining>
 
