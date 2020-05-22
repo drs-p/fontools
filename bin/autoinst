@@ -1434,6 +1434,7 @@ I'm using the following options:
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
     math:               @{[ $ARGV{math}         ? 'yes'     : 'no'     ]}
+    mathextra:          $ARGV{mathextra}
 
 END_ARGUMENTS
 
@@ -2004,7 +2005,7 @@ Possible options:
     -defaulttabular             considered 'default' for this font; see docs
     -defaultproportional
 
-    -extra="TEXT"           Add TEXT to the command for 'otftotfm'
+    -extra="EXTRA"          Add EXTRA to the otftotfm command for all fonts
     -target="DIRECTORY"     Install files into specified TEXMF tree
     -vendor="VENDOR"        Only used for naming directories
     -typeface="TYPEFACE"    Only used for naming directories
@@ -2024,6 +2025,7 @@ Possible options:
     -version                Print version number and exit
 
     -math                   Generate basic math fonts
+    -mathextra="EXTRA"      Add EXTRA to the otftotfm command for math fonts
 
     font[s]                 The fonts (.otf or .ttf format) to install.
 
@@ -2062,6 +2064,7 @@ END_USAGE
     nfsswidth       => [],
     nfssweight      => [],
     math            => 0,
+    mathextra       => '',
 );
 
 
@@ -2128,6 +2131,7 @@ sub parse_options {
                                      $ARGV{$key} = 'user-defined';
                                  },
         'math!'               => \$ARGV{math},
+        'mathextra=s'         => \$ARGV{mathextra},
     )
     or die "$USAGE";
 
@@ -2663,6 +2667,12 @@ sub process_encoding_options {
     }
     else {
         delete $STYLE{math}
+    }
+
+    if ($ARGV{mathextra}) {
+        if (defined $STYLE{math}{extra}) {
+            $STYLE{math}{extra} .= " $ARGV{mathextra}";
+        }
     }
 
     return;
@@ -3617,11 +3627,16 @@ use C<-nfssweight=ul=thin>.
 To inhibit the use of the `ul' code completely,
 use C<-nfssweight=ul=>.
 
-=item B<-extra>=I<text>
+=item B<-extra>=I<extra>
 
-Append I<text> as extra options to the command lines for I<otftotfm>.
-To prevent I<text> from accidentily being interpreted as options
+=item B<-mathextra>=I<extra>
+
+Append I<extra> as extra options to the command lines for I<otftotfm>.
+To prevent I<extra> from accidentily being interpreted as options
 to B<autoinst>, it should be properly quoted.
+With I<-mathextra>, the extra option is only applied to the math fonts;
+this allows the user to do things such as add extra space around
+the letters in math fonts: C<-mathextra="--letterspacing=50">.
 
 =item B<-manual>
 
