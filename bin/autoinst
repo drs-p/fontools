@@ -3620,7 +3620,9 @@ to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
 
-=item B<-nfssweight>=I<code>=I<weight>, B<-nfsswidth>=I<code>=I<width>
+=item B<-nfssweight>=I<code>=I<weight>
+
+=item B<-nfsswidth>=I<code>=I<width>
 
 Map the NFSS code I<code> to the given weight or width,
 overriding the built-in tables.
@@ -3638,9 +3640,7 @@ use C<-nfssweight=ul=>.
 Append I<extra> as extra options to the command lines for I<otftotfm>.
 To prevent I<extra> from accidentily being interpreted as options
 to B<autoinst>, it should be properly quoted.
-With I<-mathextra>, the extra option is only applied to the math fonts;
-this allows the user to do things such as add extra space around
-the letters in math fonts: C<-mathextra="--letterspacing=50">.
+With I<-mathextra>, the extra options are only applied to math fonts.
 
 =item B<-manual>
 
