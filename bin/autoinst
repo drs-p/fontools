@@ -653,7 +653,7 @@ sub create_support_files {
              [ $minsize, $maxsize, $workitem->{fontname} ];
     }
 
-    create_stylefile($family, \%fddata);
+    create_stylefile($nfss_mapping, $family, \%fddata);
     while (my ($enc, $encdata) = each %fddata) {
         while (my ($sty, $stydata) = each %$encdata) {
             create_fdfile($nfss_mapping, $family, $enc, $sty, $stydata);
@@ -677,7 +677,22 @@ my %SSUB_SHAPE = (
 #   Creates a LaTeX style file.
 # --------------------------------------------------------------------------
 sub create_stylefile {
-    my ($fam, $data) = @_;
+    my ($nfss_mapping, $fam, $data) = @_;
+
+    my $testfont;
+    eval {
+        my $testenc  = $ARGV{encoding}[0];
+        my $testfig  = ( grep { exists $data->{$testenc}{$_} }
+            qw(OsF LF TOsF TLF) )[0] or die;
+        my $testweight = $nfss_mapping->{weight}{""}[0] or die;
+        my $testshape
+            = ( grep { exists $data->{$testenc}{$testfig}{$testweight}{$_} }
+                     qw(n it sl sc)
+              )[0] or die;
+        $testfont
+            = $data->{$testenc}{$testfig}{$testweight}{$testshape}[0][2]
+                or die;
+    };
 
     my %seen = %{Util::get_keys($data)};
 
@@ -870,10 +885,30 @@ END_STY_MATHCALOPTION
     }
     $defaults .= ",$default_regular" if $default_regular;
 
-    print {$STY} <<"END_STYLE_REST";
+    print {$STY} <<"END_STY_PROCESSOPTIONS";
 \\ExecuteOptionsX{$defaults}
 \\ProcessOptionsX\\relax
 
+END_STY_PROCESSOPTIONS
+
+    if (defined $testfont) {
+        print {$STY} <<"END_STY_MATCHLOWERCASE";
+\\ifthenelse{\\equal{\\$fam\@scale}{MatchLowercase}}
+    {\\newlength{\\$fam\@defaultx}
+     \\settoheight{\\$fam\@defaultx}{x}
+     \\newlength{\\$fam\@xheight}
+     \\settoheight{\\$fam\@xheight}
+        {{\\font\\testfont=$testfont at \\f\@size pt\\testfont x}}
+     \\renewcommand*{\\$fam\@scale}
+        {\\strip\@pt\\dimexpr\\number\\numexpr\\number\\dimexpr\\$fam\@defaultx\\relax*65536/\\number\\dimexpr\\$fam\@xheight\\relax\\relax sp\\relax
+        }
+    }
+    {}
+
+END_STY_MATCHLOWERCASE
+    }
+
+    print {$STY} <<"END_STYLE_REST";
 \\renewcommand*
     {\\$ARGV{nfss}default}
     {$fam-\\$fam\@figurealign\\$fam\@figurestyle}
@@ -3251,16 +3286,21 @@ yourself.
 Choose which figure style to use.
 The defaults are `oldstyle' and `proportional' (if available).
 
-=item C<<< scale=I<< <number> >> >>>, C<<< scaled=I<< <number> >> >>>
+=item C<<< scale=I<< <number> >> >>>, C<scale=MatchLowercase>
 
 Scale the font by a factor of I<< <number> >>.
 E.g., to increase the size of the font by 5%, use
 C<<< \usepackage[scale=1.05]{I<< <FontFamily> >>} >>>.
-C<scale> and C<scaled> are synonyms.
+The special value C<MatchLowercase> may be used to scale the font
+so that its x-height matches that of the previously active font
+(which is usually Computer Modern, unless you have loaded another
+font package before this one).
+The name C<scaled> may be used as a synonym for C<scale>.
 
 =item C<math>, C<mathcal>, C<<< math-style=I<< <style> >> >>>
 
-Use the (optional) math fonts; see the section `Maths' below.
+Three options for accessing the (optional) math fonts;
+see the section `Maths' below.
 
 =item C<medium>, C<book>, C<text>, C<regular>
 
@@ -3325,12 +3365,12 @@ incompatible changes.
 The I<-math> option tells B<autoinst> to generate basic math fonts.
 To access these fonts, the generated style file contains a C<math> option
 (and, if the fonts contain swash characters, also a C<mathcal> option
-to use these as the C<\mathcal> alphabet).
+that uses these as the C<\mathcal> alphabet).
 Additionally there is a C<<< math-style=I<< <style> >> >>> option
 to change the style of some of the math `letters'.
 With C<math-style=TeX> (the default), uppercase greek is upright;
 with C<math-style=ISO>, all latin and greek letters in math are italic;
-with C<math-style=french>, all greek as well as uppercase latin is upright,
+with C<math-style=french>, all greek as well as uppercase latin is upright;
 and with C<math-style=upright> all letters are upright.
 
 Note that this `math' option only changes digits, latin and greek letters,
@@ -3824,8 +3864,11 @@ This document describes B<autoinst> version __VERSION__.
 =item I<2020-05-25>
 
 Added basic (and still somewhat experimental) math support.
+Implemented the C<scale=MatchLowercase> option in the generated
+style files.
 The generated style files now use C<\textsup> and C<\textinf>
-instead of the more cryptic C<\textsu> and C<\textin>
+instead of the more cryptic C<\textsu> and C<\textin> to access
+superior and inferior characters
 (though the old forms are retained for backwards compatibility).
 
 =item I<2020-05-11>
