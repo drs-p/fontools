@@ -985,25 +985,26 @@ END_STYLE_REST
     \\re\@DeclareMathSymbol{\\jmath}{\\mathord}{newletters}{"7C}
 
     \\re\@DeclareMathSymbol{!}{\\mathclose}{newoperators}{"21}
+  % \\re\@DeclareMathSymbol{+}{\\mathbin}  {newoperators}{"2B}
     \\re\@DeclareMathSymbol{:}{\\mathrel}  {newoperators}{"3A}
     \\re\@DeclareMathSymbol{;}{\\mathpunct}{newoperators}{"3B}
-    \\re\@DeclareMathSymbol{=}{\\mathrel}  {newoperators}{"3D}
+  % \\re\@DeclareMathSymbol{=}{\\mathrel}  {newoperators}{"3D}
     \\re\@DeclareMathSymbol{?}{\\mathclose}{newoperators}{"3F}
 
     \\re\@DeclareMathSymbol{.}{\\mathord}  {newletters}{"3A}
     \\re\@DeclareMathSymbol{,}{\\mathpunct}{newletters}{"3B}
-    \\re\@DeclareMathSymbol{<}{\\mathrel}  {newletters}{"3C}
-    \\re\@DeclareMathSymbol{/}{\\mathord}  {newletters}{"3D}
-    \\re\@DeclareMathSymbol{>}{\\mathrel}  {newletters}{"3E}
+  % \\re\@DeclareMathSymbol{<}{\\mathrel}  {newletters}{"3C}
+  % \\re\@DeclareMathSymbol{/}{\\mathord}  {newletters}{"3D}
+  % \\re\@DeclareMathSymbol{>}{\\mathrel}  {newletters}{"3E}
 
     \\re\@DeclareMathSymbol{\\mathdollar}{\\mathord}  {newoperators}{"24}
     \\re\@DeclareMathSymbol{\\colon}     {\\mathpunct}{newoperators}{"3A}
 
-    \\DeclareMathDelimiter{(}{\\mathopen} {newoperators}{"28}{largesymbols}{"00}
-    \\DeclareMathDelimiter{)}{\\mathclose}{newoperators}{"29}{largesymbols}{"01}
-    \\DeclareMathDelimiter{[}{\\mathopen} {newoperators}{"5B}{largesymbols}{"02}
-    \\DeclareMathDelimiter{]}{\\mathclose}{newoperators}{"5D}{largesymbols}{"03}
-    \\DeclareMathDelimiter{/}{\\mathord}  {newoperators}{"2F}{largesymbols}{"0E}
+  % \\DeclareMathDelimiter{(}{\\mathopen} {newoperators}{"28}{largesymbols}{"00}
+  % \\DeclareMathDelimiter{)}{\\mathclose}{newoperators}{"29}{largesymbols}{"01}
+  % \\DeclareMathDelimiter{[}{\\mathopen} {newoperators}{"5B}{largesymbols}{"02}
+  % \\DeclareMathDelimiter{]}{\\mathclose}{newoperators}{"5D}{largesymbols}{"03}
+  % \\DeclareMathDelimiter{/}{\\mathord}  {newoperators}{"2F}{largesymbols}{"0E}
 
     \\re\@DeclareMathAccent{\\grave}   {\\mathalpha}{newoperators}{"12}
     \\re\@DeclareMathAccent{\\acute}   {\\mathalpha}{newoperators}{"13}
@@ -3341,8 +3342,14 @@ before loading the B<autoinst>-generated style file.
 
 Finally, note that B<autoinst> doesn't check if your fonts actually contains
 any greek; it just assumes that they do and sets up the style file
-accordingly.
-Check the resulting fonts thoroughly for missing characters!
+accordingly. Check the resulting fonts thoroughly for missing characters!
+You may also find that some glyphs I<are> present in your fonts,
+but don't work well in equations or don't match with other symbols;
+edit the generated style file to remove the declarations of
+these offending characters.
+If the characters themselves are fine but spaced too tightly,
+you may try to increase the side bearings in math fonts with
+the I<-mathextra> option (see below): C<-mathextra="--letterspacing=100">.
 
 
 =head2 NFSS codes
@@ -3814,7 +3821,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-22>
+=item I<2020-05-25>
 
 Added basic (and still somewhat experimental) math support.
 The generated style files now use C<\textsup> and C<\textinf>
