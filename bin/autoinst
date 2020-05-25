@@ -182,6 +182,7 @@ my $ERR_DETAIL =<<'END_ERR_DETAIL';
             Width:      %s
             Shape:      %s
             Size:       %s-%s
+            Smallcaps:  %s
 
 END_ERR_DETAIL
 
@@ -359,15 +360,19 @@ sub process_basicinfo {
         $self->{family} = $1;
         $self->{shape}  = NFSS::unabbreviate(lc($2));
     }
-    # Ditto for the smallcaps shape; here we have to test both 'family'
-    # and 'name' for hints that this is a small caps font, as some fonts
-    # (e.g., Dolly) only mention this in their name.
+    # Ditto for the smallcaps shape; here we have to test both 'family',
+    # 'subfamily' and 'name' for hints that this is a small caps font,
+    # as some fonts (e.g., Dolly) only mention this in their name.
     $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
-    if ($self->{family} =~ m/(.+?) -? (?: $shapes) \z/xmsi) {
+    if ($self->{family} =~ m/(.+?) (?: $shapes) \z/xmsi) {
         $self->{family}       = $1;
         $self->{is_smallcaps} = 1;
     }
-    if ($self->{name} =~ m/(.+?) -? (?: $shapes) \z/xmsi) {
+    if ($self->{subfamily} =~ m/(.+?) (?: $shapes) \z/xmsi) {
+        $self->{subfamily}         = $1;
+        $self->{is_smallcaps} = 1;
+    }
+    if ($self->{name} =~ m/(.+?) (?: $shapes) \z/xmsi) {
         $self->{name}         = $1;
         $self->{is_smallcaps} = 1;
     }
