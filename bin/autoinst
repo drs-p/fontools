@@ -900,8 +900,7 @@ END_STY_PROCESSOPTIONS
      \\settoheight{\\$fam\@xheight}
         {{\\font\\testfont=$testfont at \\f\@size pt\\testfont x}}
      \\renewcommand*{\\$fam\@scale}
-        {\\strip\@pt\\dimexpr\\number\\numexpr\\number\\dimexpr\\$fam\@defaultx\\relax*65536/\\number\\dimexpr\\$fam\@xheight\\relax\\relax sp\\relax
-        }
+        {\\strip\@pt\\dimexpr\\number\\numexpr\\number\\dimexpr\\$fam\@defaultx\\relax*65536/\\number\\dimexpr\\$fam\@xheight\\relax\\relax sp\\relax}
     }
     {}
 
