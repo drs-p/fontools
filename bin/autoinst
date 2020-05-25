@@ -1019,6 +1019,15 @@ END_STYLE_REST
     \\re\@DeclareMathSymbol{\\imath}{\\mathord}{newletters}{"7B}
     \\re\@DeclareMathSymbol{\\jmath}{\\mathord}{newletters}{"7C}
 
+    %
+    %   A number of math symbol declarations have been commented out,
+    %   since these characters generally do not work very well when
+    %   typesetting maths (either because of spacing issues or because
+    %   they don't mix with others symbols).
+    %   The commented-out declarations have been left in this style file
+    %   in case the user does want to re-activate those characters.
+    %
+
     \\re\@DeclareMathSymbol{!}{\\mathclose}{newoperators}{"21}
   % \\re\@DeclareMathSymbol{+}{\\mathbin}  {newoperators}{"2B}
     \\re\@DeclareMathSymbol{:}{\\mathrel}  {newoperators}{"3A}
