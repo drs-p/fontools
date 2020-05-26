@@ -48,7 +48,7 @@ my $TODAY = sprintf "%04d/%02d/%02d", $y + 1900, $m + 1, $d;
 my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 
-=begin Architecture
+=begin Comment
 
 ----------------------------------------------------------------------------
 
@@ -2455,13 +2455,13 @@ my %FIGURESTYLE = (
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp math) ],
+        styles => [ qw(normal smallcaps swash textcomp) ],
     },
     OsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp math) ],
+        styles => [ qw(normal smallcaps swash textcomp) ],
     },
     Sup => {
         reqd   => [ 'sups' ],
@@ -3869,7 +3869,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-25>
+=item I<2020-05-26>
 
 Added basic (and still somewhat experimental) math support.
 Implemented the C<scale=MatchLowercase> option in the generated
