@@ -1336,8 +1336,8 @@ my @WIDTH = (
     c   =>  [ qw( condensed ) ],
     sc  =>  [ qw( semicondensed narrow ) ],
     ''  =>  [ qw( regular ) ],
-    sx  =>  [ qw( semiextended semiexpanded ) ],
-    x   =>  [ qw( extended expanded wide ) ],
+    sx  =>  [ qw( semiextended semiexpanded wide ) ],
+    x   =>  [ qw( extended expanded ) ],
     ex  =>  [],
     ux  =>  [],
 );
