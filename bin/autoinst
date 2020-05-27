@@ -86,7 +86,7 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
 ----------------------------------------------------------------------------
 
-=end Architecture
+=end Comment
 
 =cut
 
