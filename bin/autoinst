@@ -846,6 +846,25 @@ END_STY_MAINFONT
 
 END_STY_MATHOPTION
 
+        if ($seen{LF} or $seen{TLF}) {
+            print {$STY} "\\newcommand*{\\$fam\@mathfigurestyle}{LF}\n";
+        }
+        elsif ($seen{OsF} or $seen{TOsF}) {
+            print {$STY} "\\newcommand*{\\$fam\@mathfigurestyle}{OsF}\n";
+        }
+
+        if ($seen{OsF} or $seen{TOsF}) {
+            print {$STY}
+                "\\DeclareOptionX{matholdstyle}\n",
+                "    {\\renewcommand*{\\$fam\@mathfigurestyle}{OsF}}\n";
+        }
+        if ($seen{LF} or $seen{TLF}) {
+            print {$STY}
+                "\\DeclareOptionX{mathlining}",
+                "    {\\renewcommand{\\$fam\@mathfigurestyle}{LF}}\n";
+        }
+        print {$STY} "\n";
+
         if ($seen{sw}) {
             print {$STY} <<"END_STY_MATHCALOPTION";
 \\newif\\if$fam\@mathcal\\$fam\@mathcalfalse
@@ -922,21 +941,21 @@ END_STYLE_REST
 \\newif\\if$fam\@mathgreekup\\$fam\@mathgreekupfalse
 
 \\if$fam\@math
-    \\DeclareSymbolFont{newoperators}  {OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
-    \\SetSymbolFont{newoperators}{bold}{OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+    \\DeclareSymbolFont{newoperators}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{newoperators}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
-    \\DeclareSymbolFont{newletters}  {OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetSymbolFont{newletters}{bold}{OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{it}
+    \\DeclareSymbolFont{newletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetSymbolFont{newletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
 
     \\DeclareSymbolFontAlphabet{\\mathrm}{newoperators}
     \\DeclareSymbolFontAlphabet{\\mathnormal}{newletters}
 
     \\def\\operator\@font{\\mathgroup\\symnewoperators}
-    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetMathAlphabet{\\mathit}{bold}  {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
 
-    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
-    \\SetMathAlphabet{\\mathbf}{bold}  {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
     \\def\\re\@DeclareMathSymbol#1#2#3#4{%
         \\if\\relax\\noexpand#1\\let#1=\\undefined\\fi
@@ -1147,8 +1166,8 @@ END_STYLE_REST
     \\fi
 
     \\if$fam\@mathlatinup
-        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
-        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
         \\re\@DeclareMathSymbol{a}{\\mathord}{upletters}{`a}
         \\re\@DeclareMathSymbol{b}{\\mathord}{upletters}{`b}
@@ -1197,8 +1216,8 @@ END_STYLE_REST
     \\fi
 
     \\if$fam\@mathgreekup
-        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{n}
-        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{n}
+        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
         \\re\@DeclareMathSymbol{\\alpha}     {\\mathord}{upletters}{"0B}
         \\re\@DeclareMathSymbol{\\beta}      {\\mathord}{upletters}{"0C}
@@ -1237,8 +1256,8 @@ END_STY_MATH
         if ($seen{sw}) {
             print {$STY} <<"END_STY_MATHCAL";
 \\if$fam\@mathcal
-    \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@figurealign LF}{\\mdseries\@$ARGV{nfss}}{sw}
-    \\SetMathAlphabet{\\mathcal}{bold}  {OT1}{$fam-\\$fam\@figurealign LF}{\\bfseries\@$ARGV{nfss}}{sw}
+    \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{sw}
+    \\SetMathAlphabet{\\mathcal}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{sw}
 \\fi
 
 END_STY_MATHCAL
@@ -2455,13 +2474,13 @@ my %FIGURESTYLE = (
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     OsF => {
         reqd   => [],
         nice   => [ 'kern', 'liga' ],
         extra  => '',
-        styles => [ qw(normal smallcaps swash textcomp) ],
+        styles => [ qw(normal smallcaps swash textcomp math) ],
     },
     Sup => {
         reqd   => [ 'sups' ],
@@ -3305,11 +3324,6 @@ so that its x-height matches that of the previously active font
 font package before this one).
 The name C<scaled> may be used as a synonym for C<scale>.
 
-=item C<math>, C<mathcal>, C<<< math-style=I<< <style> >> >>>
-
-Three options for accessing the (optional) math fonts;
-see the section `Maths' below.
-
 =item C<medium>, C<book>, C<text>, C<regular>
 
 Select the weight that LaTeX will use as the `regular' weight;
@@ -3371,30 +3385,53 @@ and be warned that future versions of B<autoinst> may introduce
 incompatible changes.
 
 The I<-math> option tells B<autoinst> to generate basic math fonts.
-To access these fonts, the generated style file contains a C<math> option
-(and, if the fonts contain swash characters, also a C<mathcal> option
-that uses these as the C<\mathcal> alphabet).
-Additionally there is a C<<< math-style=I<< <style> >> >>> option
-to change the style of some of the math `letters'.
+When enabled, the generated style file defines a few extra options
+to access these math fonts:
+
+=over 4
+
+=item C<math>
+
+Use these fonts for the maths in your document.
+
+=item C<mathlining>, C<matholdstyle>
+
+Choose which figure style to use in maths.
+The default is `mathlining'.
+
+=item C<mathcal>
+
+Use the swash characters from your fonts as the C<\mathcal> alphabet.
+(This option is only defined if your fonts actually contain swash characters,
+plus a C<swsh> feature to access them).
+
+=item C<<< math-style=I<< <style> >> >>>
+
+Choose the math `style' to use.
 With C<math-style=TeX> (the default), uppercase greek is upright;
 with C<math-style=ISO>, all latin and greek letters in math are italic;
 with C<math-style=french>, all greek as well as uppercase latin is upright;
 and with C<math-style=upright> all letters are upright.
 
+=back
+
 Note that this `math' option only changes digits, latin and greek letters,
 plus a few basic punctuation characters; all other mathematical symbols,
 operators, delimiters etc. are left as they were before.
 If you don't want to use TeX's default versions of those symbols,
-load another math package (such as F<newtxmath>)
+load another math package (such as F<mathdesign> or F<newtxmath>)
 before loading the B<autoinst>-generated style file.
 
 Finally, note that B<autoinst> doesn't check if your fonts actually contains
-any greek; it just assumes that they do and sets up the style file
-accordingly. Check the resulting fonts thoroughly for missing characters!
+all of the required characters;
+it just assumes that they do and sets up the style file accordingly.
+Even if your fonts contain greek, characters such as C<\varepsilon>
+may be missing.
 You may also find that some glyphs I<are> present in your fonts,
 but don't work well in equations or don't match with other symbols;
 edit the generated style file to remove the declarations of
 these offending characters.
+Once again: test the resulting fonts thoroughly before using them!
 If the characters themselves are fine but spaced too tightly,
 you may try to increase the side bearings in math fonts with
 the I<-mathextra> option (see below): C<-mathextra="--letterspacing=100">.
@@ -3869,7 +3906,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-05-26>
+=item I<2020-05-27>
 
 Added basic (and still somewhat experimental) math support.
 Implemented the C<scale=MatchLowercase> option in the generated
