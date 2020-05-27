@@ -1497,7 +1497,7 @@ I'm using the following options:
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
     math:               @{[ $ARGV{math}         ? 'yes'     : 'no'     ]}
-    mathextra:          $ARGV{mathextra}
+    mathspacing:        $ARGV{mathspacing}
 
 END_ARGUMENTS
 
@@ -2088,7 +2088,7 @@ Possible options:
     -version                Print version number and exit
 
     -math                   Generate basic math fonts
-    -mathextra="EXTRA"      Add EXTRA to the otftotfm command for math fonts
+    -mathspacing=AMOUNT     Letterspace the math fonts by AMOUNT/1000 em
 
     font[s]                 The fonts (.otf or .ttf format) to install.
 
@@ -2127,7 +2127,7 @@ END_USAGE
     nfsswidth       => [],
     nfssweight      => [],
     math            => 0,
-    mathextra       => '',
+    mathspacing     => 0,
 );
 
 
@@ -2194,7 +2194,7 @@ sub parse_options {
                                      $ARGV{$key} = 'user-defined';
                                  },
         'math!'               => \$ARGV{math},
-        'mathextra=s'         => \$ARGV{mathextra},
+        'mathspacing=i'       => \$ARGV{mathspacing},
     )
     or die "$USAGE";
 
@@ -2732,9 +2732,9 @@ sub process_encoding_options {
         delete $STYLE{math}
     }
 
-    if ($ARGV{mathextra}) {
+    if ($ARGV{mathspacing}) {
         if (defined $STYLE{math}{extra}) {
-            $STYLE{math}{extra} .= " $ARGV{mathextra}";
+            $STYLE{math}{extra} .= " --letterspacing=$ARGV{mathspacing}";
         }
     }
 
@@ -3433,8 +3433,8 @@ edit the generated style file to remove the declarations of
 these offending characters.
 Once again: test the resulting fonts thoroughly before using them!
 If the characters themselves are fine but spaced too tightly,
-you may try to increase the side bearings in math fonts with
-the I<-mathextra> option (see below): C<-mathextra="--letterspacing=100">.
+you may try increasing the side bearings in math fonts with
+the I<-mathspacing> option (see below): C<-mathspacing=100>.
 
 
 =head2 NFSS codes
@@ -3682,6 +3682,13 @@ that do contain a `liga' feature.
 
 Tells B<autoinst> to create basic math fonts (see above).
 
+=item B<-mathspacing>=I<amount>
+
+Letterspace each character in the math fonts by I<amount> units,
+where 1000 units equal one em.
+In my opinion, many text fonts benefit from letterspacing by 50 to 100 units
+when used in maths; some fonts need even more. Use your own judgement!
+
 =item B<-defaultlining>/B<-defaultoldstyle>
 
 =item B<-defaulttabular>/B<-defaultproportional>
@@ -3720,12 +3727,9 @@ use C<-nfssweight=ul=>.
 
 =item B<-extra>=I<extra>
 
-=item B<-mathextra>=I<extra>
-
 Append I<extra> as extra options to the command lines for I<otftotfm>.
 To prevent I<extra> from accidentily being interpreted as options
 to B<autoinst>, it should be properly quoted.
-With I<-mathextra>, the extra options are only applied to math fonts.
 
 =item B<-manual>
 
