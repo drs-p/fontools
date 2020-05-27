@@ -3402,14 +3402,14 @@ The default is `mathlining'.
 =item C<mathcal>
 
 Use the swash characters from your fonts as the C<\mathcal> alphabet.
-(This option is only defined if your fonts actually contain swash characters,
-plus a C<swsh> feature to access them).
+(This option only exists if your fonts actually contain swash characters
+and a C<swsh> feature to access them).
 
 =item C<<< math-style=I<< <style> >> >>>
 
-Choose the math `style' to use.
-With C<math-style=TeX> (the default), uppercase greek is upright;
-with C<math-style=ISO>, all latin and greek letters in math are italic;
+Choose the `math style' to use.
+With C<math-style=ISO>, all latin and greek letters in math are italic;
+with C<math-style=TeX> (the default), uppercase greek is upright;
 with C<math-style=french>, all greek as well as uppercase latin is upright;
 and with C<math-style=upright> all letters are upright.
 
@@ -3431,10 +3431,10 @@ You may also find that some glyphs I<are> present in your fonts,
 but don't work well in equations or don't match with other symbols;
 edit the generated style file to remove the declarations of
 these offending characters.
-Once again: test the resulting fonts thoroughly before using them!
+Once again: test the results before using them!
 If the characters themselves are fine but spaced too tightly,
 you may try increasing the side bearings in math fonts with
-the I<-mathspacing> option (see below): C<-mathspacing=100>.
+the I<-mathspacing> option (see below), e.g. C<-mathspacing=100>.
 
 
 =head2 NFSS codes
@@ -3802,17 +3802,6 @@ The default is B<-updmap>.
 =back
 
 
-=head2 About the log file
-
-B<autoinst> writes some info about what it thinks it's doing to a log file.
-By default this is called F<< <fontfamily>.log >>,
-but this choice can be overridden by the user;
-see the I<-logfile> command-line option in L</COMMAND-LINE OPTIONS> below.
-If this log file already exists, B<autoinst> will append its data to the end
-rather than overwrite it.
-Use the I<-verbose> command-line option to ask for more detailed info.
-
-
 =head2 A note for MiKTeX users
 
 Automatically installing the fonts into a suitable TEXMF tree
@@ -3913,8 +3902,10 @@ This document describes B<autoinst> version __VERSION__.
 =item I<2020-05-27>
 
 Added basic (and still somewhat experimental) math support.
-Implemented the C<scale=MatchLowercase> option in the generated
-style files.
+Implemented the C<scale=MatchLowercase> option value
+in the generated style files.
+`Wide' fonts are mapped to the `sx' NFSS code instead of `x',
+to cater for League Mono Variable's Wide and Extended widths.
 The generated style files now use C<\textsup> and C<\textinf>
 instead of the more cryptic C<\textsu> and C<\textin> to access
 superior and inferior characters
