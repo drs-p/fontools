@@ -15,6 +15,7 @@
 | leaguemono        | widths: Condensed < Narrow < Regular < Wide < Extended    |
 | librecaslon       | family LibreCaslon vs LibreCaslonText                     |
 | marcellus         | broken by changes in -mergesmallcaps                      |
+| merriweathertext  | Text as subfamily (optical size)                          |
 | metapro           | Normal should map to m                                    |
 | museo             | numerical weights: 100, 300, 500, 700, 900                |
 | notosansmono      | many weights/widths; monospaced but isFixedPitch is False |

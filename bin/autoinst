@@ -369,7 +369,7 @@ sub process_basicinfo {
         $self->{is_smallcaps} = 1;
     }
     if ($self->{subfamily} =~ m/(.+?) (?: $shapes) \z/xmsi) {
-        $self->{subfamily}         = $1;
+        $self->{subfamily}    = $1;
         $self->{is_smallcaps} = 1;
     }
     if ($self->{name} =~ m/(.+?) (?: $shapes) \z/xmsi) {
@@ -393,7 +393,7 @@ sub process_basicinfo {
     # (i.e., Libre Caslon Text) and should not be mistaken for a weight.
     my $weights = join '|', NFSS::get_all_weights();
     if ($self->{family} =~ m/text \z/xmsi) {
-        $weights =~ s/text[|]?//xms;
+        $weights =~ s/[|]? text//xms;
     }
     if ($self->{family} =~ m/(.+?) ($weights) \z/xmsi
             and ($self->{weight} eq 'regular'
@@ -1730,7 +1730,7 @@ my @WEIGHT = (
     sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
     b   =>  [ qw( bold 700 ) ],
     eb  =>  [ qw( extrabold 800 ) ],
-    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack 900
+    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack 900 fatface
                   ultraheavy poster super 1000 ) ],
 );
 
@@ -1848,9 +1848,9 @@ sub get_all_nfss_weights {
 }
 
 
-my @allweights = grep { $_ !~ m/ regular | medium /xms }
+my @allweights = grep { $_ !~ m/ medium | regular | text /xms }
                       map { @{$_} } values %WEIGHT;
-@allweights = (Util::sort_desc_length(@allweights), qw(medium regular));
+@allweights = (Util::sort_desc_length(@allweights), qw(medium regular text));
 
 # --------------------------------------------------------------------------
 #   Returns a list of all known weight names,
