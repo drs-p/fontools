@@ -1,6 +1,6 @@
 autoinst:
--   math fonts?
+v   math fonts?
 
 testcases:
 -   open source fonts only
--   more widths (esp compressed, extended, narrow, wide)
+v   more widths (esp compressed, extended, narrow, wide)

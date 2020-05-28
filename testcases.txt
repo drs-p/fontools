@@ -1,24 +1,25 @@
-|---------------------|-----------------------------------------------------------|
-| font                | test case                                                 |
-|---------------------|-----------------------------------------------------------|
-| agenda              | Medium should map to m (no Regular); unusual widths       |
-| alegreyasans        | 'sans' in name; medium maps to sb                         |
-| clearsans           | Thin, Light and Medium are separate families              |
-| cormorantgaramond   | Roman shapes have no -pnum; tripped over -inferiors bug   |
-| dolly               | SC font has SmallCaps in name, but not in familyname      |
-| firasans            | Book maps to sl                                           |
-| franklingothic      | many widths; should also test with -nfssweight=m=medium   |
-| garamondlibre       | tripped over -inferiors; contains ornaments               |
-| go                  | small caps in separate family                             |
-| ibmplexsans         | broken by -mergewidths; Text weight                       |
-| lato                | Hairline, Thin and Heavy; also test -inferiors=subs       |
-| librecaslon         | family LibreCaslon vs LibreCaslonText                     |
-| marcellus           | broken by changes in -mergesmallcaps                      |
-| metapro             | Normal should map to m                                    |
-| museo               | numerical weights: 100, 300, 500, 700, 900                |
-| notosansmono        | many weights/widths; monospaced but isFixedPitch is False |
-| operatormono        | Book maps to m, Medium maps to sb                         |
-| recursivesans       | Linear and Casual variants; become separate families      |
-| sourcecodepro       | monospaced but no 'mono'; also without Regular/Medium     |
-| victormono          | both Italic and Oblique shapes                            |
-|---------------------|-----------------------------------------------------------|
+|-------------------|-----------------------------------------------------------|
+| font              | test case                                                 |
+|-------------------|-----------------------------------------------------------|
+| agenda            | Medium should map to m (no Regular); unusual widths       |
+| alegreyasans      | 'sans' in name; medium maps to sb                         |
+| clearsans         | Thin, Light and Medium are separate families              |
+| cormorantgaramond | Roman shapes have no -pnum; tripped over -inferiors bug   |
+| dolly             | SC font has SmallCaps in name, but not in familyname      |
+| firasans          | Book maps to sl                                           |
+| franklingothic    | many widths; should also test with -nfssweight=m=medium   |
+| garamondlibre     | tripped over -inferiors; contains ornaments               |
+| go                | small caps in separate family                             |
+| ibmplexsans       | broken by -mergewidths; Text weight                       |
+| lato              | Hairline, Thin and Heavy; also test -inferiors=subs       |
+| leaguemono        | widths: Condensed < Narrow < Regular < Wide < Extended    |
+| librecaslon       | family LibreCaslon vs LibreCaslonText                     |
+| marcellus         | broken by changes in -mergesmallcaps                      |
+| metapro           | Normal should map to m                                    |
+| museo             | numerical weights: 100, 300, 500, 700, 900                |
+| notosansmono      | many weights/widths; monospaced but isFixedPitch is False |
+| operatormono      | Book maps to m, Medium maps to sb                         |
+| recursivesans     | Linear and Casual variants; become separate families      |
+| sourcecodepro     | monospaced but no 'mono'; also without Regular/Medium     |
+| victormono        | both Italic and Oblique shapes                            |
+|-------------------|-----------------------------------------------------------|
