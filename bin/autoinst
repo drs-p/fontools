@@ -366,7 +366,6 @@ sub process_basicinfo {
         $self->{is_smallcaps} = 1;
     }
     if ($self->{name} =~ m/(.+?) (?: $shapes) \z/xmsi) {
-        $self->{name}         = $1;
         $self->{is_smallcaps} = 1;
     }
     # Some font families put italic shapes into separate families;
