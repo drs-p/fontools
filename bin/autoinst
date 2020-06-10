@@ -351,19 +351,12 @@ sub process_basicinfo {
     $self->{weight} = NFSS::unabbreviate($self->{weight});
     $self->{shape}  = NFSS::unabbreviate($self->{shape});
 
-    # Some font families put different shapes into separate families;
+    # Some font families put small caps into separate families;
     # we merge these into the 'main' family.
-    my $shapes = join '|', Util::sort_desc_length(qw(it italic));
-    if ($self->{family} =~ m/(.+?) ($shapes) \z/xmsi
-            and ($self->{shape} eq 'regular'
-                    or $self->{shape} eq NFSS::unabbreviate(lc($2)))) {
-        $self->{family} = $1;
-        $self->{shape}  = NFSS::unabbreviate(lc($2));
-    }
-    # Ditto for the smallcaps shape; here we have to test both 'family',
-    # 'subfamily' and 'name' for hints that this is a small caps font,
-    # as some fonts (e.g., Dolly) only mention this in their name.
-    $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
+    # We have to test both 'family', 'subfamily' and 'name' for hints
+    # that this is a small caps font, as some fonts (e.g., Dolly)
+    # only mention this in their name.
+    my $shapes = join '|', Util::sort_desc_length(qw(smallcaps sc smcp caps));
     if ($self->{family} =~ m/(.+?) (?: $shapes) \z/xmsi) {
         $self->{family}       = $1;
         $self->{is_smallcaps} = 1;
@@ -375,6 +368,15 @@ sub process_basicinfo {
     if ($self->{name} =~ m/(.+?) (?: $shapes) \z/xmsi) {
         $self->{name}         = $1;
         $self->{is_smallcaps} = 1;
+    }
+    # Some font families put italic shapes into separate families;
+    # we merge these into the 'main' family.
+    $shapes = join '|', Util::sort_desc_length(qw(it italic));
+    if ($self->{family} =~ m/(.+?) ($shapes) \z/xmsi
+            and ($self->{shape} eq 'regular'
+                    or $self->{shape} eq NFSS::unabbreviate(lc($2)))) {
+        $self->{family} = $1;
+        $self->{shape}  = NFSS::unabbreviate(lc($2));
     }
 
     # Some font families put different widths into separate families;
