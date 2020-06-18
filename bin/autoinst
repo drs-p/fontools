@@ -3159,6 +3159,8 @@ for installing and using OpenType fonts in LaTeX.
 
 =head1 SYNOPSIS
 
+B<autoinst> I<-help>
+
 B<autoinst> [I<options>] B<font(s)>
 
 
