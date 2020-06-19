@@ -2250,7 +2250,7 @@ sub get_targetdirs {
                                 'fonts',
                                 $_,
                                 $ARGV{vendor},
-                                $ARGV{typeface} || lc $family) )
+                                $ARGV{typeface} || $family) )
                   }
                   @filetypes;
 
@@ -3924,7 +3924,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-06-18>
+=item I<2020-06-19>
 
 Added the C<nomathgreek> option to generated style files.
 Reorganized the generated style files to make them more
