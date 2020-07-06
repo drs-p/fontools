@@ -1307,6 +1307,14 @@ sub create_fdfile {
 \\ProvidesFile{$enc$fam-$sty.fd}
     [$TODAY (autoinst)  Font definitions for $enc/$fam-$sty.]
 
+\\ifcsname s\@fct\@alias\\endcsname\\else
+\\gdef\\s\@fct\@alias{\\sub\@sfcnt\\\@font\@aliasinfo}
+\\gdef\\\@font\@aliasinfo#1{%
+    \\\@font\@info{Font\\space shape\\space `\\curr\@fontshape'\\space will
+        \\space be\\space aliased\\MessageBreak to\\space `\\mandatory\@arg'}%
+}
+\\fi
+
 \\expandafter\\ifx\\csname $fam\@scale\\endcsname\\relax
     \\let\\$fam\@\@scale\\\@empty
 \\else
@@ -1323,39 +1331,56 @@ END_FD_HEADER
 
     while (my ($series, $fdseries) = each %$data) {
         my $nfssseries = $nfss_mapping->{$series};
-        my @series = defined $nfssseries ? ($nfssseries, $series)
-                   :                       ($series)
-                   ;
 
-        for my $ser (@series) {
-            print {$FD} "\n%   ----  $ser  ----\n\n";
-            while (my ($shape, $fdshape) = each %$fdseries) {
-                print {$FD}
-                    "\\DeclareFontShape{$enc}{$fam-$sty}{$ser}{$shape}{\n";
-                my @sizes = sort { $a->[0] <=> $b->[0] }
-                                 @{$fdshape};
-                $sizes[0][0] = $sizes[-1][1] = '';
-                $sizes[$_][0] = $sizes[$_ - 1][1] for (1 .. $#sizes);
-                for my $size (@sizes) {
-                    print {$FD} "      <$size->[0]-$size->[1]> ",
-                                "\\$fam\@\@scale $size->[2]\n";
-                }
-                print {$FD} "}{}\n\n";
+        my $fancyseries = $series;
+        if (defined $nfssseries) {
+            print {$FD} "\n%   ----  $nfssseries = $series  ----\n\n";
+            $series = $nfssseries;
+        }
+        else {
+            print {$FD} "\n%   ----  $series  ----\n\n";
+        }
+        while (my ($shape, $fdshape) = each %$fdseries) {
+            print {$FD}
+                "\\DeclareFontShape{$enc}{$fam-$sty}{$series}{$shape}{\n";
+            my @sizes = sort { $a->[0] <=> $b->[0] }
+                                @{$fdshape};
+            $sizes[0][0] = $sizes[-1][1] = '';
+            $sizes[$_][0] = $sizes[$_ - 1][1] for (1 .. $#sizes);
+            for my $size (@sizes) {
+                print {$FD} "      <$size->[0]-$size->[1]> ",
+                            "\\$fam\@\@scale $size->[2]\n";
             }
+            print {$FD} "}{}\n\n";
 
-            # ssub italic for missing slanted, or vice versa
-            while (my ($shape, $replace) = each %SSUB_SHAPE) {
-                if (!exists $fdseries->{$shape} && exists $fdseries->{$replace}) {
-                    print {$FD} <<"END_SSUB_SHAPE";
-\\DeclareFontShape{$enc}{$fam-$sty}{$ser}{$shape}{
-      <-> ssub * $fam-$sty/$ser/$replace
+            if (defined $nfssseries) {
+                print {$FD} <<"END_ALIAS_SERIES";
+\\DeclareFontShape{$enc}{$fam-$sty}{$fancyseries}{$shape}{
+      <-> alias * $fam-$sty/$nfssseries/$shape
+}{}
+
+END_ALIAS_SERIES
+            }
+        }
+
+        # ssub italic for missing slanted, or vice versa
+        while (my ($shape, $replace) = each %SSUB_SHAPE) {
+            if (!exists $fdseries->{$shape} && exists $fdseries->{$replace}) {
+                print {$FD} <<"END_SSUB_SHAPE";
+\\DeclareFontShape{$enc}{$fam-$sty}{$series}{$shape}{
+    <-> ssub * $fam-$sty/$series/$replace
 }{}
 
 END_SSUB_SHAPE
-                    if ($ser eq $series[-1]) {
-                        $fdseries->{$shape} = $fdseries->{$replace};
-                    }
+                if (defined $nfssseries) {
+                    print {$FD} <<"END_SSUB_SHAPE";
+\\DeclareFontShape{$enc}{$fam-$sty}{$fancyseries}{$shape}{
+    <-> ssub * $fam-$sty/$fancyseries/$replace
+}{}
+
+END_SSUB_SHAPE
                 }
+                $fdseries->{$shape} = 1;
             }
         }
     }
