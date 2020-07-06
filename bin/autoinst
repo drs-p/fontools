@@ -3519,17 +3519,10 @@ The mapping of shapes to NFSS codes is done using the following table:
 we map the first of these to `n', for the second one we (ab)use the `it' code
 as this family doesn't contain an Italic shape.)
 
-The mapping of weights and widths to NFSS codes is a more complex,
-two-step proces.
-In the first step, all fonts are assigned a `series' name that is simply
-the concatenation of its weight and width
-(after expanding any abbreviations and converting to lowercase).
-A font with `Cond' width and `Ultra' weight will then be known
-as `ultrablackcondensed'.
-
-In the second step, B<autoinst> tries to map all combinations of NFSS codes
+For weights and widths, B<autoinst> tries to the standard NFSS codes
 (ul, el, l, sl, m, sb, b, eb and ub for weights;
-uc, ec, c, sc, m, sx, x, ex and ux for widths) to actual fonts.
+uc, ec, c, sc, m, sx, x, ex and ux for widths)
+as much as possible.
 Of course, not all 81 combinations of these NFSS weights and widths will map
 to existing fonts;
 and conversely it may not be possible to assign every existing font
@@ -3537,12 +3530,14 @@ a unique code in a sane way (especially for the weights, some font families
 offer more choices or finer granularity than NFSS's codes can handle;
 e.g., Fira Sans contains fifteen(!) different weights,
 including an additional `Medium' weight between Regular and Semibold).
+Therefore every font is also assigned a `series' name that is simply
+the concatenation of its weight and width
+(after expanding any abbreviations and converting to lowercase).
+A font with `Cond' width and `Ultra' weight will then be known
+as `ultrablackcondensed'.
 
-B<autoinst> tries hard to ensure that the most common NFSS codes
-(and high-level commands such as C<\bfseries>,
-which are built on top of those codes) will `just work'.
-
-To see exactly which NFSS codes map to which fonts, see the log file
+The exact mapping between fonts and NFSS codes can be found
+in the generated F<fd> files and in the log file
 (pro tip: run B<autoinst> with the I<-dryrun> option
 to check the chosen mapping beforehand).
 The I<-nfssweight> and I<-nfsswidth> command-line options can be used
@@ -3953,9 +3948,9 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2020-07-06>
 
-Change in generated F<fd> files: don't use `alias' rules
-for mapping standard NFSS codes, but instead define them
-directly as whatever series we have chosen.
+Changes in generated F<fd> files: declare fonts using standard NFSS codes
+as much as possible, and use our `fancy' names only when the standard
+codes don't fit (or as an alias for the standard codes).
 
 =item I<2020-06-19>
 
