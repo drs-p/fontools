@@ -739,7 +739,7 @@ END_STY_MAINFONT
         :               die "[ERROR]     Internal bug, please report!"
         ;
 
-    for my $series (qw(heavy black extrabold demibold semibold)) {
+    for my $series (qw(heavy black extrabold demibold semibold bold)) {
         if ( $seen{$series} ) {
             print {$STY}
                 "\\DeclareOptionX{$series}{\\edef\\bfseries\@$ARGV{nfss}",
@@ -747,7 +747,7 @@ END_STY_MAINFONT
         }
     }
 
-    for my $series (qw(medium book text)) {
+    for my $series (qw(medium book text normal regular)) {
         if ( $seen{$series} ) {
             print {$STY}
                 "\\DeclareOptionX{$series}{\\edef\\mdseries\@$ARGV{nfss}",
@@ -3372,11 +3372,11 @@ so that its x-height matches that of the previously active font
 font package before this one).
 The name C<scaled> may be used as a synonym for C<scale>.
 
-=item C<medium>, C<book>, C<text>
+=item C<medium>, C<book>, C<text>, C<normal>, C<regular>
 
 Select the weight that LaTeX will use as the `regular' weight.
 
-=item C<heavy>, C<black>, C<extrabold>, C<demibold>, C<semibold>
+=item C<heavy>, C<black>, C<extrabold>, C<demibold>, C<semibold>, C<bold>
 
 Select the weight that LaTeX will use as the `bold' weight.
 
