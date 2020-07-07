@@ -942,6 +942,27 @@ END_STY_MATCHLOWERCASE
     {\\$ARGV{nfss}default}
     {$fam-\\$fam\@figurealign\\$fam\@figurestyle}
 
+% Adapt microtype's "basic" sets to recognize our series names.
+% Since microtype may be loaded after this style file,
+% we defer the check until AtBeginDocument.
+\\AtBeginDocument{%
+    \\ifcsname DeclareMicrotypeSet\\endcsname
+        \\DeclareMicrotypeSet{basictext}{%
+            encoding = {OT1,T1,T2A,LY1,OT4,QX,T5,EU1,EU2,TU},
+            family   = {rm*,sf*},
+            series   = {md*,regular,normal,text,book,medium},
+            size     = {footnotesize-Large}
+        }%
+        \\DeclareMicrotypeSet{basicmath}{%
+            encoding = {OT1,T1,T2A,LY1,OT4,QX,T5,EU1,EU2,TU,OML,OMS},
+            family   = {rm*,sf*},
+            series   = {md*,regular,normal,text,book,medium},
+            size     = {footnotesize-Large}
+        }%
+    \\fi
+}
+
+
 END_STYLE_REST
 
     if ($ARGV{math}) {
@@ -3944,9 +3965,8 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2020-07-07>
 
-Changes in generated F<fd> files: declare fonts using NFSS codes
-as much as possible, and use our `fancy' series names only when
-the standard codes don't fit (or as an alias for the standard codes).
+Some changes in the generated F<sty> and F<fd> files,
+to improve compatibility with the F<microtype> package.
 
 =item I<2020-06-19>
 
