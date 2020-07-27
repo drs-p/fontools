@@ -132,6 +132,10 @@ sub main {
             $nfss_mapping = NFSS::invert_mapping($nfss_mapping);
             LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
             Otftotfm::run_commands(\@commands, $family, $log);
+
+            if ($ARGV{mangle_fontname} and !$ARGV{manual}) {
+                Work::mangle_fontname($family, $fontlist);
+            }
         }
 
         $log->close();
@@ -275,6 +279,12 @@ sub new {
 # --------------------------------------------------------------------------
 sub process_basicinfo {
     my ($self, $data) = @_;
+
+    $self->{originalfamily} = $data->{family};
+
+    for my $key (keys %{$data}) {
+        $data->{$key} =~ s/\s+//xmsg;
+    }
 
     $data->{family}    =  $data->{preferredfamily} || $data->{family};
     $data->{subfamily} =  $data->{preferredsubfamily} || $data->{subfamily};
@@ -511,7 +521,6 @@ sub get_basicinfo {
         or die "[ERROR]     Could not fork(): $!";
     my %data = map { my ($k,$v) = m/\A\s* ([^:]+?) \s*:\s* ([^\r\n]+)/xms;
                      $k =~ s/\s+//xmsg;
-                     $v =~ s/\s+//xmsg;
                      (lc $k => $v);
                    }
                    grep { m/\A\s* [^:]+? \s*:\s* [^\r\n]+/xms } <$otfinfo>;
@@ -1523,7 +1532,6 @@ I'm using the following options:
     fractions:          @{[ $ARGV{fractions}    ? 'yes'     : 'no'     ]}
     ligatures:          @{[ $ARGV{ligatures}    ? 'yes'     : 'no'     ]}
 
-    auto/manual:        @{[ $ARGV{manual}       ? 'manual'  : 'auto'   ]}
     target:             $ARGV{target}
     extra:              $ARGV{extra}
 
@@ -1532,8 +1540,11 @@ I'm using the following options:
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
 
-    math:               @{[ $ARGV{math}         ? 'yes'     : 'no'     ]}
+    math:               @{[ $ARGV{math} ? 'yes' : 'no' ]}
     mathspacing:        $ARGV{mathspacing}
+
+    auto/manual:        @{[ $ARGV{manual}          ? 'manual'  : 'auto' ]}
+    mangle font names:  @{[ $ARGV{mangle_fontname} ? 'yes'     : 'no'   ]}
 
 END_ARGUMENTS
 
@@ -2191,6 +2202,7 @@ END_USAGE
     nfssweight      => [],
     math            => 0,
     mathspacing     => 0,
+    mangle_fontname => 1,
 );
 
 
@@ -2258,6 +2270,7 @@ sub parse_options {
                                  },
         'math!'               => \$ARGV{math},
         'mathspacing=i'       => \$ARGV{mathspacing},
+        'mangle-fontname!'    => \$ARGV{mangle_fontname},
     )
     or die "$USAGE";
 
@@ -2347,9 +2360,10 @@ sub create_command {
                       "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
-                      ($workitem->{font}{filename} =~ m/[.]ttf\z/xmsi
-                         ? '--no-type1'
-                         : q()),
+                      (($workitem->{font}{filename} =~ m/[.]otf\z/xmsi
+                            && !$ARGV{mangle_fontname})
+                         ? q()
+                         : '--no-type1'),
                       ($SCHEME{$workitem->{encoding}}
                          ? qq(--coding-scheme="$SCHEME{$workitem->{encoding}}")
                          : q()),
@@ -3171,6 +3185,155 @@ sub cleanup {
 }
 
 
+# --------------------------------------------------------------------------
+#   Adds "LaTeX" suffix to font names to avoid licensing issues.
+# --------------------------------------------------------------------------
+sub mangle_fontname {
+    my ($family, $fontlist) = @_;
+
+    my %has_fonttype = map { ($_->{fonttype} => 1) } @{$fontlist};
+    return unless $has_fonttype{opentype};
+
+    # The otftotfm-generated map file refers to the original otf files;
+    # we need to change this to use our name-mangled Type1 fonts instead.
+    my $mapfile = File::Spec->catfile(
+        $ARGV{target},
+        'fonts',
+        'map',
+        'dvips',
+        $ARGV{typeface} || $family,
+        $family . '.map');
+    open my $map, '<', $mapfile
+        or die "[ERROR]     Cannot open '$mapfile' for reading";
+    my $mapdata = do { local $/; <$map> };
+    close $mapfile;
+
+    my $NOTICE = 'Converted to Type1 by autoinst/cfftot1; '
+        . 'use with pdfTeX only!';
+
+    my $newfam = $family . "LaTeX";
+
+    for my $font (@{$fontlist}) {
+        next unless $font->{fonttype} eq 'opentype';
+
+        my $oldfullfam = $font->{originalfamily};
+        my $newfullfam = $oldfullfam . " LaTeX";
+        my $newname    = $font->{name};
+        if ($newname =~ m/$family/xms) {
+            $newname =~ s/$family/$newfam/xms;
+        }
+        else {
+            $newname =~ s/(.+?)(?:-|\z)/$1LaTeX/xms;
+        }
+        my $newfn = File::Spec->catfile(
+            $ARGV{target},
+            'fonts',
+            'type1',
+            $ARGV{vendor},
+            $ARGV{typeface} || $family,
+            $newname . '.pfb');
+
+        eval {
+            my $cmd = qq(cfftot1 -b "$font->{filename}" | t1disasm);
+            open my $pipe, '-|:raw', $cmd
+                or die "could not fork(): $!";
+
+            my @postscript;
+            for my $line (<$pipe>) {
+                if ($line =~ m/\/FamilyName | \/FullName/xms) {
+                    $line =~ s/$oldfullfam/$newfullfam/;
+                }
+                elsif ($line =~ m/%!PS-AdobeFont-1.0 | \/FontName/xms) {
+                    $line =~ s/$font->{name}/$newname/;
+                }
+
+                if ($line =~ m/\/Notice /xms) {
+                    $line =~ s/[)] readonly def/ $NOTICE) readonly def/;
+                }
+                push @postscript, $line;
+            }
+
+            close $pipe
+                or die "'$cmd' failed";
+
+            $cmd = qq(t1asm -b >"$newfn");
+            open my $pfb, '|-:raw', $cmd
+                or die "could not fork(): $!";
+            print {$pfb} @postscript;
+            close $pfb
+                or die "'$cmd' failed";
+        } or warn "[WARNING]   $@";
+
+        $mapdata =~ s/$font->{name}.(?:otf|pfb)/$newname.pfb/g;
+
+        # otftotfm ignores the --no-type1 option when generating
+        # dotless-j fonts. We remove these fonts, since we don't need them;
+        # we already generated our own (name-mangled) ones.
+        my $oldfn = File::Spec->catfile(
+            $ARGV{target},
+            'fonts',
+            'type1',
+            $ARGV{vendor},
+            $ARGV{typeface} || $family,
+            $font->{name} . '.pfb');
+        if (-e "$oldfn") {
+            unlink "$oldfn";
+        }
+
+        # We can't use otftotfm's auto-generated dotless-j fonts,
+        # since these will be based on the old (non-name-mangled) fonts;
+        # so we re-run t1dotlessj by hand to create a correct font.
+        # There are some cases where t1dotlessj creates an empty font
+        # (original font already has a dotless-j; the j itself is dotless;
+        # there is no "j"). We catch those cases, remove the empty file
+        # and rewrite the map file to use the base font instead.
+        my $oldlcdfj = File::Spec->catfile(
+            $ARGV{target},
+            'fonts',
+            'type1',
+            $ARGV{vendor},
+            $ARGV{typeface} || $family,
+            $font->{name} . 'LCDFJ.pfb');
+        my $newlcdfj = File::Spec->catfile(
+            $ARGV{target},
+            'fonts',
+            'type1',
+            $ARGV{vendor},
+            $ARGV{typeface} || $family,
+            $newname . 'LCDFJ.pfb');
+        if (-e "$oldlcdfj") {
+            my $cmd = qq(t1dotlessj --pfb "$newfn" "$newlcdfj");
+            eval {
+                open my $t1dotlessj, '|-:raw', $cmd
+                    or die "could not fork(): $!";
+                close $t1dotlessj
+                    or die "'$cmd' failed";
+            } or do {
+                if (($? >> 8) > 3) {
+                    warn "[WARNING]   $@";
+                }
+                else {
+                    $mapdata =~ s/$font->{name}LCDFJ/${newname}/g;
+                    unlink "$newlcdfj";
+                }
+            };
+
+            $mapdata =~ s/$font->{name}LCDFJ/${newname}LCDFJ/g;
+            unlink "$oldlcdfj";
+        }
+    }
+
+    # After all fonts have been processed, we write the modified
+    # map file back to disk.
+    open $map, '>', $mapfile
+        or die "[ERROR]     Cannot open '$mapfile' for writing";
+    print {$map} $mapdata;
+    close $map;
+
+    return;
+}
+
+
 ############################################################################
 
 
@@ -3335,13 +3498,9 @@ Titling characters; see above
 
 ornaments
 
-=item I<Numr>
+=item I<Numr>, I<Dnom>
 
-numerators
-
-=item I<Dnom>
-
-denominators
+numerators and denominators
 
 =back
 
@@ -3503,7 +3662,7 @@ these offending characters.
 Once again: test the results before using them!
 If the characters themselves are fine but spaced too tightly,
 you may try increasing the side bearings in math fonts with
-the I<-mathspacing> option (see below), e.g. C<-mathspacing=100>.
+the I<-mathspacing> option (see below), e.g. C<-mathspacing=50>.
 
 
 =head2 NFSS codes
@@ -3585,6 +3744,56 @@ this will create a table of all glyphs in that font.
 Note that versions of B<autoinst> up to 20200428 handled ornaments
 differently, and fonts and style files generated by those versions
 are not compatible with files generated by newer versions.
+
+
+=head1 WARNINGS AND CAVEATS
+
+=head2 OpenType fonts and licensing issues
+
+Since F<pdfTeX> cannot subset F<otf> fonts,
+B<autoinst> will convert such fonts to Type1 (F<pfb>) format.
+However, many fonts (at least those licensed under the SIL Open Font License)
+do not allow distributing modified versions under their original name;
+therefore B<autoinst> modifies the names of the Type1 fonts
+(both their filenames and their internal font names)
+by appending the suffix ``LaTeX'' to the original family name.
+
+If you do not want this behaviour,
+add the C<-nomangle-fontname> option to B<autoinst>'s command line.
+
+
+=head2 A note for MiKTeX users
+
+Automatically installing the fonts into a suitable TEXMF tree
+(as B<autoinst> tries to do by default) only works for TeX-installations
+that use the F<kpathsea> library; with TeX distributions that implement
+their own directory searching (such as MiKTeX), B<autoinst> will complain
+that it cannot find the F<kpsewhich> program and move all generated files
+into a subdirectory C<./autoinst_output/> of the current directory.
+If you use such a TeX distribution, you should either move these files
+to their correct destinations by hand, or use the I<-target> option
+(see L</COMMAND-LINE OPTIONS> below) to manually specify a TEXMF tree.
+
+Also, some OpenType fonts contain so many kerning pairs that the resulting
+F<pl> and F<vpl> files are too big for MiKTeX's F<pltotf> and F<vptovf>;
+the versions that come with W32TeX (F<http://www.w32tex.org>)
+and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
+
+
+=head2 A note for MacTeX users
+
+By default, B<autoinst> will try to install all generated files into
+the $TEXMFLOCAL tree; when this directory isn't user-writable,
+it will use the $TEXMFHOME tree instead.  Unfortunately, MacTeX's version
+of C<updmap-sys> (which is called behind the scenes) doesn't search
+in $TEXMFHOME, and hence MacTeX will not find the new fonts.
+
+To remedy this, either run B<autoinst> as root (so that it can install
+everything into $TEXMFLOCAL) or manually run C<updmap -user> to tell
+TeX about the files in $TEXMFHOME.
+The latter option does, however, have some caveats;
+see F<https://tug.org/texlive/scripts-sys-user.html>.
+
 
 
 =head1 COMMAND-LINE OPTIONS
@@ -3776,6 +3985,15 @@ to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
 
+=item B<-mangle-fontname>/B<-nomangle-fontname>
+
+Tell B<autoinst> whether or not to mangle the font name of
+the generated Type1-fonts. The default is B<-mangle-fontname>.
+Since Type1 fonts are only generated for F<otf> input fonts,
+these options have no effect if the input fonts are TrueType-flavored.
+
+See also L</OpenType fonts and licensing issues> above.
+
 =item B<-nfssweight>=I<code>=I<weight>
 
 =item B<-nfsswidth>=I<code>=I<width>
@@ -3825,6 +4043,8 @@ and, if necessary, update the filename database;
 Note that some options (I<-target>, I<-vendor> and I<-typeface>,
 I<-[no]updmap>) are meaningless, and hence ignored, in manual mode.
 
+Also note that font name mangling doesn't happen in manual mode.
+
 =item B<-target>=I<DIRECTORY>
 
 Install all generated files into the TEXMF tree at I<DIRECTORY>.
@@ -3866,42 +4086,9 @@ The default is B<-updmap>.
 =back
 
 
-=head2 A note for MiKTeX users
-
-Automatically installing the fonts into a suitable TEXMF tree
-(as B<autoinst> tries to do by default) only works for TeX-installations
-that use the F<kpathsea> library; with TeX distributions that implement
-their own directory searching (such as MiKTeX), B<autoinst> will complain
-that it cannot find the F<kpsewhich> program and move all generated files
-into a subdirectory C<./autoinst_output/> of the current directory.
-If you use such a TeX distribution, you should either move these files
-to their correct destinations by hand, or use the I<-target> option
-(see L</COMMAND-LINE OPTIONS> below) to manually specify a TEXMF tree.
-
-Also, some OpenType fonts contain so many kerning pairs that the resulting
-F<pl> and F<vpl> files are too big for MiKTeX's F<pltotf> and F<vptovf>;
-the versions that come with W32TeX (F<http://www.w32tex.org>)
-and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
-
-
-=head2 A note for MacTeX users
-
-By default, B<autoinst> will try to install all generated files into
-the $TEXMFLOCAL tree; when this directory isn't user-writable,
-it will use the $TEXMFHOME tree instead.  Unfortunately, MacTeX's version
-of C<updmap-sys> (which is called behind the scenes) doesn't search
-in $TEXMFHOME, and hence MacTeX will not find the new fonts.
-
-To remedy this, either run B<autoinst> as root (so that it can install
-everything into $TEXMFLOCAL) or manually run C<updmap -user> to tell
-TeX about the files in $TEXMFHOME.
-The latter option does, however, have some caveats;
-see F<https://tug.org/texlive/scripts-sys-user.html>.
-
-
 =head1 SEE ALSO
 
-Eddie Kohler's B<TypeTools> (F<http://www.lcdf.org/type>).
+Eddie Kohler's B<TypeTools> and B<T1Utils> (F<http://www.lcdf.org/type>).
 
 B<Perl> can be obtained from F<http://www.perl.org>;
 it is included in most Linux distributions.
@@ -3963,10 +4150,12 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-07-07>
+=item I<2020-07-27>
 
 Some changes in the generated F<sty> and F<fd> files,
 to improve compatibility with the F<microtype> package.
+Added mangling of font and file names for generated Type1 fonts
+and the related C<-(no)mangle-fontname> options.
 
 =item I<2020-06-19>
 
@@ -4001,6 +4190,13 @@ an argument to I<-inferiors>.
 =item I<2020-01-29>
 
 Don't create empty subdirectories in the target TEXMF tree.
+
+=back
+
+
+=begin Really_old_history
+
+=over 12
 
 =item I<2019-11-18>
 
@@ -4141,13 +4337,6 @@ in the font metadata.
 Then we add `ssub' rules to the F<fd> files to map the standard NFSS codes
 to our fancy names (see the section B<NFSS codes>;
 based on discussions with Frank Mittelbach and Bob Tennent).
-
-=back
-
-
-=begin Really_old_history
-
-=over 12
 
 =item I<2018-08-10>
 
