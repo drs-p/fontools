@@ -32,9 +32,10 @@ Perl
     for Windows, try ActivePerl (http://www.activestate.com)
     or Strawberry Perl (http://strawberryperl.com).
 
-LCDF TypeTools
-    Of course, Autoinst needs the LCDF TypeTools;
-    they should be installed in a directory on your PATH.
+LCDF TypeTools and T1Utils
+    Of course, Autoinst needs the LCDF TypeTools and T1Utils
+    (available from www.lcdf.org/type, and also on CTAN and in TeXLive);
+    these should be installed in a directory on your PATH.
 
 Kpathsea
     Automatically installing the fonts into a suitable TEXMF tree
