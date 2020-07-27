@@ -2360,7 +2360,7 @@ sub create_command {
                       "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
-                      (($workitem->{font}{filename} =~ m/[.]otf\z/xmsi
+                      (($workitem->{font}{fonttype} eq 'opentype'
                             && !$ARGV{mangle_fontname})
                          ? q()
                          : '--no-type1'),
