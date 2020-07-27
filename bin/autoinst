@@ -3301,7 +3301,7 @@ sub mangle_fontname {
             $ARGV{vendor},
             $ARGV{typeface} || $family,
             $newname . 'LCDFJ.pfb');
-        if (-e "$oldlcdfj") {
+        if (-e "$oldlcdfj" or $mapdata =~ m/$font->{name}LCDFJ.pfb/) {
             my $cmd = qq(t1dotlessj --pfb "$newfn" "$newlcdfj");
             eval {
                 open my $t1dotlessj, '|-:raw', $cmd
