@@ -133,8 +133,8 @@ sub main {
             LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
             Otftotfm::run_commands(\@commands, $family, $log);
 
-            if ($ARGV{mangle_fontname} and !$ARGV{manual}) {
-                Work::mangle_fontname($family, $fontlist);
+            if ($ARGV{modify_fontname} and !$ARGV{manual}) {
+                Work::modify_fontname($family, $fontlist);
             }
         }
 
@@ -1544,7 +1544,7 @@ I'm using the following options:
     mathspacing:        $ARGV{mathspacing}
 
     auto/manual:        @{[ $ARGV{manual}          ? 'manual'  : 'auto' ]}
-    mangle font names:  @{[ $ARGV{mangle_fontname} ? 'yes'     : 'no'   ]}
+    modify font names:  @{[ $ARGV{modify_fontname} ? 'yes'     : 'no'   ]}
 
 END_ARGUMENTS
 
@@ -2202,7 +2202,7 @@ END_USAGE
     nfssweight      => [],
     math            => 0,
     mathspacing     => 0,
-    mangle_fontname => 1,
+    modify_fontname => 1,
 );
 
 
@@ -2270,7 +2270,7 @@ sub parse_options {
                                  },
         'math!'               => \$ARGV{math},
         'mathspacing=i'       => \$ARGV{mathspacing},
-        'mangle-fontname!'    => \$ARGV{mangle_fontname},
+        'modify-fontname!'    => \$ARGV{modify_fontname},
     )
     or die "$USAGE";
 
@@ -2361,7 +2361,7 @@ sub create_command {
                       $targetdirs,
                       '--no-updmap',
                       (($workitem->{font}{fonttype} eq 'opentype'
-                            && !$ARGV{mangle_fontname})
+                            && !$ARGV{modify_fontname})
                          ? q()
                          : '--no-type1'),
                       ($SCHEME{$workitem->{encoding}}
@@ -3188,14 +3188,14 @@ sub cleanup {
 # --------------------------------------------------------------------------
 #   Adds "LaTeX" suffix to font names to avoid licensing issues.
 # --------------------------------------------------------------------------
-sub mangle_fontname {
+sub modify_fontname {
     my ($family, $fontlist) = @_;
 
     my %has_fonttype = map { ($_->{fonttype} => 1) } @{$fontlist};
     return unless $has_fonttype{opentype};
 
     # The otftotfm-generated map file refers to the original otf files;
-    # we need to change this to use our name-mangled Type1 fonts instead.
+    # we need to change this to use our name-modifyd Type1 fonts instead.
     my $mapfile = File::Spec->catfile(
         $ARGV{target},
         'fonts',
@@ -3268,7 +3268,7 @@ sub mangle_fontname {
 
         # otftotfm ignores the --no-type1 option when generating
         # dotless-j fonts. We remove these fonts, since we don't need them;
-        # we already generated our own (name-mangled) ones.
+        # we already generated our own (name-modifyd) ones.
         my $oldfn = File::Spec->catfile(
             $ARGV{target},
             'fonts',
@@ -3281,7 +3281,7 @@ sub mangle_fontname {
         }
 
         # We can't use otftotfm's auto-generated dotless-j fonts,
-        # since these will be based on the old (non-name-mangled) fonts;
+        # since these will be based on the old (non-name-modifyd) fonts;
         # so we re-run t1dotlessj by hand to create a correct font.
         # There are some cases where t1dotlessj creates an empty font
         # (original font already has a dotless-j; the j itself is dotless;
@@ -3759,7 +3759,7 @@ therefore B<autoinst> modifies the names of the Type1 fonts
 by appending the suffix ``LaTeX'' to the original family name.
 
 If you do not want this behaviour,
-add the C<-nomangle-fontname> option to B<autoinst>'s command line.
+add the C<-nomodify-fontname> option to B<autoinst>'s command line.
 
 
 =head2 A note for MiKTeX users
@@ -3985,10 +3985,10 @@ to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
 
-=item B<-mangle-fontname>/B<-nomangle-fontname>
+=item B<-modify-fontname>/B<-nomodify-fontname>
 
-Tell B<autoinst> whether or not to mangle the font name of
-the generated Type1-fonts. The default is B<-mangle-fontname>.
+Tell B<autoinst> whether or not to modify the font name of
+the generated Type1-fonts. The default is B<-modify-fontname>.
 Since Type1 fonts are only generated for F<otf> input fonts,
 these options have no effect if the input fonts are TrueType-flavored.
 
@@ -4043,7 +4043,7 @@ and, if necessary, update the filename database;
 Note that some options (I<-target>, I<-vendor> and I<-typeface>,
 I<-[no]updmap>) are meaningless, and hence ignored, in manual mode.
 
-Also note that font name mangling doesn't happen in manual mode.
+Also note that font name modification doesn't happen in manual mode.
 
 =item B<-target>=I<DIRECTORY>
 
@@ -4154,8 +4154,8 @@ This document describes B<autoinst> version __VERSION__.
 
 Some changes in the generated F<sty> and F<fd> files,
 to improve compatibility with the F<microtype> package.
-Added mangling of font and file names for generated Type1 fonts
-and the related C<-(no)mangle-fontname> options.
+Added modification of font and file names for generated Type1 fonts
+and the related C<-(no)modify-fontname> options.
 
 =item I<2020-06-19>
 
