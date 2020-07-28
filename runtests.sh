@@ -17,4 +17,7 @@ $AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -nfssweight=m=medium ../
 $AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -inferiors=subs ../testfiles/lato/*.[ot]tf
 $AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular')
 $AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular|medium')
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -pfb-suffix ../testfiles/librecaslon/*.[ot]tf
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -pfb-suffix ../testfiles/merriweathertext/*.[ot]tf
+$AUTOINST -verbose -target="$PWD" -noupdmap -enc=OT1,T1 -pfb-suffix ../testfiles/sourcecodepro/*.[ot]tf
 cd ../..
