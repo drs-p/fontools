@@ -414,11 +414,6 @@ sub process_basicinfo {
         $self->{weight} = NFSS::unabbreviate(lc($2));
     }
 
-    # Strip off the "Text" from family names that contain this string.
-    # This was a crude way to fix a bug in the previous paragraph;
-    # it's unnecessary now, but we don't want to break the old behaviour.
-    $self->{family} =~ s/text \z//xmsi;
-
     $self->{basicshape} = NFSS::get_nfss_shape($self->{shape});
 
     # We define 'series' as 'weight + width'. This matches NFSS,
