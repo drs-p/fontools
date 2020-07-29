@@ -133,9 +133,15 @@ sub main {
             LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
             Otftotfm::run_commands(\@commands, $family, $log);
 
-            if (!$ARGV{manual}) {
-                Work::create_pfb($family, $fontlist);
+            if ($ARGV{t1suffix} and !$ARGV{manual}) {
+                Work::modify_fontnames($family, $fontlist);
             }
+
+            print <<"END_MESSAGE_UPDMAP";
+[INFO]      Done generating fonts!
+            Please update TeX's databases (by calling 'texhash' and 'updmap'
+            or their equivalents on your system) before using these fonts.
+END_MESSAGE_UPDMAP
         }
 
         $log->close();
@@ -293,9 +299,7 @@ sub process_basicinfo {
 
     # clean up family name (it's used in LaTeX command names)
     my @DIGITS = qw(Zero One Two Three Four Five Six Seven Eight Nine);
-    $data->{family}    =~ s/\A(?: Adobe | DTL | FF | ITC | LT | MT)//xms;
     $data->{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
-    $data->{family}    =~ s/ Std \z//xms;
     $data->{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data->{family}    =~ s/[^A-Za-z]+//xmsg;
 
@@ -1509,7 +1513,7 @@ I'm using the following options:
     target:             $ARGV{target}
     extra:              $ARGV{extra}
 
-    figurekern:         @{[ $ARGV{figurekern}   ? 'keep'    : 'remove' ]}
+    figurekern:         @{[ $ARGV{figurekern} ? 'keep' : 'remove' ]}
 
     nfssweight:         @{[ join q{, }, @{$ARGV{nfssweight}} ]}
     nfsswidth:          @{[ join q{, }, @{$ARGV{nfsswidth}}  ]}
@@ -1517,8 +1521,8 @@ I'm using the following options:
     math:               @{[ $ARGV{math} ? 'yes' : 'no' ]}
     mathspacing:        $ARGV{mathspacing}
 
-    auto/manual:        @{[ $ARGV{manual}          ? 'manual'  : 'auto' ]}
-    pfb suffix:         $ARGV{pfb_suffix}
+    auto/manual:        @{[ $ARGV{manual} ? 'manual' : 'auto' ]}
+    fontname suffix:    @{[ $ARGV{t1suffix} || '(none)' ]}
 
 END_ARGUMENTS
 
@@ -2136,9 +2140,8 @@ Possible options:
     -math                   Generate basic math fonts
     -mathspacing=AMOUNT     Letterspace the math fonts by AMOUNT/1000 em
 
-    -(no)updmap             Toggle running of updmap
     -manual                 Manual mode (see documentation)
-    -pfb-suffix=SUFFIX      Add SUFFIX to name of generated pfb fonts
+    -t1suffix=SUFFIX        Add SUFFIX to name of generated pfb fonts
 
     font[s]                 The fonts (.otf or .ttf format) to install.
 
@@ -2168,7 +2171,6 @@ END_USAGE
     target          => '',
     vendor          => 'lcdftools',
     typeface        => '',
-    updmap          => '1',     # 0 = no, 1 = yes
     manual          => '0',     # 0 = no, 1 = yes
     dryrun          => '0',     # 0 = no, 1 = yes
     logfile         => '',
@@ -2178,7 +2180,7 @@ END_USAGE
     nfssweight      => [],
     math            => 0,
     mathspacing     => 0,
-    pfb_suffix      => 'none',
+    t1suffix        => 'none',
 );
 
 
@@ -2218,7 +2220,6 @@ sub parse_options {
         'target=s'            => \$ARGV{target},
         'vendor=s'            => \$ARGV{vendor},
         'typeface=s'          => \$ARGV{typeface},
-        'updmap!'             => \$ARGV{updmap},
         'dryrun'              => \$ARGV{dryrun},
         'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
@@ -2246,7 +2247,7 @@ sub parse_options {
                                  },
         'math!'               => \$ARGV{math},
         'mathspacing=i'       => \$ARGV{mathspacing},
-        'pfb-suffix:s'        => \$ARGV{pfb_suffix},
+        't1suffix:s'          => \$ARGV{t1suffix},
     )
     or die "$USAGE";
 
@@ -2336,7 +2337,7 @@ sub create_command {
                       "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
-                      '--no-type1',
+                      '--force',
                       ($SCHEME{$workitem->{encoding}}
                          ? qq(--coding-scheme="$SCHEME{$workitem->{encoding}}")
                          : q()),
@@ -2362,9 +2363,6 @@ sub create_command {
 # --------------------------------------------------------------------------
 sub run_commands {
     my ($commandlist, $family, $log) = @_;
-
-    # Make sure the last command *does* call updmap.
-    $commandlist->[-1] =~ s/--no-updmap//xms if $ARGV{updmap};
 
     if ($ARGV{manual}) {
         open my $BAT, '>', 'autoinst.bat'
@@ -2803,15 +2801,6 @@ sub process_target_options{
         warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
             if $ARGV{target};
         $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
-    }
-    elsif ($ARGV{target}) {
-        $ARGV{updmap} = 0;
-        warn <<"END_WARNING_TARGET_UPDMAP";
-[WARNING]   The '-target' option may interfere with kpathsea and updmap;
-            automatic calling of updmap has been disabled.
-            Please call updmap manually.
-END_WARNING_TARGET_UPDMAP
     }
     elsif (!$ARGV{target}) {
         my $is_windows_os = ( $^O =~ /^MSWin/i );
@@ -2841,7 +2830,6 @@ END_WARNING_KPSEWHICH
 
     if (!$ARGV{target}) {
         $ARGV{target} = $localtarget;
-        $ARGV{updmap} = 0;
         warn <<"END_WARNING_DUMPING_FILES";
 [WARNING]   No user-writable TEXMF-tree found!
 
@@ -2870,20 +2858,20 @@ END_WARNING_SPACES_IN_PATHS
 #   Processes the output related options.
 # --------------------------------------------------------------------------
 sub process_output_options{
-    # If the user gave --pfb-suffix *without* value as the last option,
+    # If the user gave -t1suffix *without* value as the last option,
     # Getopt::Long may mistake the next argument (a font filename)
-    # for the value of --pfb-suffix; we take care of this case
+    # for the value of -t1suffix; we take care of this case
     # by testing whether the value refers to an existing file
     # and repairing things if necessary.
-    if (-e $ARGV{pfb_suffix}) {
-        unshift @ARGV, $ARGV{pfb_suffix};
-        $ARGV{pfb_suffix} = '';
+    if (-e $ARGV{t1suffix}) {
+        unshift @ARGV, $ARGV{t1suffix};
+        $ARGV{t1suffix} = '';
     }
 
-    $ARGV{pfb_suffix} ||= 'PS';
+    $ARGV{t1suffix} ||= 'PS';
 
-    if ($ARGV{pfb_suffix} eq 'none') {
-        $ARGV{pfb_suffix} = '';
+    if ($ARGV{t1suffix} eq 'none') {
+        $ARGV{t1suffix} = '';
     }
 
     return;
@@ -3184,15 +3172,20 @@ sub cleanup {
 
 
 # --------------------------------------------------------------------------
-#   Makes sure all required pfb fonts are actually created
-#   (by default, otftotfm won't create these if they are already
-#   present somewhere on the KPSE search path).
+#   Modify the font and file names of all generated .pfb files.
 # --------------------------------------------------------------------------
-sub create_pfb {
+sub modify_fontnames {
     my ($family, $fontlist) = @_;
 
     my %has_fonttype = map { ($_->{fonttype} => 1) } @{$fontlist};
     return unless $has_fonttype{opentype};
+
+    my $pfb_dir = File::Spec->catdir(
+        $ARGV{target},
+        'fonts',
+        'type1',
+        $ARGV{vendor},
+        $ARGV{typeface} || $family);
 
     # The otftotfm-generated map file refers to the original otf files;
     # we need to change this to use our name-modifyd Type1 fonts instead.
@@ -3206,143 +3199,83 @@ sub create_pfb {
     open my $map, '<', $mapfile
         or die "[ERROR]     Cannot open '$mapfile' for reading";
     my $mapdata = do { local $/; <$map> };
-    close $mapfile;
+    close $map;
 
     my $NOTICE = 'Converted to Type1 by autoinst/cfftot1; '
-               . 'meant for use with pdfTeX only!';
+               . 'for use with pdfTeX only! ';
 
-    my $newfam = $family . $ARGV{pfb_suffix};
+    my $newfam = $family . $ARGV{t1suffix};
 
     for my $font (@{$fontlist}) {
         next unless $font->{fonttype} eq 'opentype';
 
-        my $oldfullfam = $font->{originalfamily};
-        my $newfullfam = $oldfullfam;
-        my $newname    = $font->{name};
-        if ($ARGV{pfb_suffix}) {
-            $newfullfam .= " $ARGV{pfb_suffix}";
-            if ($newname =~ m/$family/xms) {
-                $newname =~ s/$family/$newfam/xms;
-            }
-            else {
-                $newname =~ s/(.+?)(-|\z)/$1$ARGV{pfb_suffix$2}/xms;
-            }
-        }
-        my $oldfn = File::Spec->catfile(
-            $ARGV{target},
-            'fonts',
-            'type1',
-            $ARGV{vendor},
-            $ARGV{typeface} || $family,
-            $font->{name} . '.pfb');
-        my $newfn = File::Spec->catfile(
-            $ARGV{target},
-            'fonts',
-            'type1',
-            $ARGV{vendor},
-            $ARGV{typeface} || $family,
-            $newname . '.pfb');
-        my $oldlcdfj = File::Spec->catfile(
-            $ARGV{target},
-            'fonts',
-            'type1',
-            $ARGV{vendor},
-            $ARGV{typeface} || $family,
-            $font->{name} . 'LCDFJ.pfb');
-        my $newlcdfj = File::Spec->catfile(
-            $ARGV{target},
-            'fonts',
-            'type1',
-            $ARGV{vendor},
-            $ARGV{typeface} || $family,
-            $newname . 'LCDFJ.pfb');
-
-        if ($ARGV{pfb_suffix}) {
-            eval {
-                my $cmd = qq(cfftot1 -b "$font->{filename}" | t1disasm);
-                open my $pipe, '-|:raw', $cmd
-                    or die "could not fork(): $!";
-
-                my @postscript;
-                for my $line (<$pipe>) {
-                    if ($line =~ m/\/FamilyName | \/FullName/xms) {
-                        $line =~ s/$oldfullfam/$newfullfam/;
-                    }
-                    elsif ($line =~ m/%!PS-AdobeFont-1.0 | \/FontName/xms) {
-                        $line =~ s/$font->{name}/$newname/;
-                    }
-
-                    if ($line =~ m/\/Notice /xms) {
-                        $line =~ s/[)] readonly def/ $NOTICE) readonly def/;
-                    }
-                    push @postscript, $line;
-                }
-
-                close $pipe
-                    or die "'$cmd' failed";
-
-                $cmd = qq(t1asm -b >"$newfn");
-                open my $pfb, '|-:raw', $cmd
-                    or die "could not fork(): $!";
-                print {$pfb} @postscript;
-                close $pfb
-                    or die "'$cmd' failed";
-            } or warn "[WARNING]   $@";
-
-            $mapdata =~ s/$font->{name}.(?:otf|pfb)/$newname.pfb/g;
-
-            # otftotfm ignores the --no-type1 option when generating
-            # dotless-j fonts. We remove these fonts, as we don't need them;
-            # we already generated our own (name-modified) ones.
-            if (-e "$oldfn") {
-                unlink "$oldfn";
-            }
+        my $full_family = $font->{originalfamily};
+        if (index($full_family, $family) > -1) {
+            $full_family = $family;
         }
         else {
-            eval {
-                my $cmd = qq(cfftot1 --pfb "$font->{filename}" "$newfn");
-                open my $cfftot1, '|-:raw', $cmd
-                    or die "could not fork(): $!";
-                close $cfftot1
-                    or die "'$cmd' failed";
-            } or warn "[WARNING]   $@";
+            while ($full_family =~ m/[ ]/xms) {
+                (my $no_space = $full_family) =~ s/[ ]+//xmsg;
+                last if $no_space eq $family;
+                $full_family =~ s/[ ]\S*\z//xms;
+            }
+            $full_family ||= $family;
+        }
+        my $newfullfam = $full_family . q( ) . $ARGV{t1suffix};
+
+        my $newname = $font->{name};
+        if ($newname =~ m/$family/xms) {
+            $newname =~ s/$family/$newfam/xms;
+        }
+        else {
+            $newname =~ s/(.+?)(-|\z)/$1$ARGV{t1suffix$2}/xms;
         }
 
-        # otftotfm won't call t1dotlessj if a dotless-j font is already
-        # present on the KPSE search path; we therefore call it ourselves.
-        if (-e "$oldlcdfj" or $mapdata =~ m/$font->{name}LCDFJ.pfb/) {
-            my $cmd = qq(t1dotlessj --pfb "$newfn" "$newlcdfj");
-            eval {
-                open my $t1dotlessj, '|-:raw', $cmd
-                    or die "could not fork(): $!";
-                close $t1dotlessj
-                    or die "'$cmd' failed";
-            } or do {
-                # In some situations, t1dotlessj creates an empty font
-                # (original font already has a dotless-j;
-                # j is already dotless; no j in the original font).
-                # We remove the empty font and rewrite the map file
-                # to point to the original font instead. This won't
-                # always work, but it's the best we can do.
-                if (($? >> 8) <= 3) {
-                    $mapdata =~ s/$font->{name}LCDFJ/${newname}/g;
-                    unlink "$newlcdfj";
-                }
-                # Serious error
-                else {
-                    warn "[WARNING]   $@";
-                }
-            };
+        for my $suffix (q(), q(LCDFJ)) {
+            my $oldfn = File::Spec->catfile(
+                $pfb_dir, $font->{name} . $suffix . '.pfb');
+            my $newfn = File::Spec->catfile(
+                $pfb_dir, $newname . $suffix . '.pfb');
 
-            if ($ARGV{pfb_suffix}) {
-                $mapdata =~ s/$font->{name}LCDFJ/${newname}LCDFJ/g;
-                unlink "$oldlcdfj";
+            next unless -e $oldfn;
+            if ($suffix eq 'LCDFJ' and -z $oldfn) {
+                unlink $oldfn;
+                next;
             }
+
+            my $cmd = qq(t1disasm "$oldfn");
+            open my $t1disasm, '-|:raw', $cmd
+                or die "[ERROR]     Could not fork(): $!";
+            my @pfbdata = readline $t1disasm;
+            close $t1disasm
+                or die "[ERROR]     '$cmd' failed";
+
+            for (@pfbdata) {
+                if (m/%!PS-AdobeFont-1.0:[ ] | \/FontName[ ]/xms) {
+                    s/$font->{name}/$newname/;
+                }
+                if (m/\/Notice[ ]/xms) {
+                    s/[(]/($NOTICE/xms;
+                }
+                if (m/\/FullName[ ] | \/FamilyName[ ]/xms) {
+                    s/$full_family/$newfullfam/
+                        or s/(.+?)(-|\z)/$1$ARGV{t1suffix}$2/;
+                }
+            }
+
+            $cmd = qq(t1asm --pfb >"$newfn");
+            open my $t1asm, '|-:raw', $cmd
+                or die "[ERROR]     Could not fork(): $!";
+            print {$t1asm} @pfbdata;
+            close $t1asm
+                or die "[ERROR]     '$cmd' failed";
+
+            unlink $oldfn unless $oldfn eq $newfn;
+
+            $mapdata =~ s/$font->{name}$suffix.pfb/$newname$suffix.pfb/g;
         }
     }
 
-    # After all fonts have been processed, we write the modified
-    # map file back to disk.
     open $map, '>', $mapfile
         or die "[ERROR]     Cannot open '$mapfile' for writing";
     print {$map} $mapdata;
@@ -3773,10 +3706,10 @@ I<otftotfm> will convert such fonts to Type1 (pfb) format.
 However, many fonts (at least those licensed under the SIL Open Font License)
 do not allow distributing such converted versions under their original name.
 
-To meet these licensing requirements, B<autoinst> provides a C<-pfb-suffix>
-command-line option that appends a (user-defined) suffix to the names
-(both filename and internal font name) of all generated Type1 fonts;
-see L</COMMAND-LINE OPTIONS> below.
+To meet these licensing requirements, B<autoinst> provides
+a C<-t1suffix> command-line option that appends
+a (user-defined) suffix to the names (both filename and internal font name)
+of all generated Type1 fonts; see L</COMMAND-LINE OPTIONS> below.
 
 
 =head2 A note for MiKTeX users
@@ -3802,8 +3735,8 @@ and TeXLive (F<http://tug.org/texlive>) don't seem to have this problem.
 By default, B<autoinst> will try to install all generated files into
 the $TEXMFLOCAL tree; when this directory isn't user-writable,
 it will use the $TEXMFHOME tree instead.  Unfortunately, MacTeX's version
-of C<updmap-sys> (which is called behind the scenes) doesn't search
-in $TEXMFHOME, and hence MacTeX will not find the new fonts.
+of C<updmap-sys> doesn't search in $TEXMFHOME,
+and hence MacTeX will not find the new fonts.
 
 To remedy this, either run B<autoinst> as root (so that it can install
 everything into $TEXMFLOCAL) or manually run C<updmap -user> to tell
@@ -4002,7 +3935,7 @@ to the commands for I<otftotfm> to suppress such kerns.
 Note that this option leads to very long commands (it adds
 one hundred I< --ligkern> options), which may cause problems on some systems.
 
-=item B<-pfb-suffix> [ = I<SUFFIX> ]
+=item B<-t1suffix> [ = I<SUFFIX> ]
 
 Tell B<autoinst> to modify the font names of all generated Type1-fonts,
 by adding I<SUFFIX> to the family name.
@@ -4059,8 +3992,8 @@ and, if necessary, update the filename database;
 
 =back
 
-Note that some options (I<-target>, I<-vendor> and I<-typeface>,
-I<-[no]updmap>) are meaningless, and hence ignored, in manual mode.
+Note that some options (I<-target>, I<-vendor> and I<-typeface>)
+are meaningless, and hence ignored, in manual mode.
 
 Also note that font name modification doesn't happen in manual mode.
 
@@ -4078,13 +4011,6 @@ It's then up to the user to move the generated files to a better location
 and update all relevant databases
 (usually by calling F<texhash> and F<updmap>).
 
-I<WARNING:> using this option may interfere with F<kpathsea> and F<updmap>
-(especially when the chosen directory is outside the standard TEXMF trees),
-so using I<-target> will disable the automatic call to F<updmap>
-(as if I<-noupdmap> had been given).
-It is up to the user to manually update all databases (i.e., by calling
-F<texhash> and F<updmap> or similar).
-
 =item B<-vendor>=I<VENDOR>
 
 =item B<-typeface>=I<TYPEFACE>
@@ -4096,11 +4022,6 @@ The default values are `lcdftools' and the font's FontFamily name.
 
 Note that these options change I<only> directory names,
 not the names of any generated files.
-
-=item B<-updmap>/B<-noupdmap>
-
-Control whether or not F<updmap> is called after the last call to F<otftotfm>.
-The default is B<-updmap>.
 
 =back
 
@@ -4175,7 +4096,7 @@ Some changes in the generated F<sty> and F<fd> files,
 to improve compatibility with the F<microtype> package.
 Made sure that F<pfb> fonts are always generated whenever
 the input fonts are in F<otf> format.
-Added the C<-pfb-suffix> command-line option,
+Added the C<-t1suffix> command-line option,
 to modify the font and file names of those generated Type1 fonts.
 
 =item I<2020-06-19>
