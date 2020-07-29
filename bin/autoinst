@@ -1746,7 +1746,7 @@ my %FULL_FORM = (
 =cut
 
 my @WEIGHT = (
-    ul  =>  [ qw( ultralight thin 100 hairline eight four two ) ],
+    ul  =>  [ qw( ultralight thin 100 hairline ) ],
     el  =>  [ qw( extralight 200 ) ],
     l   =>  [ qw( light 300 ) ],
     sl  =>  [ qw( semilight blond ) ],
