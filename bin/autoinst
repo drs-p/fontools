@@ -133,7 +133,7 @@ sub main {
             LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
             Otftotfm::run_commands(\@commands, $family, $log);
 
-            if ($ARGV{t1suffix} and !$ARGV{manual}) {
+            if ($ARGV{t1suffix}) {
                 Work::modify_fontnames($family, $fontlist);
             }
 
@@ -1521,7 +1521,6 @@ I'm using the following options:
     math:               @{[ $ARGV{math} ? 'yes' : 'no' ]}
     mathspacing:        $ARGV{mathspacing}
 
-    auto/manual:        @{[ $ARGV{manual} ? 'manual' : 'auto' ]}
     fontname suffix:    @{[ $ARGV{t1suffix} || '(none)' ]}
 
 END_ARGUMENTS
@@ -2140,7 +2139,6 @@ Possible options:
     -math                   Generate basic math fonts
     -mathspacing=AMOUNT     Letterspace the math fonts by AMOUNT/1000 em
 
-    -manual                 Manual mode (see documentation)
     -t1suffix=SUFFIX        Add SUFFIX to name of generated pfb fonts
 
     font[s]                 The fonts (.otf or .ttf format) to install.
@@ -2171,7 +2169,6 @@ END_USAGE
     target          => '',
     vendor          => 'lcdftools',
     typeface        => '',
-    manual          => '0',     # 0 = no, 1 = yes
     dryrun          => '0',     # 0 = no, 1 = yes
     logfile         => '',
     figurekern      => '1',     # 0 = no, 1 = yes
@@ -2221,7 +2218,6 @@ sub parse_options {
         'vendor=s'            => \$ARGV{vendor},
         'typeface=s'          => \$ARGV{typeface},
         'dryrun'              => \$ARGV{dryrun},
-        'manual'              => \$ARGV{manual},
         'figurekern!'         => \$ARGV{figurekern},
         'logfile=s'           => \$ARGV{logfile},
         'verbose+'            => \$ARGV{verbose},
@@ -2333,7 +2329,7 @@ sub create_command {
             || Util::any( map { $_ eq 'liga' } @{$workitem->{features}} );
 
     return join q( ), 'otftotfm',
-                      ($ARGV{manual} ? '--pl' : '--automatic'),
+                      '--automatic',
                       "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
@@ -2359,41 +2355,33 @@ sub create_command {
 
 
 # --------------------------------------------------------------------------
-#   Executes (or saves to file, when $ARGV{manual} is true) all commands.
+#   Executes all commands.
 # --------------------------------------------------------------------------
 sub run_commands {
     my ($commandlist, $family, $log) = @_;
 
-    if ($ARGV{manual}) {
-        open my $BAT, '>', 'autoinst.bat'
-            or die "[ERROR]     Can't create 'autoinst.bat': $!";
-        print {$BAT} "$_\n" for @{$commandlist};
-        close $BAT;
+    my $oops = 0;
+    $| = 1;     # turn on autoflush, to make a poor man's progress bar
+    print "[INFO]      Generating fonts for $family ";
+    for my $command (@{$commandlist}) {
+        print '.';
+        open my $otftotfm, '-|', "$command 2>&1"
+            or die "could not fork(): $!";
+        my $msgs = do { local $/; <$otftotfm> };
+        close $otftotfm
+            or do {
+            warn "\n$command\n\n$msgs\n";
+            $log->log("\n$command\n\n$msgs\n");
+            $oops = 1;
+        };
     }
-    else {
-        my $oops = 0;
-        $| = 1;     # turn on autoflush, to make a poor man's progress bar
-        print "[INFO]      Generating fonts for $family ";
-        for my $command (@{$commandlist}) {
-            print '.';
-            open my $otftotfm, '-|', "$command 2>&1"
-                or die "could not fork(): $!";
-            my $msgs = do { local $/; <$otftotfm> };
-            close $otftotfm
-                or do {
-                    warn "\n$command\n\n$msgs\n";
-                    $log->log("\n$command\n\n$msgs\n");
-                    $oops = 1;
-                };
-        }
-        print "\n";
-        $| = 0;
-        if ($oops) {
-            warn <<"END_OTFTOTFM_WARNING";
+    print "\n";
+    $| = 0;
+    if ($oops) {
+        warn <<"END_OTFTOTFM_WARNING";
 [ERROR]     One or more calls to 'otftotfm' returned a non-zero status code;
             please check the messages above and in the log file.
 END_OTFTOTFM_WARNING
-        }
     }
 
     return;
@@ -2797,12 +2785,7 @@ sub process_encoding_options {
 sub process_target_options{
 
     my $localtarget = File::Spec->catdir( Cwd::getcwd(), 'autoinst_output' );
-    if ($ARGV{manual}) {
-        warn "[WARNING]   Option '-target' overridden by '-manual'!\n"
-            if $ARGV{target};
-        $ARGV{target} = $localtarget;
-    }
-    elsif (!$ARGV{target}) {
+    if (!$ARGV{target}) {
         my $is_windows_os = ( $^O =~ /^MSWin/i );
         my $kpsepath = $is_windows_os
             ? eval { qx( kpsewhich -expand-var=\$TEXMFLOCAL;\$TEXMFHOME ) }
@@ -3965,38 +3948,6 @@ Append I<extra> as extra options to the command lines for I<otftotfm>.
 To prevent I<extra> from accidentily being interpreted as options
 to B<autoinst>, it should be properly quoted.
 
-=item B<-manual>
-
-Manual mode; for users who want to post-process the generated files
-and commands. By default, B<autoinst> immediately executes all
-F<otftotfm> commands it generates;
-in manual mode, these are instead written to a file F<autoinst.bat>.
-Furthermore it tells F<otftotfm> to generate human readable (and editable)
-F<pl/vpl> files instead of the default F<tfm/vf> ones,
-and to place all generated files in a subdirectory C<./autoinst_output/>
-of the current directory, rather than install them into your TeX installation.
-
-When using this option, you need to execute the following manual steps after
-B<autoinst> has finished:
-
-=over 2
-
-=item - run F<pltotf> and F<vptovf> on the generated F<pl> and F<vf> files,
-to convert them to F<tfm/vf> format;
-
-=item - move all generated files to a proper TEXMF tree,
-and, if necessary, update the filename database;
-
-=item - tell TeX about the new F<map> file
-(usually by running C<updmap> or similar).
-
-=back
-
-Note that some options (I<-target>, I<-vendor> and I<-typeface>)
-are meaningless, and hence ignored, in manual mode.
-
-Also note that font name modification doesn't happen in manual mode.
-
 =item B<-target>=I<DIRECTORY>
 
 Install all generated files into the TEXMF tree at I<DIRECTORY>.
@@ -4262,7 +4213,7 @@ Fine-tuned the decision where to put generated files;
 in particular, create $TEXMFHOME if it doesn't already exist
 and $TEXMFLOCAL isn't user-writable.
 
-In manual mode, or when we can't find a user-writable TEXMF tree,
+When we can't find a user-writable TEXMF tree,
 put all generated files into a subdirectory C<./autoinst_output/>
 instead of all over the current working directory.
 
