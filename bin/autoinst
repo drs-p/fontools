@@ -2896,20 +2896,20 @@ END_WARNING_SPACES_IN_PATHS
 #   Processes the output related options.
 # --------------------------------------------------------------------------
 sub process_output_options{
-    $ARGV{pfb_suffix} ||= 'LaTeX';
-
-    if ($ARGV{pfb_suffix} eq 'none') {
-        $ARGV{pfb_suffix} = '';
-    }
-
     # If the user gave --pfb-suffix *without* value as the last option,
-    # Getopt::Long mistakes the next argument (a font filename)
+    # Getopt::Long may mistake the next argument (a font filename)
     # for the value of --pfb-suffix; we take care of this case
     # by testing whether the value refers to an existing file
     # and repairing things if necessary.
     if (-e $ARGV{pfb_suffix}) {
         unshift @ARGV, $ARGV{pfb_suffix};
-        $ARGV{pfb_suffix} = 'LaTeX';
+        $ARGV{pfb_suffix} = '';
+    }
+
+    $ARGV{pfb_suffix} ||= 'PS';
+
+    if ($ARGV{pfb_suffix} eq 'none') {
+        $ARGV{pfb_suffix} = '';
     }
 
     return;
@@ -3235,7 +3235,7 @@ sub create_pfb {
     close $mapfile;
 
     my $NOTICE = 'Converted to Type1 by autoinst/cfftot1; '
-        . 'use with pdfTeX only!';
+               . 'meant for use with pdfTeX only!';
 
     my $newfam = $family . $ARGV{pfb_suffix};
 
@@ -4033,7 +4033,7 @@ one hundred I< --ligkern> options), which may cause problems on some systems.
 Tell B<autoinst> to modify the font names of all generated Type1-fonts,
 by adding I<SUFFIX> to the family name.
 If you use this option without specifying a I<SUFFIX> value,
-B<autoinst> will use the value ``LaTeX''.
+B<autoinst> will use the value ``PS''.
 The default behaviour when this option is not given
 is to not modify font names at all.
 
@@ -4195,12 +4195,12 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-07-28>
+=item I<2020-07-29>
 
 Some changes in the generated F<sty> and F<fd> files,
 to improve compatibility with the F<microtype> package.
-Made sure that F<pfb> fonts are always generated whenever the input fonts
-are in F<otf> format.
+Made sure that F<pfb> fonts are always generated whenever
+the input fonts are in F<otf> format.
 Added the C<-pfb-suffix> command-line option,
 to modify the font and file names of those generated Type1 fonts.
 
