@@ -3741,11 +3741,9 @@ and option names may be shortened to a unique prefix
 but B<-e> is ambiguous (it may mean either B<-encoding> or B<-extra>)).
 
 
+=head2 General options
+
 =over 4
-
-=item B<-version>
-
-Print B<autoinst>'s version number and exit.
 
 =item B<-help>
 
@@ -3756,15 +3754,20 @@ Print a (relatively) short help text and exit.
 Don't generate output; just parse input fonts and write
 a log file saying what B<autoinst> would have done.
 
-=item B<-logfile>=I<filename>
-
-Write log data to F<filename> instead of the default F<< <fontfamily>.log >>.
-If the file already exists, B<autoinst> appends to it;
-it doesn't overwrite an existing file.
-
 =item B<-verbose>
 
 Add more details to the log file.
+
+=item B<-version>
+
+Print B<autoinst>'s version number and exit.
+
+=back
+
+
+=head2 Font creation options
+
+=over 4
 
 =item B<-encoding>=I<encoding[,encoding]>
 
@@ -3785,27 +3788,6 @@ with other packages; the `fontools_' prefix may be omitted.)
 Control the creation of TS1-encoded fonts. The default is B<-ts1>
 if the text encodings (see I<-encoding> above) include T1,
 B<-nots1> otherwise.
-
-=item B<-serif>/B<-sanserif>/B<-typewriter>
-
-Install the font as a serif, sanserif or typewriter font, respectively.
-This changes how you access the font in LaTeX:
-with C<\rmfamily>/C<\textrm>, C<\sffamily>/C<\textsf>
-or C<\ttfamily>/C<\texttt>.
-
-Installing the font as a typewriter font will cause two further changes:
-it will - by default - turn off the use of f-ligatures
-(though this can be overridden with the I<-ligatures> option),
-and it will disable hyphenation for this font.
-This latter effect cannot be re-enabled in B<autoinst>;
-if you want typewriter text to be hyphenated, use the F<hyphenat> package.
-
-If none of these options is specified, B<autoinst> tries to guess:
-if the font's filename contains the string `mono'
-or if the field C<isFixedPitch> in the font's I<post> table is True,
-it will select B<-typewriter>;
-else if the filename contains `sans' it will select B<-sanserif>;
-otherwise it will opt for B<-serif>.
 
 =item B<-lining>/B<-nolining>
 
@@ -3868,21 +3850,41 @@ with inferiors at all; it won't try to substitute one of the other styles. >>
 Control the creation of fonts with numerators and denominators.
 The default is B<-nofractions>.
 
-=item B<-ornaments>/B<-noornaments>
-
-Control the creation of ornament fonts. The default is B<-ornaments>.
-
 =item B<-ligatures>/B<-noligatures>
 
 Some fonts create glyphs for the standard f-ligatures (ff, fi, fl, ffi, ffl),
 but don't provide a `liga' feature to access these.
 This option tells B<autoinst> to add extra C<LIGKERN> rules to
 the generated fonts to enable the use of these ligatures.
-The default is B<-ligatures>,
-unless the user specified the I<-typewriter> option.
+The default is B<-ligatures>, except for typewriter fonts.
 
-Specify B<-noligatures> to disable the generation of ligatures even for fonts
+Specify B<-noligatures> to disable generation of ligatures even for fonts
 that do contain a `liga' feature.
+
+=item B<-ornaments>/B<-noornaments>
+
+Control the creation of ornament fonts. The default is B<-ornaments>.
+
+=item B<-serif>/B<-sanserif>/B<-typewriter>
+
+Install the font as a serif, sanserif or typewriter font, respectively.
+This changes how you access the font in LaTeX:
+with C<\rmfamily>/C<\textrm>, C<\sffamily>/C<\textsf>
+or C<\ttfamily>/C<\texttt>.
+
+Installing the font as a typewriter font will cause two further changes:
+it will - by default - turn off the use of f-ligatures
+(though this can be overridden with the I<-ligatures> option),
+and it will disable hyphenation for this font.
+This latter effect cannot be re-enabled in B<autoinst>;
+if you want typewriter text to be hyphenated, use the F<hyphenat> package.
+
+If none of these options is specified, B<autoinst> tries to guess:
+if the font's filename contains the string `mono'
+or if the field C<isFixedPitch> in the font's I<post> table is True,
+it will select B<-typewriter>;
+else if the filename contains `sans' it will select B<-sanserif>;
+otherwise it will opt for B<-serif>.
 
 =item B<-math>
 
@@ -3895,28 +3897,12 @@ where 1000 units equal one em.
 In my opinion, many text fonts benefit from letterspacing by 50 to 100 units
 when used in maths; some fonts need even more. Use your own judgement!
 
-=item B<-defaultlining>/B<-defaultoldstyle>
+=back
 
-=item B<-defaulttabular>/B<-defaultproportional>
 
-Tell B<autoinst> which figure style is the current font family's default
-(i.e., which figures you get when you don't specify any OpenType features).
+=head2 Output options
 
-I<Don't use these options unless you are certain you need them!>
-They are only needed for fonts that don't provide OpenType features
-for their default figure style; and even in that case,
-B<autoinst>'s default values (B<-defaultlining> and B<-defaulttabular>)
-are usually correct.
-
-=item B<-nofigurekern>
-
-Some fonts provide kerning pairs for tabular figures.
-This is very probably not what you want
-(e.g., numbers in tables won't line up exactly).
-This option adds extra I< --ligkern> options
-to the commands for I<otftotfm> to suppress such kerns.
-Note that this option leads to very long commands (it adds
-one hundred I< --ligkern> options), which may cause problems on some systems.
+=over 4
 
 =item B<-t1suffix> [ = I<SUFFIX> ]
 
@@ -3928,25 +3914,6 @@ The default behaviour when this option is not given
 is to not modify font names at all.
 
 See also L</OpenType fonts and licensing issues> above.
-
-=item B<-nfssweight>=I<code>=I<weight>
-
-=item B<-nfsswidth>=I<code>=I<width>
-
-Map the NFSS code I<code> to the given weight or width,
-overriding the built-in tables.
-Each of these options may be given multiple times,
-to override more than one NFSS code.
-Example: to map the `ul' code to the `Thin' weight,
-use C<-nfssweight=ul=thin>.
-To inhibit the use of the `ul' code completely,
-use C<-nfssweight=ul=>.
-
-=item B<-extra>=I<extra>
-
-Append I<extra> as extra options to the command lines for I<otftotfm>.
-To prevent I<extra> from accidentily being interpreted as options
-to B<autoinst>, it should be properly quoted.
 
 =item B<-target>=I<DIRECTORY>
 
@@ -3970,9 +3937,63 @@ These options are equivalent to F<otftotfm>'s I< --vendor> and I< --typeface>
 options: they change the `vendor' and `typeface' parts of the names of the
 subdirectories in the TEXMF tree where generated files will be stored.
 The default values are `lcdftools' and the font's FontFamily name.
-
-Note that these options change I<only> directory names,
+These options change I<only> directory names,
 not the names of any generated files.
+
+=item B<-logfile>=I<filename>
+
+Write log data to F<filename> instead of the default F<< <fontfamily>.log >>.
+If the file already exists, B<autoinst> appends to it;
+it doesn't overwrite an existing file.
+
+=back
+
+
+=head2 Specialist options
+
+=over 4
+
+=item B<-defaultlining>/B<-defaultoldstyle>
+
+=item B<-defaulttabular>/B<-defaultproportional>
+
+Tell B<autoinst> which figure style is the current font family's default
+(i.e., which figures you get when you don't specify any OpenType features).
+
+I<Don't use these options unless you are certain you need them!>
+They are only needed for fonts that don't provide OpenType features
+for their default figure style; and even in that case,
+B<autoinst>'s default values (B<-defaultlining> and B<-defaulttabular>)
+are usually correct.
+
+=item B<-nfssweight>=I<code>=I<weight>
+
+=item B<-nfsswidth>=I<code>=I<width>
+
+Map the NFSS code I<code> to the given weight or width,
+overriding the built-in tables.
+Each of these options may be given multiple times,
+to override more than one NFSS code.
+Example: to map the `ul' code to the `Thin' weight,
+use C<-nfssweight=ul=thin>.
+To inhibit the use of the `ul' code completely,
+use C<-nfssweight=ul=>.
+
+=item B<-extra>=I<extra>
+
+Append I<extra> as extra options to the command lines for I<otftotfm>.
+To prevent I<extra> from accidentily being interpreted as options
+to B<autoinst>, it should be properly quoted.
+
+=item B<-nofigurekern>
+
+Some fonts provide kerning pairs for tabular figures.
+This is very probably not what you want
+(e.g., numbers in tables won't line up exactly).
+This option adds extra I< --ligkern> options
+to the commands for I<otftotfm> to suppress such kerns.
+Note that this option leads to very long commands (it adds
+one hundred I< --ligkern> options), which may cause problems on some systems.
 
 =back
 
@@ -3986,8 +4007,8 @@ it is included in most Linux distributions.
 For Windows, try ActivePerl (F<http://www.activestate.com>)
 or Strawberry Perl (F<http://strawberryperl.com>).
 
-B<XeTeX> (F<http://www.tug.org/xetex>) and
-B<LuaTeX> (F<http://www.luatex.org>)
+B<LuaTeX> (F<http://www.luatex.org>) and
+B<XeTeX> (F<http://www.tug.org/xetex>)
 are Unicode-aware TeX engines that can use OpenType fonts directly,
 without any (La)TeX-specific support files.
 
