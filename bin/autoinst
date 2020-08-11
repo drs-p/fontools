@@ -3171,7 +3171,7 @@ sub modify_fontnames {
         $ARGV{typeface} || $family);
 
     # The otftotfm-generated map file refers to the original otf files;
-    # we need to change this to use our name-modifyd Type1 fonts instead.
+    # we need to change this to use our name-modified Type1 fonts instead.
     my $mapfile = File::Spec->catfile(
         $ARGV{target},
         'fonts',
