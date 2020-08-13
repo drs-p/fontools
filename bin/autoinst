@@ -63,18 +63,15 @@ my $RUNNING_AS_MAIN = (__PACKAGE__ eq 'main');
 
         Log         Logs the font parsing and creation process.
 
+        Attr        Contains tables and routines that represent
+                    font attributes (weight, width, shape).
+
         Font        Parses an OpenType font's metadata.
 
         Tables      Contains tables that drive the font creation process
                     (especially the decisions which fonts to create).
 
         Work        Generates all font files, driven by data from `Tables`.
-
-        NFSS        Contains tables and routines that map
-                    font characteristics (weight, width, shape)
-                    to NFSS attributes.
-                    This data is also used by the font metadata parsing
-                    in the `Font` package, to avoid duplication.
 
         LaTeX       Creates LaTeX support (.sty and .fd files).
 
@@ -115,8 +112,9 @@ sub main {
         # until after the results of the parsing have been logged.
         Font::assert_unique($log, $fontlist);
 
-        my $nfss_mapping = NFSS::map_nfss_codes($fontlist);
-        $log->log_nfss_mapping($nfss_mapping);
+        my $mappings = Attr::map_nfss_codes($fontlist);
+        my ($from_nfss, $to_nfss) = @{$mappings};
+        $log->log_nfss_mapping($from_nfss);
 
         my @workitems = Work::generate_worklist($fontlist);
         $log->log_worklist(\@workitems);
@@ -127,8 +125,7 @@ sub main {
         $log->log_commands(\@commands) if $ARGV{verbose} >= 1;
 
         if (!$ARGV{dryrun}) {
-            $nfss_mapping = NFSS::invert_mapping($nfss_mapping);
-            LaTeX::create_support_files(\@workitems, $family, $nfss_mapping);
+            LaTeX::create_support_files(\@workitems, $family, $to_nfss);
             Otftotfm::run_commands(\@commands, $family, $log);
 
             if ($ARGV{t1suffix}) {
@@ -146,6 +143,407 @@ END_MESSAGE_UPDMAP
     }
 
     return;
+}
+
+
+############################################################################
+
+
+package Attr;
+
+=begin Comment
+
+    Some fontnames contain abbreviated words for width, weight and/or shape;
+    we unabbreviate these using the following table.
+
+=end Comment
+
+=cut
+
+my %FULL_FORM = (
+    cmp     =>  'compressed',
+    comp    =>  'compressed',
+    cond    =>  'condensed',
+    demi    =>  'demibold',
+    extcond =>  'extracondensed',
+    hair    =>  'hairline',
+    incline =>  'inclined',
+    it      =>  'italic',
+    ita     =>  'italic',
+    md      =>  'medium',
+    slant   =>  'slanted',
+    ultra   =>  'ultrablack',
+);
+
+# Auxiliary table that reverses FULL_FORM; maps full forms to abbrevs.
+my %abbrev;
+while (my ($k, $v) = each %FULL_FORM) {
+    push @{$abbrev{$v}}, $k;
+}
+
+# Add full forms as known abbreviations of themselves.
+for my $full (keys %abbrev) {
+    push @{$abbrev{$full}}, $full;
+}
+
+# Internal helper: returns a list of known abbreviations of its argument.
+sub _get_abbreviated_forms {
+    my $key = shift;
+
+    return @{ $abbrev{$key} // [$key] };
+}
+
+
+=begin Comment
+
+    LaTeX's NFSS contains a number of standard codes for weight and width:
+    - weight: ul, el, l, sl, m, sb, b, eb, ub
+    - width:  uc, ec, c, sc, m, sx, x, ex, ux
+
+    These codes are not always a perfect match with the weights and widths
+    present in a font family; some families (especially many sans serif ones)
+    contain more or different weights and widths, and the naming of those
+    weights and widths isn't always consistent between font families.
+    To handle this situation, we use a two-tiered approach:
+    1.  We install all fonts using a "series" name that is the concatenation
+        of whatever the font designer has chosen to call the weight and width
+        (but in all *lower*case).
+    2.  We add "alias" rules to the .fd files that map the standard NFSS codes
+        to actual fonts.
+
+    In step 1, we follow NFSS in leaving out any occurrence of
+    the word "regular" unless *both* weight and width are Regular;
+    in that case, the 'series' attribute becomes "regular".
+
+    The two tables WEIGHT and WIDTH are used to control step 2.
+    It contains several entries of the form
+
+        sc  =>  [ qw( semicondensed narrow ) ],
+
+    This should be read as follows: the NFSS code "sc" is mapped to
+    the *first* width on the right hand side present in the current family.
+
+    Please note that the tables contain empty keys instead of "m" for the
+    regular weight and width. NFSS actually combines weight and width into
+    a single "series" attribute; a weight or width of "m" is left out of
+    this combination (unless *both* weight and width are equal to "m"; then
+    the series becomes "m", but that's a special case we deal with later on).
+
+    In addition to the mapping of NFSS codes, the two mentioned tables are
+    also used in parsing the font's metadata to determine its weight and
+    width: any string that occurs on the right hand side is considered a
+    possible name to be searched for.
+
+    These tables can be extended to teach autoinst about new weights or
+    widths.  Suppose your font family contains a "Hemibold" weight, that
+    you want mapped to the "sb" code. Then add the name "hemibold" to
+    the right hand side of the "sb" entry in the WEIGHT table:
+
+        sb  =>  [ qw( semibold demibold medium hemibold ) ],
+
+    In this case, since it's in last position, it's only mapped to "sb"
+    if none of the other fonts are present. Put it earlier in the list
+    to give it higher priority.
+
+    Note that autoinst converts all metadata to lowercase to avoid
+    inconsistent capitalization; so all entries in these tables should
+    be *lowercase* as well.
+
+    Technical notes:
+    -   We define WEIGHT and WIDTH first as arrays
+        and then as hashtables; this allows us to use the array-variants
+        as an *ordered* (by weight/width) list of values (in the routines
+        get_all_nfss_weights and get_all_nfss_widths).
+
+=end Comment
+
+=cut
+
+my @WEIGHT = (
+    ul  =>  [ qw( ultralight thin 100 hairline ) ],
+    el  =>  [ qw( extralight 200 ) ],
+    l   =>  [ qw( light 300 ) ],
+    sl  =>  [ qw( semilight blond ) ],
+    ''  =>  [ qw( regular normal text book 400 ) ],
+    sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
+    b   =>  [ qw( bold 700 ) ],
+    eb  =>  [ qw( extrabold 800 ) ],
+    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack 900 fatface
+                  ultraheavy poster super 1000 ) ],
+);
+
+my @WIDTH = (
+    uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
+    ec  =>  [ qw( extracondensed compressed compact ) ],
+    c   =>  [ qw( condensed ) ],
+    sc  =>  [ qw( semicondensed narrow ) ],
+    ''  =>  [ qw( regular ) ],
+    sx  =>  [ qw( semiextended semiexpanded wide ) ],
+    x   =>  [ qw( extended expanded ) ],
+    ex  =>  [],
+    ux  =>  [],
+);
+
+my %WEIGHT = @WEIGHT;
+@WEIGHT = grep { !ref } @WEIGHT;
+# Add abbreviated forms of weight names.
+for my $code (@WEIGHT) {
+    $WEIGHT{$code}
+        = [ map { _get_abbreviated_forms($_) } @{$WEIGHT{$code}} ];
+}
+
+my @allweights = grep { $_ !~ m/ medium | regular | text /xms }
+                      map { @{$_} } values %WEIGHT;
+@allweights = (
+    Util::sort_desc_length(@allweights),
+    qw(medium regular text)
+);
+
+
+my %WIDTH = @WIDTH;
+@WIDTH = grep { !ref } @WIDTH;
+# Add abbreviated forms.
+for my $code (@WIDTH) {
+    $WIDTH{$code}
+        = [ map { _get_abbreviated_forms($_) } @{$WIDTH{$code}} ];
+}
+
+my @allwidths = grep { $_ ne 'regular' } map { @{$_} } values %WIDTH;
+@allwidths = Util::sort_desc_length(@allwidths);
+
+
+=begin Comment
+
+    The SHAPE table maps various shape names to NFSS codes.
+
+    Like in the other * tables, entries may be added to teach autoinst
+    about new shapes. Note that this table is "the other way around"
+    compared to WEIGHT and WIDTH; those map NFSS codes to names,
+    this one maps names to NFSS codes. That's because the data from
+    this table is used in a slightly different way; notably, it isn't
+    used in the map_nfss_codes routine.
+
+=end Comment
+
+=cut
+
+my %SHAPE = (
+    roman       =>  'n',
+    upright     =>  'n',
+    italic      =>  'it',
+    inclined    =>  'sl',
+    oblique     =>  'sl',
+    slanted     =>  'sl',
+    romani      =>  'n',    # Silentium has two roman shapes, but no italic;
+    romanii     =>  'it',   # so we cheat by mapping the second roman to 'it'
+);
+
+# Add abbreviated forms.
+for my $full (keys %abbrev) {
+    if (defined $SHAPE{$full}) {
+        for my $abbrev (_get_abbreviated_forms($full)) {
+            $SHAPE{$abbrev} = $SHAPE{$full};
+        }
+    }
+}
+
+my @allshapes = Util::sort_desc_length(keys %SHAPE);
+
+
+# --------------------------------------------------------------------------
+#   Returns the unabbreviated form of its argument,
+#   or its argument itself if no unabbreviated form is known.
+# --------------------------------------------------------------------------
+sub unabbreviate {
+    my $key = shift;
+
+    return $FULL_FORM{$key} // $key;
+}
+
+
+# --------------------------------------------------------------------------
+#   Prepends weight names to the WEIGHT table for a given NFSS code.
+# --------------------------------------------------------------------------
+sub set_weight {
+    my ($key, @values) = @_;
+
+    $WEIGHT{$key} = [ @values, @{$WEIGHT{$key}} ];
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns a list of NFSS weight names, sorted by weight.
+# --------------------------------------------------------------------------
+sub get_all_nfss_weights {
+    return @WEIGHT;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns a list of all known weights, in an order suitable for searching.
+# --------------------------------------------------------------------------
+sub get_all_weights {
+    return @allweights;
+}
+
+
+# --------------------------------------------------------------------------
+#   Prepends weight names to the WIDTH table for a given NFSS code.
+# --------------------------------------------------------------------------
+sub set_width {
+    my ($key, @values) = @_;
+
+    $WIDTH{$key} = [ @values, @{$WIDTH{$key}} ];
+    return;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns a list of NFSS width names, sorted by width.
+# --------------------------------------------------------------------------
+sub get_all_nfss_widths {
+    return @WIDTH;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns a list of all known widths, in an order suitable for searching.
+# --------------------------------------------------------------------------
+sub get_all_widths {
+    return @allwidths;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns the NFSS code for the given shape.
+# --------------------------------------------------------------------------
+sub to_nfss {
+    my $key = shift;
+
+    return $SHAPE{$key};
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns a list of all known shapes, in an order suitable for searching.
+# --------------------------------------------------------------------------
+sub get_all_shapes {
+    return @allshapes;
+}
+
+
+# --------------------------------------------------------------------------
+#   Returns mappings of NFSS codes to weight and width, and vice versa.
+# --------------------------------------------------------------------------
+sub map_nfss_codes {
+    my $fontlist = shift;
+
+    my (%weight, %width);
+    for my $font (@{$fontlist}) {
+        $weight{ $font->{weight} } //= $font->{weight_class};
+        $width{  $font->{width} }  //= $font->{width_class};
+    }
+
+    my $from_nfss = {
+        weight => {},
+        width => {},
+    };
+
+    for my $nfssweight (get_all_nfss_weights()) {
+        $from_nfss->{weight}{$nfssweight}
+            = [ grep { $weight{$_} } @{$WEIGHT{$nfssweight}} ];
+    }
+
+    # Some trickery to handle the case where the ul/ub codes are mapped
+    # but the el/eb codes are still empty. We try two things:
+    # 1.  if there is a Thin (Heavy) weight and this is less extreme
+    #     than the weight mapped to ul (ub), we map Thin (Heavy) to ul (ub)
+    # 2.  otherwise we move the ul/ub weight to the el/eb position,
+    #     unless that weight is the Ultralight/Ultrabold weight
+    if (!$ARGV{el} and !$ARGV{ul}) {
+        if (@{$from_nfss->{weight}{ul}}
+                and !@{$from_nfss->{weight}{el}}) {
+            if ($weight{thin}
+                    and $weight{thin}
+                        > $weight{$from_nfss->{weight}{ul}[0]}) {
+                $from_nfss->{weight}{el} = ['thin',];
+            }
+            elsif ($from_nfss->{weight}{ul}[0] ne 'ultralight') {
+                $from_nfss->{weight}{el}
+                    = [ shift @{$from_nfss->{weight}{ul}} ];
+            }
+        }
+    }
+    if (!$ARGV{eb} and !$ARGV{ub}) {
+        if (@{$from_nfss->{weight}{ub}}
+                and !@{$from_nfss->{weight}{eb}}) {
+            if ($weight{heavy}
+                    and $weight{heavy}
+                        < $weight{$from_nfss->{weight}{ub}[0]}) {
+                $from_nfss->{weight}{eb} = ['heavy',]
+                    unless @{$from_nfss->{weight}{b}}
+                       and $weight{$from_nfss->{weight}{b}[0]}
+                           > $weight{heavy};
+            }
+            elsif ($from_nfss->{weight}{ub}[0] ne 'ultrabold') {
+                $from_nfss->{weight}{eb}
+                    = [ shift @{$from_nfss->{weight}{ub}} ];
+            }
+        }
+    }
+
+    # Special case: if we don't have Regular but we *do* have Medium,
+    # move Medium from the "sb" list to the "m" (i.e., Regular) one.
+    if (!@{$from_nfss->{weight}{''}}) {
+        my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
+        if ($alternate) {
+            $from_nfss->{weight}{''} = [$alternate];
+            $from_nfss->{weight}{sb}
+                = [ grep { $_ ne $alternate } @{$from_nfss->{weight}{sb}} ];
+        }
+    }
+
+    # Some more trickery to map the sl code to Book or Text (but of course
+    # only if sl is empty and Book/Text is lighter than Regular)
+    if (!@{$from_nfss->{weight}{sl}}) {
+        $from_nfss->{weight}{sl}
+            = [ grep { $weight{$_} < $weight{$from_nfss->{weight}{''}[0]} }
+                     @{$from_nfss->{weight}{''}} ];
+    }
+
+    NFSSWIDTH:
+    for my $nfsswidth (get_all_nfss_widths()) {
+        for my $width ( @{$WIDTH{$nfsswidth}} ) {
+            if ($width{$width}) {
+                $from_nfss->{width}{$nfsswidth} = [$width];
+                next NFSSWIDTH;
+            }
+        }
+        $from_nfss->{width}{$nfsswidth} = [];
+    }
+
+    # Reverse the %from_nfss mapping to get %to_nfss
+    my %to_nfss;
+    NFSSWEIGHT:
+    for my $nfssweight (get_all_nfss_weights()) {
+        next unless @{$from_nfss->{weight}{$nfssweight}};
+        my $weight = $from_nfss->{weight}{$nfssweight}[0];
+        $weight = "" if $weight eq 'regular';
+
+        NFSSWIDTH:
+        for my $nfsswidth (get_all_nfss_widths()) {
+            my $nfssseries = ($nfssweight . $nfsswidth) || 'm';
+
+            next unless @{$from_nfss->{width}{$nfsswidth}};
+            my $width = $from_nfss->{width}{$nfsswidth}[0];
+            $width = "" if $width eq 'regular';
+            my $series = ($weight . $width) || 'regular';
+            $to_nfss{$series} = $nfssseries;
+        }
+    }
+
+    return [ $from_nfss, \%to_nfss ];
 }
 
 
@@ -221,7 +619,7 @@ sub _get_metadata {
 
 
 # --------------------------------------------------------------------------
-#   Processes the basic metadata (as a list of key-value pairs) for a font.
+#   Processes the basic metadata for this font.
 # --------------------------------------------------------------------------
 sub _parse_metadata {
     my ($self, $data) = @_;
@@ -262,7 +660,7 @@ sub _parse_metadata {
     # 3.  Test the weights 'medium' and 'regular' *last*, since these strings
     #     may also occur in Subfamily without indicating the weight;
     #     so we only take them to mean weight if we find no other hit.
-    my @widths = NFSS::get_all_widths();
+    my @widths = Attr::get_all_widths();
     for my $width (@widths) {
         if ($fullinfo =~ m/$width/xms) {
             $self->{width} = $width;
@@ -271,7 +669,7 @@ sub _parse_metadata {
             last;
         }
     }
-    my @weights = NFSS::get_all_weights();
+    my @weights = Attr::get_all_weights();
     for my $weight (@weights) {
         if ($fullinfo =~ m/$weight/xms) {
             $self->{weight} = $weight;
@@ -280,7 +678,7 @@ sub _parse_metadata {
             last;
         }
     }
-    my @shapes = NFSS::get_all_shapes();
+    my @shapes = Attr::get_all_shapes();
     for my $shape (@shapes) {
         if ($fullinfo =~ m/$shape/xms) {
             $self->{shape} = $shape;
@@ -302,9 +700,9 @@ sub _parse_metadata {
 
     # Take care to unabbreviate weight and width; CondensedUltra fonts
     # might end up as 'ultracondensed' instead of 'ultrablackcondensed'!
-    $self->{width}  = NFSS::unabbreviate($self->{width});
-    $self->{weight} = NFSS::unabbreviate($self->{weight});
-    $self->{shape}  = NFSS::unabbreviate($self->{shape});
+    $self->{width}  = Attr::unabbreviate($self->{width});
+    $self->{weight} = Attr::unabbreviate($self->{weight});
+    $self->{shape}  = Attr::unabbreviate($self->{shape});
 
     # Some font families put small caps into separate families;
     # we merge these into the 'main' family.
@@ -328,37 +726,37 @@ sub _parse_metadata {
     $shapes = join '|', Util::sort_desc_length(qw(it italic));
     if ($self->{family} =~ m/(.+?) ($shapes) \z/xmsi
             and ($self->{shape} eq 'regular'
-                    or $self->{shape} eq NFSS::unabbreviate(lc($2)))) {
+                    or $self->{shape} eq Attr::unabbreviate(lc($2)))) {
         $self->{family} = $1;
-        $self->{shape}  = NFSS::unabbreviate(lc($2));
+        $self->{shape}  = Attr::unabbreviate(lc($2));
     }
 
     # Some font families put different widths into separate families;
     # we merge these into the 'main' font family.
-    my $widths = join '|', NFSS::get_all_widths();
+    my $widths = join '|', Attr::get_all_widths();
     if ($self->{family} =~ m/(.+?) ($widths) \z/xmsi
             and ($self->{width} eq 'regular'
-                    or $self->{width} eq NFSS::unabbreviate(lc($2)))) {
+                    or $self->{width} eq Attr::unabbreviate(lc($2)))) {
         $self->{family} = $1;
-        $self->{width}  = NFSS::unabbreviate(lc($2));
+        $self->{width}  = Attr::unabbreviate(lc($2));
     }
 
     # Some font families put unusual weights into separate families;
     # we merge these into the 'main' font family. But we have to be
     # careful with the word 'Text': this might be part of the family name
     # (i.e., Libre Caslon Text) and should not be mistaken for a weight.
-    my $weights = join '|', NFSS::get_all_weights();
+    my $weights = join '|', Attr::get_all_weights();
     if ($self->{family} =~ m/text \z/xmsi) {
         $weights =~ s/[|]? text//xms;
     }
     if ($self->{family} =~ m/(.+?) ($weights) \z/xmsi
             and ($self->{weight} eq 'regular'
-                    or $self->{weight} eq NFSS::unabbreviate(lc($2)))) {
+                    or $self->{weight} eq Attr::unabbreviate(lc($2)))) {
         $self->{family} = $1;
-        $self->{weight} = NFSS::unabbreviate(lc($2));
+        $self->{weight} = Attr::unabbreviate(lc($2));
     }
 
-    $self->{basicshape} = NFSS::get_nfss_shape($self->{shape});
+    $self->{basicshape} = Attr::to_nfss($self->{shape});
 
     # We define 'series' as 'weight + width'. This matches NFSS,
     # but contradicts how most fonts are named (which is 'width + weight').
@@ -1545,13 +1943,13 @@ sub log_nfss_mapping {
     my ($self, $nfss_mapping) = @_;
 
     print {$self} "\n" . '-' x 76 . "\n\nNFSS mappings:\n\n";
-    for my $weight (NFSS::get_all_nfss_weights()) {
+    for my $weight (Attr::get_all_nfss_weights()) {
         printf {$self} "    %-3s =>  %s\n",
                        $weight || 'm',
                        $nfss_mapping->{weight}{$weight}[0] || '';
     }
     printf {$self} "\n";
-    for my $width (NFSS::get_all_nfss_widths()) {
+    for my $width (Attr::get_all_nfss_widths()) {
         printf {$self} "    %-3s =>  %s\n",
                        $width || 'm',
                        $nfss_mapping->{width}{$width}[0] || '';
@@ -1612,434 +2010,6 @@ sub log_commands {
     print {$self} "\n";
 
     return;
-}
-
-
-############################################################################
-
-
-package NFSS;
-
-=begin Comment
-
-    Some fontnames contain abbreviated words for width, weight and/or shape;
-    we unabbreviate these using the following table.
-
-=end Comment
-
-=cut
-
-my %FULL_FORM = (
-    cmp     =>  'compressed',
-    comp    =>  'compressed',
-    cond    =>  'condensed',
-    demi    =>  'demibold',
-    extcond =>  'extracondensed',
-    hair    =>  'hairline',
-    incline =>  'inclined',
-    it      =>  'italic',
-    ita     =>  'italic',
-    md      =>  'medium',
-    slant   =>  'slanted',
-    ultra   =>  'ultrablack',
-);
-
-=begin Comment
-
-    LaTeX's NFSS contains a number of standard codes for weight and width:
-    - weight: ul, el, l, sl, m, sb, b, eb, ub
-    - width:  uc, ec, c, sc, m, sx, x, ex, ux
-
-    These codes are not always a perfect match with the weights and widths
-    present in a font family; some families (especially many sans serif ones)
-    contain more or different weights and widths, and the naming of those
-    weights and widths isn't always consistent between font families.
-    To handle this situation, we use a two-tiered approach:
-    1.  We install all fonts using a "series" name that is the concatenation
-        of whatever the font designer has chosen to call the weight and width
-        (but in all *lower*case).
-    2.  We add "alias" rules to the .fd files that map the standard NFSS codes
-        to actual fonts.
-
-    In step 1, we follow NFSS in leaving out any occurrence of
-    the word "regular" unless *both* weight and width are Regular;
-    in that case, the 'series' attribute becomes "regular".
-
-    The two tables WEIGHT and WIDTH are used to control step 2.
-    It contains several entries of the form
-
-        sc  =>  [ qw( semicondensed narrow ) ],
-
-    This should be read as follows: the NFSS code "sc" is mapped to
-    the *first* width on the right hand side present in the current family.
-
-    Please note that the tables contain empty keys instead of "m" for the
-    regular weight and width. NFSS actually combines weight and width into
-    a single "series" attribute; a weight or width of "m" is left out of
-    this combination (unless *both* weight and width are equal to "m"; then
-    the series becomes "m", but that's a special case we deal with later on).
-
-    In addition to the mapping of NFSS codes, the two mentioned tables are
-    also used in parsing the font's metadata to determine its weight and
-    width: any string that occurs on the right hand side is considered a
-    possible name to be searched for.
-
-    These tables can be extended to teach autoinst about new weights or
-    widths.  Suppose your font family contains a "Hemibold" weight, that
-    you want mapped to the "sb" code. Then add the name "hemibold" to
-    the right hand side of the "sb" entry in the WEIGHT table:
-
-        sb  =>  [ qw( semibold demibold medium hemibold ) ],
-
-    In this case, since it's in last position, it's only mapped to "sb"
-    if none of the other fonts are present. Put it earlier in the list
-    to give it higher priority.
-
-    Note that autoinst converts all metadata to lowercase to avoid
-    inconsistent capitalization; so all entries in these tables should
-    be *lowercase* as well.
-
-    Technical notes:
-    -   We define WEIGHT and WIDTH first as arrays
-        and then as hashtables; this allows us to use the array-variants
-        as an *ordered* (by weight/width) list of values (in the routines
-        get_all_nfss_weights and get_all_nfss_widths).
-
-=end Comment
-
-=cut
-
-my @WEIGHT = (
-    ul  =>  [ qw( ultralight thin 100 hairline ) ],
-    el  =>  [ qw( extralight 200 ) ],
-    l   =>  [ qw( light 300 ) ],
-    sl  =>  [ qw( semilight blond ) ],
-    ''  =>  [ qw( regular normal text book 400 ) ],
-    sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
-    b   =>  [ qw( bold 700 ) ],
-    eb  =>  [ qw( extrabold 800 ) ],
-    ub  =>  [ qw( ultrabold black heavy extrablack ultrablack 900 fatface
-                  ultraheavy poster super 1000 ) ],
-);
-
-my @WIDTH = (
-    uc  =>  [ qw( ultracondensed extracompressed ultracompressed ) ],
-    ec  =>  [ qw( extracondensed compressed compact ) ],
-    c   =>  [ qw( condensed ) ],
-    sc  =>  [ qw( semicondensed narrow ) ],
-    ''  =>  [ qw( regular ) ],
-    sx  =>  [ qw( semiextended semiexpanded wide ) ],
-    x   =>  [ qw( extended expanded ) ],
-    ex  =>  [],
-    ux  =>  [],
-);
-
-=begin Comment
-
-    The SHAPE table maps various shape names to NFSS codes.
-
-    Like in the other * tables, entries may be added to teach autoinst
-    about new shapes. Note that this table is "the other way around"
-    compared to WEIGHT and WIDTH; those map NFSS codes to names,
-    this one maps names to NFSS codes. That's because the data from
-    this table is used in a slightly different way; notably, it isn't
-    used in the map_nfss_codes routine.
-
-=end Comment
-
-=cut
-
-my %SHAPE = (
-    roman       =>  'n',
-    upright     =>  'n',
-    italic      =>  'it',
-    inclined    =>  'sl',
-    oblique     =>  'sl',
-    slanted     =>  'sl',
-    romani      =>  'n',    # Silentium has two roman shapes, but no italic;
-    romanii     =>  'it',   # so we cheat by mapping the second roman to 'it'
-);
-
-
-####    FUNCTIONS FOR ACCESSING DATA FROM THE TABLES    ####
-
-
-# --------------------------------------------------------------------------
-#   Returns the unabbreviated form of its argument,
-#   or its argument itself if no unabbreviated form is known.
-# --------------------------------------------------------------------------
-sub unabbreviate {
-    my $key = shift;
-
-    return $FULL_FORM{$key} // $key;
-}
-
-
-# Auxiliary table that reverses FULL_FORM; maps full forms to abbrevs.
-my %abbrev;
-while (my ($k, $v) = each %FULL_FORM) {
-    push @{$abbrev{$v}}, $k;
-}
-for my $full (keys %abbrev) {
-    push @{$abbrev{$full}}, $full;
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns a list of known abbreviations of its argument,
-#   or a singleton list containing just the argument itself
-#   if no abbreviations are known.
-# --------------------------------------------------------------------------
-sub get_abbreviated_forms {
-    my $key = shift;
-
-    return @{ $abbrev{$key} // [$key] };
-}
-
-
-my %WEIGHT = @WEIGHT;
-@WEIGHT = grep { !ref } @WEIGHT;
-
-# Add abbreviated forms, using the %ABBREV table constructed earlier.
-for my $code (@WEIGHT) {
-    $WEIGHT{$code}
-        = [ map { get_abbreviated_forms($_) } @{$WEIGHT{$code}} ];
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns all weight names that might map to the given NFSS code.
-# --------------------------------------------------------------------------
-sub get_weights {
-    my $key = shift;
-
-    return @{$WEIGHT{$key}};
-}
-
-
-# --------------------------------------------------------------------------
-#   Adds weight names to the WEIGHT table.
-# --------------------------------------------------------------------------
-sub set_weights {
-    my ($key, @values) = @_;
-
-    $WEIGHT{$key} = [ @values, @{$WEIGHT{$key}} ];
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns a list of NFSS weights, sorted from light to heavy.
-# --------------------------------------------------------------------------
-sub get_all_nfss_weights {
-    return @WEIGHT;
-}
-
-
-my @allweights = grep { $_ !~ m/ medium | regular | text /xms }
-                      map { @{$_} } values %WEIGHT;
-@allweights = (Util::sort_desc_length(@allweights), qw(medium regular text));
-
-# --------------------------------------------------------------------------
-#   Returns a list of all known weight names,
-#   in an order that's suitable for search routines.
-# --------------------------------------------------------------------------
-sub get_all_weights {
-    return @allweights;
-}
-
-my %WIDTH = @WIDTH;
-@WIDTH = grep { !ref } @WIDTH;
-
-# Add abbreviated forms, using the %ABBREV table constructed earlier.
-for my $code (@WIDTH) {
-    $WIDTH{$code}
-        = [ map { get_abbreviated_forms($_) } @{$WIDTH{$code}} ];
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns all width names that might map to the given NFSS code.
-# --------------------------------------------------------------------------
-sub get_widths {
-    my $key = shift;
-
-    return @{$WIDTH{$key}};
-}
-
-
-# --------------------------------------------------------------------------
-#   Adds width names to the WEIGHT table.
-# --------------------------------------------------------------------------
-sub set_widths {
-    my ($key, @values) = @_;
-
-    $WIDTH{$key} = [ @values, @{$WIDTH{$key}} ];
-    return;
-}
-
-
-# --------------------------------------------------------------------------
-#   Returns a list of NFSS widths, sorted from narrow to wide.
-# --------------------------------------------------------------------------
-sub get_all_nfss_widths {
-    return @WIDTH;
-}
-
-
-my @allwidths = grep { $_ ne 'regular' } map { @{$_} } values %WIDTH;
-@allwidths = Util::sort_desc_length(@allwidths);
-
-# --------------------------------------------------------------------------
-#   Returns a list of all known width names,
-#   in an order that's suitable for search routines.
-# --------------------------------------------------------------------------
-sub get_all_widths {
-    return @allwidths;
-}
-
-
-# Add abbreviated forms to %SHAPE table.
-for my $full (keys %abbrev) {
-    if (defined $SHAPE{$full}) {
-        for my $abbrev (get_abbreviated_forms($full)) {
-            $SHAPE{$abbrev} = $SHAPE{$full};
-        }
-    }
-}
-
-# --------------------------------------------------------------------------
-#   Returns the NFSS code for the given shape.
-# --------------------------------------------------------------------------
-sub get_nfss_shape {
-    my $key = shift;
-
-    return $SHAPE{$key};
-}
-
-
-my @allshapes = Util::sort_desc_length(keys %SHAPE);
-
-# --------------------------------------------------------------------------
-#   Returns a list of all known shape names,
-#   in an order that's suitable for search routines.
-# --------------------------------------------------------------------------
-sub get_all_shapes {
-    return @allshapes;
-}
-
-# --------------------------------------------------------------------------
-#   Returns a mapping of NFSS codes to weight and width names.
-# --------------------------------------------------------------------------
-sub map_nfss_codes {
-    my $fontlist = shift;
-
-    my (%weight, %width);
-    for my $font (@{$fontlist}) {
-        $weight{ $font->{weight} } //= $font->{weight_class};
-        $width{ $font->{width} }   //= $font->{width_class};
-    }
-
-    my $mapping = {
-        weight => {},
-        width => {},
-    };
-
-    for my $nfssweight (NFSS::get_all_nfss_weights()) {
-        $mapping->{weight}{$nfssweight}
-            = [ grep { $weight{$_} } NFSS::get_weights($nfssweight) ];
-    }
-
-    # Some trickery to handle the case where the ul/ub codes are mapped
-    # but the el/eb codes are still empty. We try two things:
-    # 1.  if there is a Thin (Heavy) weight and this is less extreme
-    #     than the weight mapped to ul (ub), we map Thin (Heavy) to ul (ub)
-    # 2.  otherwise we move the ul/ub weight to the el/eb position,
-    #     unless that weight is the Ultralight/Ultrabold weight
-    if (!$ARGV{el} and !$ARGV{ul}) {
-        if (@{$mapping->{weight}{ul}} and !@{$mapping->{weight}{el}}) {
-            if ($weight{thin}
-                    and $weight{thin} > $weight{$mapping->{weight}{ul}[0]}) {
-                $mapping->{weight}{el} = ['thin',];
-            }
-            elsif ($mapping->{weight}{ul}[0] ne 'ultralight') {
-                $mapping->{weight}{el} = [ shift @{$mapping->{weight}{ul}} ];
-            }
-        }
-    }
-    if (!$ARGV{eb} and !$ARGV{ub}) {
-        if (@{$mapping->{weight}{ub}} and !@{$mapping->{weight}{eb}}) {
-            if ($weight{heavy}
-                    and $weight{heavy} < $weight{$mapping->{weight}{ub}[0]}) {
-                $mapping->{weight}{eb} = ['heavy',]
-                    unless @{$mapping->{weight}{b}}
-                       and $weight{$mapping->{weight}{b}[0]} > $weight{heavy};
-            }
-            elsif ($mapping->{weight}{ub}[0] ne 'ultrabold') {
-                $mapping->{weight}{eb} = [ shift @{$mapping->{weight}{ub}} ];
-            }
-        }
-    }
-
-    # Special case: if we don't have Regular but we *do* have Medium,
-    # move Medium from the "sb" list to the "m" (i.e., Regular) one.
-    if (!@{$mapping->{weight}{''}}) {
-        my $alternate = ( grep { $weight{$_} } qw(medium 500) )[0];
-        if ($alternate) {
-            $mapping->{weight}{''} = [$alternate];
-            $mapping->{weight}{sb}
-                = [ grep { $_ ne $alternate } @{$mapping->{weight}{sb}} ];
-        }
-    }
-
-    # Some more trickery to map the sl code to Book or Text (but of course
-    # only if sl is empty and Book/Text is lighter than Regular)
-    if (!@{$mapping->{weight}{sl}}) {
-        $mapping->{weight}{sl}
-            = [ grep { $weight{$_} < $weight{$mapping->{weight}{''}[0]} }
-                     @{$mapping->{weight}{''}} ];
-    }
-
-    NFSSWIDTH:
-    for my $nfsswidth (NFSS::get_all_nfss_widths()) {
-        for my $width ( NFSS::get_widths($nfsswidth) ) {
-            if ($width{$width}) {
-                $mapping->{width}{$nfsswidth} = [$width];
-                next NFSSWIDTH;
-            }
-        }
-        $mapping->{width}{$nfsswidth} = [];
-    }
-
-    return $mapping;
-}
-
-# --------------------------------------------------------------------------
-#   Returns a mapping of weight and width names to NFSS codes.
-# --------------------------------------------------------------------------
-sub invert_mapping {
-    my $nfss_mapping = shift;
-
-    my %to_nfss;
-    NFSSWEIGHT:
-    for my $nfssweight (NFSS::get_all_nfss_weights()) {
-        next unless @{$nfss_mapping->{weight}{$nfssweight}};
-        my $weight = $nfss_mapping->{weight}{$nfssweight}[0];
-        $weight = "" if $weight eq 'regular';
-
-        NFSSWIDTH:
-        for my $nfsswidth (NFSS::get_all_nfss_widths()) {
-            my $nfssseries = ($nfssweight . $nfsswidth) || 'm';
-
-            next unless @{$nfss_mapping->{width}{$nfsswidth}};
-            my $width = $nfss_mapping->{width}{$nfsswidth}[0];
-            $width = "" if $width eq 'regular';
-            my $series = ($weight . $width) || 'regular';
-            $to_nfss{$series} = $nfssseries;
-        }
-    }
-
-    return \%to_nfss;
 }
 
 
@@ -2192,7 +2162,7 @@ sub parse_options {
                                           "$key=$values";
                                      my @values = split m/,/, lc $values;
                                      $key = q{} if $key eq 'm';
-                                     NFSS::set_weights($key, @values);
+                                     Attr::set_weight($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
         'nfsswidth=s%'        => sub {
@@ -2202,7 +2172,7 @@ sub parse_options {
                                      push @{$ARGV{nfsswidth}},
                                           "$key=$values";
                                      $key = q{} if $key eq 'm';
-                                     NFSS::set_widths($key, @values);
+                                     Attr::set_width($key, @values);
                                      $ARGV{$key} = 'user-defined';
                                  },
         'math!'               => \$ARGV{math},
@@ -4026,7 +3996,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-08-11>
+=item I<2020-08-13>
 
 Cleaned up the code for better maintainability;
 no changes in functionality.
