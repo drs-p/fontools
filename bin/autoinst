@@ -2695,7 +2695,7 @@ sub process_encoding_options {
     # - the text encodings contain T1 and the user didn't turn off TS1
     if ($ARGV{textcomp} == 1
             or ($ARGV{textcomp} >= 1
-                and grep { $_ =~ m/T1/xmsi } @{$ARGV{encoding}})) {
+                and grep { uc $_ eq 'T1' } @{$ARGV{encoding}})) {
         $ARGV{textcomp} = 1;
     }
     else {
