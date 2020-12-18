@@ -2680,7 +2680,7 @@ sub process_encoding_options {
     my @encodings = split /,/, $ARGV{encoding};
     for my $enc (@encodings) {
         if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
-            my $try = Cwd::abs_path($enc);
+            my $try = $enc;
             $try .= '.enc' if $try !~ m/[.]enc\z/xms;
             if (!-e $try) {
                 die "[ERROR]     No .enc file found for '$enc'";
@@ -3048,16 +3048,13 @@ sub cleanup {
         return;
     }
 
-    # Figure out which encoding file to use for this font.
-    # If the user-specified encoding refers to an existing file
-    # in the current directory, we get its absolute pathname
-    # (to avoid problems with otftotfm not being able to find it);
-    # else, it refers to one of our own encoding files, which we *known*
-    # otftotfm can find. In that case, we just add the 'fontools_' prefix.
+    # Figure out whether the encoding option refers to a custom encoding file
+    # in the current directory, or to the name of one of our standard
+    # encodings.  In the latter case, we add the 'fontools_' prefix.
     my $try = $workitem->{encoding};
     $try .= '.enc' if $try !~ m/[.]enc\z/xms;
     if (-e $try) {
-        $workitem->{enc_file} = Cwd::abs_path($try);
+        $workitem->{enc_file} = $try;
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
