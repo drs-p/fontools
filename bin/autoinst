@@ -3049,10 +3049,15 @@ sub cleanup {
     }
 
     # Figure out which encoding file to use for this font.
-    my $try = Cwd::abs_path($workitem->{encoding});
+    # If the user-specified encoding refers to an existing file
+    # in the current directory, we get its absolute pathname
+    # (to avoid problems with otftotfm not being able to find it);
+    # else, it refers to one of our own encoding files, which we *known*
+    # otftotfm can find. In that case, we just add the 'fontools_' prefix.
+    my $try = $workitem->{encoding};
     $try .= '.enc' if $try !~ m/[.]enc\z/xms;
     if (-e $try) {
-        $workitem->{enc_file} = $try;
+        $workitem->{enc_file} = Cwd::abs_path($try);
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
@@ -4004,14 +4009,13 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2020-12-14>
+=item I<2020-12-18>
 
-Optimized font info parsing for DTL and TypeBy fonts.
-
-=item I<2020-08-13>
-
-Cleaned up the code for better maintainability;
-no changes in functionality.
+Fixed a problem with files not being found on Windows.
+Added extra C<--unicoding> options to prevent getting
+lowercase f-ligatures in smallcaps for some buggy fonts.
+Optimized font info parsing for DTL and TypeBy font families.
+Cleaned up the code for better maintainability.
 
 =item I<2020-07-29>
 
