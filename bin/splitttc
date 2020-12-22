@@ -267,8 +267,8 @@ and option names may be shortened to a unique prefix.
 =head1 OUTPUT
 
 B<splitttc> tries to determine the 'PostScript name' of the resulting fonts
-and uses this to name the output files.
-If it cannot determine the PostScript name, it uses the basename of the input
+and uses these to name the output files.
+If it cannot determine the PostScript names, it uses the basename of the input
 font collection file plus a three-digit sequence number:
 F<<< I<< <input> >> 001.otf >>>, F<<< I<< <input> >> 002.otf >>> etc.
 
@@ -280,7 +280,7 @@ Marc Penninga <marcpenninga@gmail.com>
 
 =head1 COPYRIGHT
 
-Copyright (C) __YEAR__ Marc Penninga.
+Copyright (C) 2019-__YEAR__ Marc Penninga.
 
 
 =head1 LICENSE
