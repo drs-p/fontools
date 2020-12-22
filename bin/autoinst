@@ -646,9 +646,9 @@ sub _parse_metadata {
     }
 
     # remove Adobe's SmallText size, to avoid mistaking it for Text weight
-    $data->{family}    =~ s/(?: SmallText | SmText )\z//xmsi;
-    $data->{subfamily} =~ s/(?: SmallText | SmText )\z//xmsi;
-    $data->{fullname}  =~ s/(?: SmallText | SmText )\z//xmsi;
+    for my $fieldname (qw(family subfamily fullname)) {
+        $data->{$fieldname} =~ s/(?: SmallText | SmText )\z//xmsi;
+    }
 
     # Sometimes the relevant info is in Fullname, sometimes in Subfamily;
     # so we need to test against both
