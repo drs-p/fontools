@@ -3720,9 +3720,10 @@ Generate the specified encoding(s) for the text fonts.
 Multiple encodings may be specified as a comma-separated list
 (without spaces!); the default choice of encodings is `OT1,LY1,T1'.
 
-For each specified encoding XYZ, B<autoinst> will first see if there is
-an encoding file F<XYZ.enc> in the current directory, and if found it will
-use that; otherwise it will use one of its built-in encoding files.
+For each argument, B<autoinst> will first check if it is
+the filename of an encoding file, and if found it will use that;
+otherwise the argument is assumed to be the name of one of
+the built-in encodings.
 Currently B<autoinst> comes with support for the OT1, T1/TS1, LY1, LGR,
 T2A/B/C and T3/TS3 encodings.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
@@ -4009,7 +4010,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2021-04-01>
 
-The C<--encoding> option now also supports as arguments
+The C<-encoding> option now also supports as arguments
 filenames of encoding files in directories other than
 the current directory. Directory names containing spaces
 do (or at least should) also work.
