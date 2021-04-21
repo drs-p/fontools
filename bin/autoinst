@@ -849,8 +849,8 @@ sub _parse_sizedata {
         or die "[ERROR]     '$cmd' failed.";
 
     my ($minsize, $maxsize)
-        = $data =~ m/[(] ([\d.]+) \s* pt, \s*
-                         ([\d.]+) \s* pt  \s* [])]/xms;
+        = $data =~ m/[([] ([\d.]+) (?:\s* pt)?, \s*
+                          ([\d.]+) (?:\s* pt)?  \s* [])]/xms;
 
     $minsize //= 0;
     $maxsize //= 0;
@@ -4008,6 +4008,10 @@ This document describes B<autoinst> version __VERSION__.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2021-04-23>
+
+Bugfix: optical size info parsing now also works for Microsoft Sitka.
 
 =item I<2021-04-01>
 
