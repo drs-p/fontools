@@ -2302,11 +2302,22 @@ sub create_command {
 sub run_commands {
     my ($commandlist, $family, $log) = @_;
 
+    my $n_cmds = scalar @{$commandlist};
+    my ($log_ncmds, $ceil) = (1, 10);
+    while ($n_cmds >= $ceil) {
+        $log_ncmds++;
+        $ceil *= 10;
+    }
+    my $template = sprintf "%%%dd of %%%dd", $log_ncmds, $log_ncmds;
+    my $l_template = 4 + 2 * $log_ncmds;
+    $| = 1; # autoflush
+    print "[INFO]      Generating fonts for $family: ", " " x $l_template;
+
+    my $i_cmd  = 1;
     my $oops = 0;
-    $| = 1;     # turn on autoflush, to make a poor man's progress bar
-    print "[INFO]      Generating fonts for $family ";
     for my $command (@{$commandlist}) {
-        print '.';
+        print "\b" x $l_template;
+        printf $template, $i_cmd++, $n_cmds;
         open my $otftotfm, '-|', "$command 2>&1"
             or die "could not fork(): $!";
         my $msgs = do { local $/; <$otftotfm> };
