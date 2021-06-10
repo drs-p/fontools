@@ -1258,7 +1258,9 @@ END_STY_FONTAXES_ORN
     if ($seen{Numr}) {
         print {$STY} <<'END_STY_FONTAXES_NUMR';
     \fa@naming@exception{figures}{{numerators}{proportional}}{Numr}
+    \fa@naming@exception{figures}{{numerator}{proportional}}{Numr}
     \fa@naming@exception{figures}{{numerators}{tabular}}{Numr}
+    \fa@naming@exception{figures}{{numerator}{tabular}}{Numr}
 
 END_STY_FONTAXES_NUMR
     }
@@ -1266,7 +1268,9 @@ END_STY_FONTAXES_NUMR
     if ($seen{Dnom}) {
         print {$STY} <<'END_STY_FONTAXES_DNOM';
     \fa@naming@exception{figures}{{denominators}{proportional}}{Dnom}
+    \fa@naming@exception{figures}{{denominator}{proportional}}{Dnom}
     \fa@naming@exception{figures}{{denominators}{tabular}}{Dnom}
+    \fa@naming@exception{figures}{{denominator}{tabular}}{Dnom}
 
 END_STY_FONTAXES_DNOM
     }
@@ -4020,9 +4024,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2021-04-23>
+=item I<2021-06-10>
 
-Bugfix: optical size info parsing now also works for Microsoft Sitka.
+Bugfixes: optical size info parsing works for Microsoft Sitka,
+and selecting numerator/denominator fonts works as described.
 
 =item I<2021-04-01>
 
