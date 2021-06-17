@@ -606,14 +606,14 @@ sub _get_metadata {
 
     my $cmd = qq(otfinfo --info "$filename");
     open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
+        or die "[ERROR]     Could not run '$cmd': $!";
     my %data = map { my ($k,$v) = m/\A\s* ([^:]+?) \s*:\s* ([^\r\n]+)/xms;
                      $k =~ s/\s+//xmsg;
                      (lc $k => $v);
                    }
                    grep { m/\A\s* [^:]+? \s*:\s* [^\r\n]+/xms } <$otfinfo>;
     close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
+        or die "[ERROR]     '$cmd' failed";
 
     return \%data;
 }
@@ -813,17 +813,17 @@ sub _parse_featuredata {
 
     my $cmd = qq(otfinfo --features "$self->{filename}");
     open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
+        or die "[ERROR]     Could not run '$cmd': $!";
     my @data = map { substr $_, 0, 4 } <$otfinfo>;
     close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
+        or die "[ERROR]     '$cmd' failed";
 
     $cmd = qq(otfinfo --tables "$self->{filename}");
     open $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
+        or die "[ERROR]     Could not run '$cmd': $!";
     my $data = do { local $/; <$otfinfo> };
     close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
+        or die "[ERROR]     '$cmd' failed";
 
     if ($data =~ m/\d+ \s+ kern/xms) {
         push @data, 'kern';
@@ -843,10 +843,10 @@ sub _parse_sizedata {
 
     my $cmd = qq(otfinfo --optical-size "$self->{filename}");
     open my $otfinfo, '-|', $cmd
-        or die "[ERROR]     Could not fork(): $!";
+        or die "[ERROR]     Could not run '$cmd': $!";
     my $data = do { local $/; <$otfinfo> };
     close $otfinfo
-        or die "[ERROR]     '$cmd' failed.";
+        or die "[ERROR]     '$cmd' failed";
 
     my ($minsize, $maxsize)
         = $data =~ m/[([] ([\d.]+) (?:\s* pt)?, \s*
@@ -3188,7 +3188,7 @@ sub modify_fontnames {
 
             my $cmd = qq(t1disasm "$oldfn");
             open my $t1disasm, '-|:raw', $cmd
-                or die "[ERROR]     Could not fork(): $!";
+                or die "[ERROR]     Could not run '$cmd': $!";
             my @pfbdata = readline $t1disasm;
             close $t1disasm
                 or die "[ERROR]     '$cmd' failed";
@@ -3208,7 +3208,7 @@ sub modify_fontnames {
 
             $cmd = qq(t1asm --pfb >"$newfn");
             open my $t1asm, '|-:raw', $cmd
-                or die "[ERROR]     Could not fork(): $!";
+                or die "[ERROR]     Could not run '$cmd': $!";
             print {$t1asm} @pfbdata;
             close $t1asm
                 or die "[ERROR]     '$cmd' failed";
