@@ -2276,7 +2276,9 @@ sub create_command {
 
     return join q( ), 'otftotfm',
                       '--automatic',
-                      "--encoding='$workitem->{enc_file}'",
+                      (-e $workitem->{enc_file}
+                        ? "--encoding='$workitem->{enc_file}'"
+                        : "--encoding=$workitem->{enc_file}"),
                       $targetdirs,
                       '--no-updmap',
                       '--force',
@@ -4024,10 +4026,25 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2021-06-10>
+=item I<2021-07-19>
 
-Bugfixes: optical size info parsing works for Microsoft Sitka,
-and selecting numerator/denominator fonts works as described.
+Bugfixes:
+
+=over 3
+
+=item -
+
+Another problem with argument quoting on Windows
+
+=item -
+
+Selecting numerator/denominator fonts now works as described.
+
+=item -
+
+Make optical size info parsing work for Microsoft Sitka
+
+=back
 
 =item I<2021-04-01>
 
