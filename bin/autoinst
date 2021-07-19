@@ -265,7 +265,7 @@ my @WEIGHT = (
     el  =>  [ qw( extralight 200 ) ],
     l   =>  [ qw( light 300 ) ],
     sl  =>  [ qw( semilight blond ) ],
-    ''  =>  [ qw( regular normal text book 400 normallight normaldark ) ],
+    ''  =>  [ qw( regular normal text book 400 normallight normaldark plain ) ],
     sb  =>  [ qw( semibold demibold 600 medium 500 ) ],
     b   =>  [ qw( bold 700 ) ],
     eb  =>  [ qw( extrabold 800 ) ],
@@ -708,6 +708,20 @@ sub _parse_metadata {
     $self->{width}  = Attr::unabbreviate($self->{width});
     $self->{weight} = Attr::unabbreviate($self->{weight});
     $self->{shape}  = Attr::unabbreviate($self->{shape});
+
+    # Handle the (semi)condensed widths of the Thesis family.
+    # Doing this in the WIDTH table is tricky (i.e., TheSansCd might be
+    # parsed as the SCd width of the TheSan family), so we treat it as
+    # a special case instead.
+    if ($self->{family} =~ m/\A (The (?: Sans | Serif | Mix)) (S? Cd) \z/xms
+            and $self->{width} eq 'regular') {
+        $self->{family} = $1;
+        $self->{width}
+            = $2 eq 'Cd'  ? 'condensed'
+            : $2 eq 'SCd' ? 'semicondensed'
+            :               die '[ERROR]     Internal error, please report!'
+            ;
+    }
 
     # Some font families put small caps into separate families;
     # we merge these into the 'main' family.
@@ -4034,7 +4048,7 @@ Bugfixes:
 
 =item -
 
-Another problem with argument quoting on Windows
+Another problem with argument quoting on Windows.
 
 =item -
 
@@ -4042,7 +4056,7 @@ Selecting numerator/denominator fonts now works as described.
 
 =item -
 
-Make optical size info parsing work for Microsoft Sitka
+Make font info parsing work for Microsoft Sitka and LucasFonts Thesis.
 
 =back
 
