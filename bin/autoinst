@@ -3081,12 +3081,10 @@ sub cleanup {
     # encodings. In the former case, we quote the filename, to account
     # for possible spaces or other metacharacters; in the latter case,
     # we add the 'fontools_' prefix.
-    my $try = $workitem->{encoding};
-    $try .= '.enc' if $try !~ m/[.]enc\z/xmsi;
-    if (-e $try) {
-        $workitem->{enc_file} = "'$try'";
+    if (-e $workitem->{encoding}) {
+        $workitem->{enc_file} = "'$workitem->{encoding}'";
         $workitem->{encoding}
-            = File::Basename::basename($try, '.enc', '.ENC');
+            = File::Basename::basename($workitem->{encoding}, '.enc', '.ENC');
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
