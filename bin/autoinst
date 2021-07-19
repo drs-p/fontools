@@ -2290,9 +2290,7 @@ sub create_command {
 
     return join q( ), 'otftotfm',
                       '--automatic',
-                      (-e $workitem->{enc_file}
-                        ? "--encoding='$workitem->{enc_file}'"
-                        : "--encoding=$workitem->{enc_file}"),
+                      "--encoding=$workitem->{enc_file}",
                       $targetdirs,
                       '--no-updmap',
                       '--force',
@@ -3080,11 +3078,13 @@ sub cleanup {
 
     # Figure out whether the encoding option refers to a custom encoding file
     # in the current directory, or to the name of one of our standard
-    # encodings.  In the latter case, we add the 'fontools_' prefix.
+    # encodings. In the former case, we quote the filename, to account
+    # for possible spaces or other metacharacters; in the latter case,
+    # we add the 'fontools_' prefix.
     my $try = $workitem->{encoding};
     $try .= '.enc' if $try !~ m/[.]enc\z/xmsi;
     if (-e $try) {
-        $workitem->{enc_file} = $try;
+        $workitem->{enc_file} = "'$try'";
         $workitem->{encoding}
             = File::Basename::basename($try, '.enc', '.ENC');
     }
