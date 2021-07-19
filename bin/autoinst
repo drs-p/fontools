@@ -3082,7 +3082,7 @@ sub cleanup {
     # for possible spaces or other metacharacters; in the latter case,
     # we add the 'fontools_' prefix.
     if (-e $workitem->{encoding}) {
-        $workitem->{enc_file} = "'$workitem->{encoding}'";
+        $workitem->{enc_file} = qq{"$workitem->{encoding}"};
         $workitem->{encoding}
             = File::Basename::basename($workitem->{encoding}, '.enc', '.ENC');
     }
