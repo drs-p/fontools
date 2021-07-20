@@ -4038,7 +4038,7 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2021-07-19>
+=item I<2021-07-21>
 
 Bugfixes:
 
@@ -4046,15 +4046,15 @@ Bugfixes:
 
 =item -
 
-Another problem with argument quoting on Windows.
+Yet another problem with argument quoting on Windows.
 
 =item -
 
-Selecting numerator/denominator fonts now works as described.
+Selecting numerator/denominator fonts didn't work as documented.
 
 =item -
 
-Make font info parsing work for Microsoft Sitka and LucasFonts Thesis.
+Font info parsing failed for Microsoft Sitka and LucasFonts Thesis.
 
 =back
 
