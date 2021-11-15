@@ -3667,6 +3667,18 @@ a user-defined suffix to the names
 of all generated Type1 fonts; see L</COMMAND-LINE OPTIONS> below.
 
 
+=head2 Sorry, LIGTABLE too long for me to handle
+
+The LIGTABLE in TeX's F<tfm> files, which contains a font's ligatures
+and kerning pairs, is limited to about 32,500 entries (2^15 - 256).
+If the number of ligatures plus kerns in a font is higher than that limit,
+I<pltotf> and I<vptovf> will complain loudly and ignore the excess entries.
+This happens at least with Adobe's Source Serif 4 and Minion 3.
+The best way to handle this situation is to use B<autoinst>'s C<-extra> option
+to raise F<otftotfm>'s value for the C<--min-kern> parameter, which causes it
+to ignore small kerning pairs: C<-extra='--min-kern=5.0'>.
+
+
 =head2 A note for MiKTeX users
 
 Automatically installing the fonts into a suitable TEXMF tree
