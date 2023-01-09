@@ -638,7 +638,7 @@ sub _parse_metadata {
 
     # clean up family name (it's used in LaTeX command names)
     my @DIGITS = qw(Zero One Two Three Four Five Six Seven Eight Nine);
-    $data->{family}    =~ s/(?: LT | MT)(?: Std | Pro )\z//xms;
+    $data->{family}    =~ s/(?: LT | MT)(?: Std | Pro )//xms;
     $data->{family}    =~ s/(\d)/$DIGITS[$1]/xmsge;
     $data->{family}    =~ s/[^A-Za-z]+//xmsg;
 
