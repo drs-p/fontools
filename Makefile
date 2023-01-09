@@ -1,11 +1,11 @@
 .PHONY: dist
 
 YEAR=$(shell date +"%Y")
-VERSION=$(shell git describe master)
+VERSION=$(shell git describe main)
 
 dist:
-	if [ "x$(shell git branch | grep '* master')" != "x* master" ]; then \
-		echo >&2 "[WARNING] not on 'master' branch"; \
+	if [ "x$(shell git branch | grep '* main')" != "x* main" ]; then \
+		echo >&2 "[WARNING] not on 'main' branch"; \
 	fi
 	if [ "x$(shell git describe | grep '-')" != "x" ]; then \
 		echo >&2 "[WARNING] release not tagged"; \

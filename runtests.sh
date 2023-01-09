@@ -1,11 +1,11 @@
-#! /bin/sh
+#! /bin/bash
 
 AUTOINST=../../bin/autoinst
 
 rm -rf test/output
 mkdir -p test/output
 cd test/output
-if [ -x "$(command -v parallel)" ]; then
+if [[ -x "$(command -v parallel)" ]]; then
     parallel $AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -t1suffix -inferiors {}/*.[ot]tf ::: ../testfiles/*
 else
     for dirname in ../testfiles/*; do
