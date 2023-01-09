@@ -1226,6 +1226,13 @@ END_STY_FONTAXES_SW
     \DeclareTextFontCommand{\textsup}{\supfigures}
     \let\textsu\textsup
     \let\textsuperior\textsup
+    \let\@oldtextsuperscript\textsuperscript
+    \def\textsuperscript{\@ifstar\@oldtextsuperscript\textsup}
+    \def\@makefnmark{%
+        \mbox{\footnotemarkfont\textsuperscript{\@thefnmark}}}
+    \@ifundefined{ftntm@font}%
+        {\let\footnotemarkfont\normalfont}%
+        {\let\footnotemarkfont\ftntm@font}
 
 END_STY_FONTAXES_SUP
     }
@@ -1240,6 +1247,8 @@ END_STY_FONTAXES_SUP
     \DeclareTextFontCommand{\textinf}{\inffigures}
     \let\textin\textinf
     \let\textinferior\textinf
+    \let\@oldtextsubscript\textsubscript
+    \def\textsubscript{\@ifstar\@oldtextsubscript\textinf}
 
 END_STY_FONTAXES_INF
     }
@@ -3490,6 +3499,12 @@ to place swash on F<fontaxes>' secondary shape axis (F<fontaxes> places it
 on the primary shape axis) to make them behave properly when nested, so that
 C<\swshape\upshape> will give upright swash.
 
+Finally, the style file will redefine Latex's C<\textsuperscript> and
+C<\textsubscript> commands to use the fonts' superior and inferior figures,
+and modifies Latex's footnote mechanism to use C<\textsuperscript>.
+The old versions of these commands are still available as
+C<\textsuperscript*> and C<\textsubscript*>.
+
 There are no commands for accessing the numerator and denominator
 fonts; these can be selected using F<fontaxes>' standard commands,
 e.g., C<\fontfigurestyle{numerator}\selectfont>.
@@ -4095,6 +4110,13 @@ the input fonts are in F<otf> format.
 Added the I<-t1suffix> command-line option,
 to modify the font and file names of those generated Type1 fonts.
 
+=back
+
+
+=begin Really_old_history
+
+=over 12
+
 =item I<2020-06-19>
 
 Added the C<nomathgreek> option to generated style files.
@@ -4128,13 +4150,6 @@ an argument to I<-inferiors>.
 =item I<2020-01-29>
 
 Don't create empty subdirectories in the target TEXMF tree.
-
-=back
-
-
-=begin Really_old_history
-
-=over 12
 
 =item I<2019-11-18>
 
