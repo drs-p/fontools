@@ -631,6 +631,15 @@ sub _parse_metadata {
         $data->{$key} =~ s/\s+//xmsg;
     }
 
+    for my $item (qw(family subfamily fullname)) {
+        if (!$data->{$item}) {
+            die <<"END_ERR_METADATA_MISSING"
+[ERROR]     Parsing font metadata failed for $self->{filename}:
+            could not find '$item' metadata item
+END_ERR_METADATA_MISSING
+        }
+    }
+
     $data->{family}    =  $data->{preferredfamily} || $data->{family};
     $data->{subfamily} =  $data->{preferredsubfamily} || $data->{subfamily};
     $data->{fullname}  =~ s/\A$data->{family}//xms;
