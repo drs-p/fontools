@@ -1155,6 +1155,7 @@ END_STY_MAINFONT
                 "{$series}}\n";
         }
     }
+    print {$STY} "\n";
 
     if ($ARGV{math}) {
         print {$STY} <<"END_STY_MATHOPTION";
@@ -1359,6 +1360,8 @@ END_STYLE_REST
 
     if ($ARGV{math}) {
         print {$STY} <<"END_STY_MATH";
+% Logically these definitions belong inside the \\if$fam\@math,
+% but somehow Latex doesn't like that.
 \\newif\\if$fam\@mathLATINup\\$fam\@mathLATINupfalse
 \\newif\\if$fam\@mathlatinup\\$fam\@mathlatinupfalse
 \\newif\\if$fam\@mathGREEKup\\$fam\@mathGREEKupfalse
@@ -1458,8 +1461,10 @@ END_STYLE_REST
     \\re\@DeclareMathSymbol{Y}{\\mathalpha}{newletters}{`Y}
     \\re\@DeclareMathSymbol{Z}{\\mathalpha}{newletters}{`Z}
 
-    \\re\@DeclareMathSymbol{\\imath}{\\mathord}{newletters}{"7B}
-    \\re\@DeclareMathSymbol{\\jmath}{\\mathord}{newletters}{"7C}
+    \\re\@DeclareMathSymbol{\\partial}{\\mathord}{newletters}{"40}
+    \\re\@DeclareMathSymbol{\\ell}    {\\mathord}{newletters}{"60}
+    \\re\@DeclareMathSymbol{\\imath}  {\\mathord}{newletters}{"7B}
+    \\re\@DeclareMathSymbol{\\jmath}  {\\mathord}{newletters}{"7C}
 
     %
     %   A number of math symbol declarations have been commented out,
