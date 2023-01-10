@@ -3697,10 +3697,15 @@ The LIGTABLE in TeX's F<tfm> files, which contains a font's ligatures
 and kerning pairs, is limited to about 32,500 entries (2^15 - 256).
 If the number of ligatures plus kerns in a font is higher than that limit,
 I<pltotf> and I<vptovf> will complain loudly and ignore the excess entries.
-This happens at least with Adobe's Source Serif 4 and Minion 3.
+This happens at least with Adobe's Source Serif 4 and Minion 3 font families.
+Even when I<pltotf> and I<vptovf> don't warn about the LIGTABLE's size,
+you may still find that I<pdftex> crashes with a
+C<Bad metric (TFM) file> error.
 The best way to handle this situation is to use B<autoinst>'s C<-extra> option
 to raise F<otftotfm>'s value for the C<--min-kern> parameter, which causes it
-to ignore small kerning pairs: C<-extra='--min-kern=5.0'>.
+to ignore small kerning pairs: C<-extra='--min-kern=6.0'>.
+Finding the correct value for the C<--min-kern> parameter may require some
+trial and error.
 
 
 =head2 A note for MiKTeX users
