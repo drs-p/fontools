@@ -1203,12 +1203,11 @@ END_STY_MATHCALOPTION
 
 END_STY_PROCESSOPTIONS
 
-    print {$STY} <<"END_STY_PACKAGES";
-\\RequirePackage{@{[ $seen{TS1} ? "fontenc,textcomp" : "fontenc" ]}}
-\\RequirePackage{ifthen}
-\\RequirePackage{mweights}
-
-END_STY_PACKAGES
+    print {$STY} "\\RequirePackage[@{[ join ',', grep { $_ ne 'OT1' } @{$ARGV{encoding}} ]}]{fontenc}\n";
+    print {$STY} "\\RequirePackage{textcomp}\n" if $seen{TS1};
+    print {$STY} "\\RequirePackage{ifthen}\n";
+    print {$STY} "\\RequirePackage{mweights}\n";
+    print {$STY} "\n";
 
     print {$STY} <<'END_STY_FONTAXES_START';
 \IfFileExists{fontaxes.sty}{
