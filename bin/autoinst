@@ -1109,36 +1109,36 @@ END_STY_HEADER
 
 END_STY_XKEYVAL
 
+    my ($figurestyle_default, $figurealign_default);
     if ($seen{LF} or $seen{TLF}) {
         print {$STY}
             "\\DeclareOptionX{lining}{\\edef\\$fam\@figurestyle{LF}}\n";
+        $figurestyle_default = 'LF';
     }
     if ($seen{OsF} or $seen{TOsF}) {
         print {$STY}
             "\\DeclareOptionX{oldstyle}{\\edef\\$fam\@figurestyle{OsF}}\n";
+        $figurestyle_default = 'OsF';
     }
     if ($seen{TLF} or $seen{TOsF}) {
         print {$STY}
             "\\DeclareOptionX{tabular}{\\edef\\$fam\@figurealign{T}}\n";
+        $figurealign_default = 'T';
     }
     if ($seen{LF} or $seen{OsF}) {
         print {$STY}
             "\\DeclareOptionX{proportional}{\\edef\\$fam\@figurealign{}}\n";
+        $figurealign_default = '';
     }
 
     print {$STY} <<"END_STY_MAINFONT";
+\\edef\\$fam\@figurestyle{$figurestyle_default}
+\\edef\\$fam\@figurealign{$figurealign_default}
+
 \\DeclareOptionX{mainfont}{
     \\renewcommand{\\familydefault}{\\$ARGV{nfss}default}
 }
 END_STY_MAINFONT
-
-    my $defaults
-        = $seen{OsF}  ? 'oldstyle,proportional'
-        : $seen{TOsF} ? 'oldstyle,tabular'
-        : $seen{LF}   ? 'lining,proportional'
-        : $seen{TLF}  ? 'lining,tabular'
-        :               die "[ERROR]     Internal bug, please report!"
-        ;
 
     for my $series (qw(heavy black extrabold demibold semibold bold)) {
         if ( $seen{$series} ) {
@@ -1172,24 +1172,32 @@ END_STY_MAINFONT
 
 END_STY_MATHOPTION
 
-        if ($seen{LF} or $seen{TLF}) {
-            print {$STY} "\\newcommand*{\\$fam\@mathfigurestyle}{LF}\n";
-        }
-        elsif ($seen{OsF} or $seen{TOsF}) {
-            print {$STY} "\\newcommand*{\\$fam\@mathfigurestyle}{OsF}\n";
-        }
-
+        my ($mathfigurestyle_default, $mathfigurealign_default);
         if ($seen{OsF} or $seen{TOsF}) {
             print {$STY}
-                "\\DeclareOptionX{matholdstyle}\n",
-                "    {\\renewcommand*{\\$fam\@mathfigurestyle}{OsF}}\n";
+                "\\DeclareOptionX{matholdstyle}{\\edef\\$fam\@mathfigurestyle{OsF}}\n";
+            $mathfigurestyle_default = 'OsF';
         }
         if ($seen{LF} or $seen{TLF}) {
             print {$STY}
-                "\\DeclareOptionX{mathlining}\n",
-                "    {\\renewcommand{\\$fam\@mathfigurestyle}{LF}}\n";
+                "\\DeclareOptionX{mathlining}{\\edef\\$fam\@mathfigurestyle{LF}}\n";
+            $mathfigurestyle_default = 'LF';
         }
-        print {$STY} "\n";
+        if ($seen{LF} or $seen{OsF}) {
+            print {$STY}
+                "\\DeclareOptionX{mathproportional}{\\edef\\$fam\@mathfigurealign{}}\n";
+            $mathfigurealign_default = '';
+        }
+        if ($seen{TLF} or $seen{TOsF}) {
+            print {$STY}
+                "\\DeclareOptionX{mathtabular}{\\edef\\$fam\@mathfigurealign{T}}\n";
+            $mathfigurealign_default = 'T';
+        }
+        print {$STY} <<"END_STY_MATHDEFAULTS";
+\\edef\\$fam\@mathfigurestyle{$mathfigurestyle_default}
+\\edef\\$fam\@mathfigurealign{$mathfigurealign_default}
+
+END_STY_MATHDEFAULTS
 
         if ($seen{sw}) {
             print {$STY} <<"END_STY_MATHCALOPTION";
@@ -1201,7 +1209,6 @@ END_STY_MATHCALOPTION
     }
 
     print {$STY} <<"END_STY_PROCESSOPTIONS";
-\\ExecuteOptionsX{$defaults}
 \\ProcessOptionsX\\relax
 
 END_STY_PROCESSOPTIONS
@@ -1368,21 +1375,36 @@ END_STYLE_REST
 \\newif\\if$fam\@mathgreekup\\$fam\@mathgreekupfalse
 
 \\if$fam\@math
-    \\DeclareSymbolFont{newoperators}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
-    \\SetSymbolFont{newoperators}{bold}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\ifthenelse{\\equal{\\$fam\@mathstyle}{TeX}}
+        {\\$fam\@mathGREEKuptrue}
+        {}
+    \\ifthenelse{\\equal{\\$fam\@mathstyle}{french}}
+        {\\$fam\@mathLATINuptrue
+         \\$fam\@mathGREEKuptrue
+         \\$fam\@mathgreekuptrue}
+        {}
+    \\ifthenelse{\\equal{\\$fam\@mathstyle}{upright}}
+        {\\$fam\@mathLATINuptrue
+         \\$fam\@mathlatinuptrue
+         \\$fam\@mathGREEKuptrue
+         \\$fam\@mathgreekuptrue}
+        {}
 
-    \\DeclareSymbolFont{newletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetSymbolFont{newletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+    \\DeclareSymbolFont{newoperators}  {OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+    \\SetSymbolFont{newoperators}{bold}{OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+
+    \\DeclareSymbolFont{newletters}  {OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetSymbolFont{newletters}{bold}{OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
 
     \\DeclareSymbolFontAlphabet{\\mathrm}{newoperators}
     \\DeclareSymbolFontAlphabet{\\mathnormal}{newletters}
 
     \\def\\operator\@font{\\mathgroup\\symnewoperators}
-    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
-    \\SetMathAlphabet{\\mathit}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{normal}{OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{it}
+    \\SetMathAlphabet{\\mathit}{bold}  {OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{it}
 
-    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
-    \\SetMathAlphabet{\\mathbf}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{normal}{OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+    \\SetMathAlphabet{\\mathbf}{bold}  {OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
     \\def\\re\@DeclareMathSymbol#1#2#3#4{%
         \\if\\relax\\noexpand#1\\let#1=\\undefined\\fi
@@ -1552,21 +1574,6 @@ END_STYLE_REST
         \\re\@DeclareMathSymbol{\\varphi}    {\\mathord}{newletters}{"27}
     \\fi
 
-    \\ifthenelse{\\equal{\\$fam\@mathstyle}{TeX}}
-        {\\$fam\@mathGREEKuptrue}
-        {}
-    \\ifthenelse{\\equal{\\$fam\@mathstyle}{french}}
-        {\\$fam\@mathLATINuptrue
-         \\$fam\@mathGREEKuptrue
-         \\$fam\@mathgreekuptrue}
-        {}
-    \\ifthenelse{\\equal{\\$fam\@mathstyle}{upright}}
-        {\\$fam\@mathLATINuptrue
-         \\$fam\@mathlatinuptrue
-         \\$fam\@mathGREEKuptrue
-         \\$fam\@mathgreekuptrue}
-        {}
-
     \\if$fam\@mathLATINup
         \\re\@DeclareMathSymbol{A}{\\mathalpha}{newoperators}{`A}
         \\re\@DeclareMathSymbol{B}{\\mathalpha}{newoperators}{`B}
@@ -1597,8 +1604,8 @@ END_STYLE_REST
     \\fi
 
     \\if$fam\@mathlatinup
-        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
-        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+        \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+        \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
         \\re\@DeclareMathSymbol{a}{\\mathord}{upletters}{`a}
         \\re\@DeclareMathSymbol{b}{\\mathord}{upletters}{`b}
@@ -1648,8 +1655,8 @@ END_STYLE_REST
         \\fi
 
         \\if$fam\@mathgreekup
-            \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
-            \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
+            \\DeclareSymbolFont{upletters}  {OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{n}
+            \\SetSymbolFont{upletters}{bold}{OML}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{n}
 
             \\re\@DeclareMathSymbol{\\alpha}     {\\mathord}{upletters}{"0B}
             \\re\@DeclareMathSymbol{\\beta}      {\\mathord}{upletters}{"0C}
@@ -1689,8 +1696,8 @@ END_STY_MATH
         if ($seen{sw}) {
             print {$STY} <<"END_STY_MATHCAL";
 \\if$fam\@mathcal
-    \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{sw}
-    \\SetMathAlphabet{\\mathcal}{bold}  {OT1}{$fam-\\$fam\@figurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{sw}
+    \\SetMathAlphabet{\\mathcal}{normal}{OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\mdseries\@$ARGV{nfss}}{sw}
+    \\SetMathAlphabet{\\mathcal}{bold}  {OT1}{$fam-\\$fam\@mathfigurealign\\$fam\@mathfigurestyle}{\\bfseries\@$ARGV{nfss}}{sw}
 \\fi
 
 END_STY_MATHCAL
@@ -3571,10 +3578,10 @@ to access these math fonts:
 
 Use these fonts for the maths in your document.
 
-=item C<mathlining>, C<matholdstyle>
+=item C<mathlining>, C<matholdstyle>, C<mathtabular>, C<mathproportional>
 
-Choose which figure style to use in maths.
-The default is "mathlining".
+Choose which figure style and alignment to use in maths.
+The defaults are "mathlining" and "mathtabular".
 
 =item C<mathcal>
 
