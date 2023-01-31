@@ -2790,7 +2790,7 @@ sub process_encoding_options {
     # or have an accompanying .enc file in the current directory.
     my @encodings = split /,/, $ARGV{encoding};
     for my $enc (@encodings) {
-        if ($enc !~ m/\A(OT1|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3)\z/xmsi) {
+        if ($enc !~ m/\A(OT1|T[1345]|T2[ABC]|TS[13]|LY1|LGR|CS|L7X|QX)\z/xmsi) {
             my $try = $enc;
             $try .= '.enc' if $try !~ m/[.]enc\z/xmsi;
             if (!-e $try) {
@@ -3176,7 +3176,7 @@ sub cleanup {
     }
     else {
         ($workitem->{enc_file} = $workitem->{encoding})
-            =~ s{ \A (OT1|OML|T1|TS1|LY1|LGR|T2[ABC]|T3|TS3) \z }
+            =~ s{ \A (OT1|OML|T[1345]|T2[ABC]|TS[13]|LY1|LGR|CS|L7X|QX) \z }
                 {fontools_\L$1\E}xmsi;
     }
 
@@ -3876,8 +3876,8 @@ For each encoding argument, B<autoinst> will first check if it is
 the filename of an encoding file, and if found it will use that;
 otherwise the argument is assumed to be the name of one of
 the built-in encodings.
-Currently B<autoinst> comes with built-in support for the OT1, T1/TS1, LY1, LGR,
-T2A/B/C and T3/TS3 encodings.
+Currently B<autoinst> comes with built-in support for the OT1, T1/TS1, LY1,
+T2A/B/C, T3/TS3, T4, T5, LGR, CS, L7X and QX encodings.
 (These files are called F<fontools_ot1.enc> etc. to avoid name clashes
 with other packages; the F<fontools_> prefix may be omitted.)
 
@@ -4193,6 +4193,10 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
+=item I<2023-02-01>
+
+Added support for the T4, T5, CS, L7X and QX encodings.
+
 =item I<2023-01-31>
 
 If the fonts contain superior and/or inferior figures,
@@ -4201,7 +4205,8 @@ and C<\textsubscript> commands, and patches Latex's footnote
 mechanism to use these figures
 (inspired by the F<realscripts> package).
 Fixed a few bugs in metadata parsing, style file generation
-and the C<-t1suffix> option.
+and the C<-t1suffix> option, so that the latter also works
+for dvips and dvipdfmx.
 
 =item I<2021-11-15>
 

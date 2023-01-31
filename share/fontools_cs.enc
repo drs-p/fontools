@@ -1,6 +1,6 @@
-% A version of the OT1 encoding, intended for use with otftotfm.
-% CODINGSCHEME TEX TEXT
-/otftotfmOT1Encoding [
+% A version of the CS encoding, intended for use with otftotfm.
+% Based on the file lm-cs.enc from the Latin Modern package
+/otftotfmCSEncoding [
 % 0x00
   /Gamma
   /Delta
@@ -38,7 +38,7 @@
   /OE
   /Oslash
 % 0x20
-  /lslashslash
+  /space
   /exclam
   /quotedblright
   /numbersign
@@ -105,7 +105,7 @@
   /Y
   /Z
   /bracketleft
-  /quotedblleft
+  /backslash
   /bracketright
   /circumflex
   /dotaccent
@@ -118,7 +118,7 @@
   /e
   /f
   /g
-% 0x68
+% 0x6a
   /h
   /i
   /j
@@ -146,154 +146,153 @@
   /tilde
   /dieresis
 % 0x80
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /ellipsis
+  /dagger
+  /daggerdbl
+  /bullet
+  /sterling
+  /paragraph
+  /Euro
   /.notdef
 % 0x88
+  /trademark
+  /copyright
+  /registered
   /.notdef
   /.notdef
-  /Lslash
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /perthousand
+  /guilsinglleft
+  /guilsinglright
 % 0x90
   /.notdef
   /.notdef
   /.notdef
   /.notdef
   /.notdef
+  /longs
   /.notdef
-  /.notdef
-  /.notdef
+  /florin
 % 0x98
+  /Agrave
   /.notdef
+  /quotesinglbase
   /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /hyphen.alt
+  /ogonek
+  /guillemotleft
+  /guillemotright
 % 0xA0
   /.notdef
+  /Aogonek
   /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /Lslash
+  /currency
+  /Lcaron
+  /Sacute
+  /section
 % 0xA8
   /.notdef
+  /Scaron
+  /Scommaaccent
+  /Tcaron
+  /Zacute
+  /.notdef
+  /Zcaron
+  /Zdotaccent
+% 0xB0
+  /degree
+  /aogonek
   /.notdef
   /lslash
   /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-% 0xB0
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /lcaron
+  /sacute
   /.notdef
 % 0xB8
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /agrave
+  /scaron
+  /scommaaccent
+  /tcaron
+  /zacute
+  /tcommaaccent
+  /zcaron
+  /zdotaccent
 % 0xC0
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /Racute
+  /Aacute
+  /Acircumflex
+  /Abreve
+  /Adieresis
+  /Lacute
+  /Cacute
+  /Ccedilla
 % 0xC8
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /Ccaron
+  /Eacute
+  /Eogonek
+  /Edieresis
+  /Ecaron
+  /Iacute
+  /Icircumflex
+  /Dcaron
 % 0xD0
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /Eth
+  /Nacute
+  /Ncaron
+  /Oacute
+  /Ocircumflex
+  /Ohungarumlaut
+  /Odieresis
+  /multiply
 % 0xD8
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /Rcaron
+  /Uring
+  /Uacute
+  /Uhungarumlaut
+  /Udieresis
+  /Yacute
+  /Tcommaaccent
   /.notdef
 % 0xE0
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /racute
+  /aacute
+  /acircumflex
+  /abreve
+  /adieresis
+  /lacute
+  /cacute
+  /ccedilla
 % 0xE8
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /ccaron
+  /eacute
+  /eogonek
+  /edieresis
+  /ecaron
+  /iacute
+  /icircumflex
+  /dcaron
 % 0xF0
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /eth
+  /nacute
+  /ncaron
+  /oacute
+  /ocircumflex
+  /ohungarumlaut
+  /odieresis
+  /divide
 % 0xF8
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
-  /.notdef
+  /rcaron
+  /uring
+  /uacute
+  /uhungarumlaut
+  /udieresis
+  /yacute
+  /quotedblbase
+  /quotedblleft
 ] def
 %
 % UNICODING Delta =: Deltagreek Delta;
 % UNICODING Omega =: Omegagreek Omega;
-% UNICODING lslashslash =: lslashslash solidusshortoverlaycmb;
 %
 % LIGKERN question quoteleft =: questiondown;
 % LIGKERN exclam quoteleft =: exclamdown;
@@ -301,8 +300,9 @@
 % LIGKERN endash hyphen =: emdash;
 % LIGKERN quoteleft quoteleft =: quotedblleft;
 % LIGKERN quoteright quoteright =: quotedblright;
-% LIGKERN lslashslash L =: Lslash;
-% LIGKERN lslashslash l =: lslash;
+% LIGKERN comma comma =: quotedblbase;
+% LIGKERN less less =: guillemotleft;
+% LIGKERN greater greater =: guillemotright;
 %
 % LIGKERN || = 32;
 %

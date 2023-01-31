@@ -1,6 +1,6 @@
-% A version of the T1 encoding, intended for use with otftotfm.
-% CODINGSCHEME EXTENDED TEX FONT ENCODING - LATIN
-/otftotfmT1Encoding [
+% Encoding file for the T4 encoding, intended for use with otftotfm.
+% Based on the file fc.rme fromnt the fc fonts package
+/otftotfmT4Encoding [
 % 0x00
   /grave
   /acute
@@ -146,154 +146,153 @@
   /asciitilde
   /hyphenchar
 % 0x80
-  /Abreve
-  /Aogonek
-  /Cacute
-  /Ccaron
-  /Dcaron
+  /Bhook
+  /Dhook
+  /Eopen
+  /Ereversed
+  /Fhook
   /Ecaron
-  /Eogonek
-  /Gbreve
+  /Gammaafrican
+  /Hbar
 % 0x88
-  /Lacute
-  /Lcaron
-  /Lslash
+  /Khook
+  /Nhookleft
+  /Oopen
   /Nacute
-  /Ncaron
+  /Esh
   /Eng
-  /Ohungarumlaut
-  /Racute
+  /Vhook
+  /Yhook
 % 0x90
-  /Rcaron
-  /Sacute
+  /Chook
+  /Phook
   /Scaron
-  /Scedilla
-  /Tcaron
-  /Tcedilla
-  /Uhungarumlaut
-  /Uring
+  /Ndotaccent
+  /Nlinebelow
+  /Sdotbelow
+  /Ezh
+  /Tbar
 % 0x98
-  /Ydieresis
-  /Zacute
-  /Zcaron
-  /Zdotaccent
-  /IJ
-  /Idotaccent
-  /dbar
-  /section
+  /Edot
+  /Edotbelow
+  /Thook
+  /Tretroflexhook
+  /tesh
+  /f_j       %fj
+  /dcroat
+  /dblgravecmb
 % 0xA0
-  /abreve
-  /aogonek
-  /cacute
-  /ccaron
-  /dcaron
+  /bhook
+  /dhook
+  /eopen
+  /eturned
+  /uni0192
   /ecaron
-  /eogonek
-  /gbreve
+  /gammalatinsmall
+  /hbar
 % 0xA8
-  /lacute
-  /lcaron
-  /lslash
+  /khook
+  /nhookleft
+  /oopen
   /nacute
-  /ncaron
+  /esh
   /eng
-  /ohungarumlaut
-  /racute
+  /vhook
+  /yhook
 % 0xB0
-  /rcaron
-  /sacute
+  /chook
+  /phook
   /scaron
-  /scedilla
-  /tcaron
-  /tcedilla
-  /uhungarumlaut
-  /uring
+  /ndotaccent
+  /nlinebelow
+  /sdotbelow
+  /ezh
+  /tbar
 % 0xB8
-  /ydieresis
-  /zacute
-  /zcaron
-  /zdotaccent
-  /ij
+  /edot
+  /edotbelow
+  /thook
+  /tretroflexhook
+  /dblverticallineabovecmb
   /exclamdown
   /questiondown
-  /sterling
+  /verticallineabovecmb
 % 0xC0
-  /Agrave
-  /Aacute
-  /Acircumflex
+  /Iotaafrican
+  /Idotbelow
+  /Eopentilde   % not in Unicode
   /Atilde
-  /Adieresis
-  /Aring
+  /Macute
+  /Oopentilde   % not in Unicode
   /AE
   /Ccedilla
 % 0xC8
   /Egrave
   /Eacute
-  /Ecircumflex
+  /Ecaron
   /Edieresis
-  /Igrave
-  /Iacute
-  /Icircumflex
-  /Idieresis
+  /Elinebelow   % not in Unicode
+  /Emacron
+  /Etilde
+  /Itilde
 % 0xD0
-  /Eth
+  /Dafrican
   /Ntilde
   /Ograve
-  /Oacute
+  /uni022E
   /Ocircumflex
   /Otilde
   /Odieresis
   /OE
 % 0xD8
   /Oslash
-  /Ugrave
-  /Uacute
-  /Ucircumflex
-  /Udieresis
-  /Yacute
-  /Thorn
-  /SS
+  /Odotbelow
+  /Olinebelow   % not in Unicode
+  /Omacron
+  /Ocaron
+  /Udotbelow
+  /Utilde
+  /solidusshortoverlaycmb
 % 0xE0
-  /agrave
-  /aacute
-  /acircumflex
+  /iotalatin
+  /idotbelow
+  /eopentilde   % not in Unicode
   /atilde
-  /adieresis
-  /aring
+  /macute
+  /oopentilde   % not in Unicode
   /ae
   /ccedilla
 % 0xE8
   /egrave
   /eacute
-  /ecircumflex
+  /ecaron
   /edieresis
-  /igrave
-  /iacute
-  /icircumflex
-  /idieresis
+  /elinebelow   % not in Unicode
+  /emacron
+  /etilde
+  /itilde
 % 0xF0
-  /eth
+  /dtail
   /ntilde
   /ograve
-  /oacute
+  /uni022F
   /ocircumflex
   /otilde
   /odieresis
   /oe
 % 0xF8
   /oslash
-  /ugrave
-  /uacute
-  /ucircumflex
-  /udieresis
-  /yacute
-  /thorn
+  /odotbelow
+  /olinebelow   % not in Unicode
+  /omacron
+  /ocaron
+  /udotbelow
+  /utilde
   /germandbls
 ] def
 %
 % UNICODING perthousandzero =: perthousandzero zeroinferior emptyslot;
 % UNICODING visualspace =: uni2423 uni02FD;
-% UNICODING SS =: uni1E9E SS;
 %
 % LIGKERN question quoteleft =: questiondown;
 % LIGKERN exclam quoteleft =: exclamdown;

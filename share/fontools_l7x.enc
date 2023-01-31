@@ -1,42 +1,42 @@
-% A version of the LY1 encoding, intended for use with otftotfm.
-% CODINGSCHEME TEX TYPEWRITER AND WINDOWS ANSI
-/otftotfmLY1Encoding [
+% A version of the L7X encoding, intended for use with otftotfm.
+% Based on the file lm-l7x.enc from the Latin Modern package
+/otftotfmL7XEncoding [
 % 0x00
-  /.notdef
-  /Euro
-  /.notdef
-  /.notdef
-  /fraction
-  /dotaccent
-  /hungarumlaut
-  /ogonek
-% 0x08
-  /fl
-  /.notdef
-  /cwm
-  /ff
-  /fi
-  /.notdef
-  /ffi
-  /ffl
-% 0x10
-  /dotlessi
-  /dotlessj
   /grave
   /acute
+  /circumflex
+  /tilde
+  /dieresis
+  /hungarumlaut
+  /ring
   /caron
+% 0x08
   /breve
   /macron
-  /ring
-% 0x18
+  /dotaccent
   /cedilla
-  /germandbls
-  /ae
-  /oe
-  /oslash
-  /AE
-  /OE
-  /Oslash
+  /ogonek
+  /quotesinglbase
+  /guilsinglleft
+  /guilsinglright
+% 0x10
+  /quotedblleft
+  /quotedblright
+  /quotedblbase
+  /guillemotleft
+  /guillemotright
+  /endash
+  /emdash
+  /cwm
+% 0x18
+  /perthousandzero
+  /dotlessi
+  /dotlessj
+  /ff
+  /fi
+  /fl
+  /ffi
+  /ffl
 % 0x20
   /space
   /exclam
@@ -107,7 +107,7 @@
   /bracketleft
   /backslash
   /bracketright
-  /circumflex
+  /asciicircum
   /underscore
 % 0x60
   /quoteleft
@@ -143,156 +143,156 @@
   /braceleft
   /bar
   /braceright
-  /tilde
-  /dieresis
+  /asciitilde
+  /.notdef
 % 0x80
-  /Lslash
-  /quotesingle
-  /quotesinglbase
+  /Euro
+  /.notdef
+  /.notdef
   /florin
-  /quotedblbase
+  /.notdef
   /ellipsis
   /dagger
   /daggerdbl
 % 0x88
-  /circumflex
+  /.notdef
   /perthousand
-  /Scaron
-  /guilsinglleft
+  /.notdef
+  /.notdef
   /OE
-  /Zcaron
-  /asciicircum
-  /minus
+  /.notdef
+  /.notdef
+  /.notdef
 % 0x90
-  /lslash
-  /quoteleft
-  /quoteright
-  /quotedblleft
-  /quotedblright
+  /.notdef
+  /.notdef
+  /.notdef
+  /.notdef
+  /.notdef
   /bullet
-  /endash
-  /emdash
+  /.notdef
+  /.notdef
 % 0x98
-  /tilde
+  /.notdef
   /trademark
-  /scaron
-  /guilsinglright
+  /.notdef
+  /.notdef
   /oe
-  /zcaron
-  /asciitilde
-  /Ydieresis
+  /.notdef
+  /.notdef
+  /.notdef
 % 0xA0
-  /cwm
-  /exclamdown
+  /nbspace
+  /.notdef
   /cent
   /sterling
   /currency
-  /yen
+  /.notdef
   /brokenbar
   /section
 % 0xA8
-  /dieresis
+  /Oslash
   /copyright
-  /ordfeminine
-  /guillemotleft
+  /Rcommaaccent
+  /.notdef
   /logicalnot
-  /sfthyphen
+  /hyphen.alt
   /registered
-  /macron
+  /AE
 % 0xB0
   /degree
   /plusminus
   /twosuperior
   /threesuperior
-  /acute
+  /.notdef
   /mu
   /paragraph
   /periodcentered
 % 0xB8
-  /cedilla
+  /oslash
   /onesuperior
-  /ordmasculine
-  /guillemotright
+  /rcommaaccent
+  /.notdef
   /onequarter
   /onehalf
   /threequarters
-  /questiondown
+  /ae
 % 0xC0
-  /Agrave
-  /Aacute
-  /Acircumflex
-  /Atilde
+  /Aogonek
+  /Iogonek
+  /Amacron
+  /Cacute
   /Adieresis
   /Aring
-  /AE
-  /Ccedilla
+  /Eogonek
+  /Emacron
 % 0xC8
-  /Egrave
+  /Ccaron
   /Eacute
-  /Ecircumflex
-  /Edieresis
-  /Igrave
-  /Iacute
-  /Icircumflex
-  /Idieresis
+  /Zacute
+  /Edotaccent
+  /Gcommaaccent
+  /Kcommaaccent
+  /Imacron
+  /Lcommaaccent
 % 0xD0
-  /Eth
-  /Ntilde
-  /Ograve
+  /Scaron
+  /Nacute
+  /Ncommaaccent
   /Oacute
-  /Ocircumflex
+  /Omacron
   /Otilde
   /Odieresis
   /multiply
 % 0xD8
-  /Oslash
-  /Ugrave
-  /Uacute
-  /Ucircumflex
+  /Uogonek
+  /Lslash
+  /Sacute
+  /Umacron
   /Udieresis
-  /Yacute
-  /Thorn
+  /Zdotaccent
+  /Zcaron
   /germandbls
 % 0xE0
-  /agrave
-  /aacute
-  /acircumflex
-  /atilde
+  /aogonek
+  /iogonek
+  /amacron
+  /cacute
   /adieresis
   /aring
-  /ae
-  /ccedilla
+  /eogonek
+  /emacron
 % 0xE8
-  /egrave
+  /ccaron
   /eacute
-  /ecircumflex
-  /edieresis
-  /igrave
-  /iacute
-  /icircumflex
-  /idieresis
+  /zacute
+  /edotaccent
+  /gcommaaccent
+  /kcommaaccent
+  /imacron
+  /lcommaaccent
 % 0xF0
-  /eth
-  /ntilde
-  /ograve
+  /scaron
+  /nacute
+  /ncommaaccent
   /oacute
-  /ocircumflex
+  /omacron
   /otilde
   /odieresis
   /divide
 % 0xF8
-  /oslash
-  /ugrave
-  /uacute
-  /ucircumflex
+  /uogonek
+  /lslash
+  /sacute
+  /umacron
   /udieresis
-  /yacute
-  /thorn
-  /ydieresis
+  /zdotaccent
+  /zcaron
+  /.notdef
 ] def
 %
-% LIGKERN question quoteleft =: questiondown;
-% LIGKERN exclam quoteleft =: exclamdown;
+% UNICODING perthousandzero =: perthousandzero zeroinferior emptyslot;
+%
 % LIGKERN hyphen hyphen =: endash;
 % LIGKERN endash hyphen =: emdash;
 % LIGKERN quoteleft quoteleft =: quotedblleft;
