@@ -658,12 +658,20 @@ END_ERR_METADATA_MISSING
         $data->{subfamily} =~ s/\A (?: ST | T | SD | D)//xms;
     }
 
+    # move Adobe's optical size from family to subfamily
+    for my $optical (qw(Caption SmText SmallText Subhead Display)) {
+        if ($data->{family} =~ s/$optical\z//xms) {
+            $data->{subfamily} .= $optical;
+            last;
+        }
+    }
+
     # Sometimes the relevant info is in Fullname, sometimes in Subfamily;
     # so we need to test against both
     my $fullinfo = lc "$data->{subfamily} | $data->{fullname}";
 
     # remove Adobe's SmallText size, to avoid mistaking it for Text weight
-    $fullinfo =~ s/(?: SmallText | SmText )\z//xmsi;
+    $fullinfo =~ s/(?: SmallText | SmText )//gxmsi;
 
     # We need to be careful when parsing the font info; in particular
     # we must parse strings like 'UltraCondensed' as 'Regular' weight
@@ -939,6 +947,27 @@ sub _parse_sizedata {
         && $self->{subfamily} =~ m/Display/xms
         && $minsize == 8.9 && $maxsize == 13.9) {
         ($minsize, $maxsize) = (23, 72);
+    }
+    elsif ($self->{family} eq 'SourceSerifFour'
+        && $minsize == 0 && $maxsize == 0) {
+        if ($self->{subfamily} eq 'Caption') {
+            ($minsize, $maxsize) = (0, 6);
+        }
+        elsif ($self->{subfamily} eq 'SmText') {
+            ($minsize, $maxsize) = (6, 9);
+        }
+        elsif ($self->{subfamily} eq '') {
+            ($minsize, $maxsize) = (9, 13);
+        }
+        elsif ($self->{subfamily} eq 'Subhead') {
+            ($minsize, $maxsize) = (13, 24);
+        }
+        elsif ($self->{subfamily} eq 'Display') {
+            ($minsize, $maxsize) = (24, 72);
+        }
+        else {
+            die "[ERROR]     Unknown subfamily '$self->{subfamily}' in $self->{filename}";
+        }
     }
 
     @{$self}{qw(minsize maxsize)} = ($minsize, $maxsize);
@@ -4192,6 +4221,10 @@ This document describes B<autoinst> version __VERSION__.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2023-06-28>
+
+Adapted font metadata parsing for Adobe Source Serif 4.
 
 =item I<2023-02-01>
 
