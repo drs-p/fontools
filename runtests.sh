@@ -12,11 +12,12 @@ else
         $AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -t1suffix -inferiors "$dirname"/*.[ot]tf
     done
 fi
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -defaultproportional -t1suffix -inferiors ../testfiles/cormorantgaramond/*.[ot]tf
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -nfssweight=m=medium -t1suffix -inferiors ../testfiles/franklingothic/*.[ot]tf
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -inferiors=subs -t1suffix ../testfiles/lato/*.[ot]tf
-cp ../../share/fontools_ot1.enc OT1.enc
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -t1suffix -inferiors $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular')
-$AUTOINST -verbose -target="$PWD" -enc=OT1,T1 -t1suffix -inferiors $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular|medium')
-$AUTOINST -verbose -target="$PWD" -enc=OT1.enc,t1 -t1suffix -inferiors $(ls ../testfiles/sourcecodepro/*.[ot]tf | egrep -iv 'regular|medium')
+
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -defaultproportional -t1suffix -inferiors ../testfiles/cormorantgaramond/*.[ot]tf
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -nfssweight=m=medium -t1suffix -inferiors ../testfiles/franklingothic/*.[ot]tf
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors=subs      -t1suffix ../testfiles/lato/*.[ot]tf
+
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -nfssweight=m=medium -t1suffix -inferiors $(ls ../testfiles/saira/*.[ot]tf)
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1                      -t1suffix -inferiors $(ls ../testfiles/saira/*.[ot]tf | egrep -iv 'regular|-italic')
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1                      -t1suffix -inferiors $(ls ../testfiles/saira/*.[ot]tf | egrep -iv 'regular|-italic|medium')
 cd ../..
