@@ -8,9 +8,9 @@
 | garamondlibre       | tripped over -inferiors; contains ornaments                 |
 | go                  | small caps in separate family                               |
 | ibmplexsans         | broken by -mergewidths; Text weight                         |
-| junicode2           | uncommon abbreviations: Exp, SmBold, SmCond, SmExp          |
+| junicode2           | unusual abbreviations: Exp, SmBold, SmCond, SmExp           |
 | lato                | Hairline, Thin and Heavy; also test -inferiors=subs         |
-| leaguemono          | widths: Condensed < Narrow < Regular < Wide < Extended      |
+| leaguemono          | Condensed < Narrow < Wide < Extended; no WidthClass 5!      |
 | librecaslon         | family LibreCaslon vs LibreCaslonText                       |
 | merriweathertext    | Text as subfamily (optical size)                            |
 | metapro             | Normal should map to m                                      |
