@@ -1,21 +1,22 @@
-|-------------------|-----------------------------------------------------------|
-| font              | test case                                                 |
-|-------------------|-----------------------------------------------------------|
-| cormorantgaramond | Roman shapes have no 'pnum'; tripped over -inferiors bug  |
-| dolly             | SC font has SmallCaps in name, but not in familyname      |
-| firasans          | Book maps to sl                                           |
-| franklingothic    | many widths; also test with -nfssweight=m=medium          |
-| garamondlibre     | tripped over -inferiors; contains ornaments               |
-| go                | small caps in separate family                             |
-| ibmplexsans       | broken by -mergewidths; Text weight                       |
-| lato              | Hairline, Thin and Heavy; also test -inferiors=subs       |
-| leaguemono        | widths: Condensed < Narrow < Regular < Wide < Extended    |
-| librecaslon       | family LibreCaslon vs LibreCaslonText                     |
-| merriweathertext  | Text as subfamily (optical size)                          |
-| metapro           | Normal should map to m                                    |
-| museo             | numerical weights: 100, 300, 500, 700, 900                |
-| notosansmono      | many weights/widths; monospaced but isFixedPitch is False |
-| quadraat          | family "Quadraat_BoldItalicCaps" etc. -> "Quadraat"       |
-| saira             | many weights/widths; also without Regular/Medium          |
-| sourcecodepro     | monospaced but no 'mono'                                  |
-|-------------------|-----------------------------------------------------------|
+| ------------------- | ----------------------------------------------------------- |
+| font                | test case                                                   |
+| ------------------- | ----------------------------------------------------------- |
+| cormorantgaramond   | Roman shapes have no 'pnum'; tripped over -inferiors bug    |
+| dolly               | SC font has SmallCaps in name, but not in familyname        |
+| firasans            | Book maps to sl                                             |
+| franklingothic      | many widths; also test with -nfssweight=m=medium            |
+| garamondlibre       | tripped over -inferiors; contains ornaments                 |
+| go                  | small caps in separate family                               |
+| ibmplexsans         | broken by -mergewidths; Text weight                         |
+| junicode2           | uncommon abbreviations: Exp, SmBold, SmCond, SmExp          |
+| lato                | Hairline, Thin and Heavy; also test -inferiors=subs         |
+| leaguemono          | widths: Condensed < Narrow < Regular < Wide < Extended      |
+| librecaslon         | family LibreCaslon vs LibreCaslonText                       |
+| merriweathertext    | Text as subfamily (optical size)                            |
+| metapro             | Normal should map to m                                      |
+| museo               | numerical weights: 100, 300, 500, 700, 900                  |
+| notosansmono        | many weights/widths; monospaced but isFixedPitch is False   |
+| quadraat            | family "Quadraat_BoldItalicCaps" etc. -> "Quadraat"         |
+| saira               | many weights/widths; also without Regular/Medium            |
+| sourcecodepro       | monospaced but no 'mono'                                    |
+| ------------------- | ----------------------------------------------------------- |
