@@ -168,7 +168,6 @@ my %FULL_FORM = (
     comp    =>  'compressed',
     cond    =>  'condensed',
     demi    =>  'demibold',
-    exp     =>  'expanded',
     extcond =>  'extracondensed',
     hair    =>  'hairline',
     incline =>  'inclined',
@@ -285,9 +284,9 @@ my @WIDTH = (
     c   =>  [ qw( condensed ) ],
     sc  =>  [ qw( semicondensed narrow ) ],
     ''  =>  [ qw( regular ) ],
-    sx  =>  [ qw( semiexpanded semiextended ) ],
-    x   =>  [ qw( expanded wide ) ],
-    ex  =>  [ qw( extended ) ],
+    sx  =>  [ qw( semiextended semiexpanded wide) ],
+    x   =>  [ qw( extended expanded ) ],
+    ex  =>  [],
     ux  =>  [],
 );
 
@@ -949,6 +948,15 @@ END_ERR_METADATA_MISSING
     }
 
     $self->{basicshape} = Attr::to_nfss($self->{shape});
+
+    # Work around a bug(?) in League Mono: the Regular width has
+    # a WidthClass of 6 instead of 5; that would cause our test below
+    # to (mis)classify it as SemiCondensed.
+    if ($self->{family} eq 'LeagueMono'
+            and $self->{width} eq 'regular'
+            and $self->{width_class} == 6) {
+        $self->{width_class} = 5;
+    }
 
     # A last-resort approach: if we couldn't parse weight or width,
     # we use the WeightClass and WidthClass indicators to derive
@@ -4399,10 +4407,13 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
-=item I<2024-01-03>
+=item I<2024-01-04>
 
-Added a more generic approach to font metadata parsing
-for fonts with unusually named weights or widths.
+We take a more generic approach to font metadata parsing;
+this should work better for fonts with unusually named weights
+or widths.
+We now also warn in font metadata parsing could not find
+a 'Regular' weight or width.
 
 =item I<2023-12-30>
 

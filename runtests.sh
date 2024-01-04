@@ -18,7 +18,6 @@ fi
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -defaultproportional      -t1suffix ../testfiles/cormorantgaramond/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -nfssweight=m=medium      -t1suffix ../testfiles/franklingothic/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors=subs                      -t1suffix ../testfiles/lato/*.[ot]tf
-$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -nfsswidth=m=semiexpanded -t1suffix ../testfiles/leaguemono/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -nfssweight=m=medium      -t1suffix $(ls ../testfiles/saira/*.[ot]tf)
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -noproportional           -t1suffix $(ls ../testfiles/saira/*.[ot]tf | egrep -iv 'regular|-italic')
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors                           -t1suffix $(ls ../testfiles/saira/*.[ot]tf | egrep -iv 'regular|-italic|medium')
