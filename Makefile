@@ -16,7 +16,7 @@ dist:
 	fi
 	rm -rf fontools/
 	mkdir -p fontools/doc
-	cp -r bin/ share/ GPLv2.txt README fontools/
+	cp -r bin/ share/ LICENSE README fontools/
 	for name in afm2afm autoinst ot2kpx splitttc; do \
 		sed -i "s:__YEAR__:$(YEAR):g" fontools/bin/"$${name}"; \
 		sed -i "s:__VERSION__:$(VERSION):g" fontools/bin/"$${name}"; \
