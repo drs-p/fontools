@@ -79,7 +79,7 @@ location.
 LICENSE & COPYRIGHT
 -------------------
 
-This software is copyright (C) 2005-2024 Marc Penninga.
+This software is copyright (C) 2005-__YEAR__ Marc Penninga.
 It is released under the terms of the GNU General Public Licence;
 see the file LICENSE for the license conditions.
 
