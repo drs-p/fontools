@@ -11,12 +11,15 @@
 | junicode2           | unusual abbreviations: Exp, SmBold, SmCond, SmExp           |
 | lato                | Hairline, Thin and Heavy; also test -inferiors=subs         |
 | leaguemono          | Condensed < Narrow < Wide < Extended; no WidthClass 5!      |
+| libertinus          | family Libertinus vs Libertinus Display                     |
 | librecaslon         | family LibreCaslon vs LibreCaslonText                       |
 | merriweathertext    | Text as subfamily (optical size)                            |
 | metapro             | Normal should map to m                                      |
+| minionpro           | optical sizes                                               |
 | museo               | numerical weights: 100, 300, 500, 700, 900                  |
 | notosansmono        | many weights/widths; monospaced but isFixedPitch is False   |
 | quadraat            | family "Quadraat_BoldItalicCaps" etc. -> "Quadraat"         |
 | saira               | many weights/widths; also without Regular/Medium            |
 | sourcecodepro       | monospaced but no 'mono'                                    |
+| sourceseriffour     | optical size info in STAT table, not in OS/2                |
 | ------------------- | ----------------------------------------------------------- |
