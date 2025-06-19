@@ -3422,20 +3422,24 @@ sub cleanup {
     # Don't create ligatures if the user doesn't want them.
     delete $feature{liga} if !$ARGV{ligatures};
 
-    # Don't create kerns and ligatures for symbol or math fonts.
+    # Don't create kerns and ligatures for symbol or otherwise "unencoded" fonts.
     delete @feature{qw(kern liga)}
-        if $workitem->{encoding} =~ m/\A ( TS\d | OML ) \z/xmsi;
+        if $workitem->{encoding} =~ m/\A ( TS\d | OM[LS] ) \z | \A U_ /xmsi;
 
     $workitem->{features} = [ sort keys %feature ];
 
     # Generate a unique name for this font.
+    (my $encoding = lc $workitem->{encoding}) =~ s/\A u_ //xms;
     $workitem->{fontname}
             = join '-', grep { $_ } $font->{name},
                                     lc $figurestyle,
                                     lc Tables::get_name($style),
-                                    lc $workitem->{encoding};
+                                    $encoding;
 
     $workitem->{encoding} = uc $workitem->{encoding};
+    if ($workitem->{encoding} =~ m/\A U_/xms) {
+        $workitem->{encoding} = 'U';
+    }
 
     return $workitem;
 }
@@ -4103,10 +4107,19 @@ For each encoding argument, B<autoinst> will first check if it is
 the filename of an encoding file, and if found it will use that;
 otherwise the argument is assumed to be the name of one of
 the built-in encodings.
+If the argument is a filename,
+B<autoinst> will define the font with an NFSS encoding
+equal to the filename (minus a “.enc” extension),
+except when the filename starts with “U_”;
+in that case the NFSS encoding will be “U”
+and the part after “U_” will be used as the “enc” part
+of the name of the generated font.
+
 Currently B<autoinst> comes with built-in support for the OT1, T1/TS1, LY1,
 T2A/B/C, T3/TS3, T4, T5, LGR, CS, L7X and QX encodings.
-(These files are called F<fontools_ot1.enc> etc. to avoid name clashes
-with other packages; the F<fontools_> prefix may be omitted.)
+(The corresponding files are called F<fontools_ot1.enc> etc.,
+to avoid name clashes with other packages;
+the F<fontools_> prefix may be omitted.)
 
 =item B<-ts1>/B<-nots1>
 
@@ -4419,6 +4432,10 @@ This document describes B<autoinst> version __VERSION__.
 (See the source for the full story, all the way back to 2005.)
 
 =over 12
+
+=item I<2025-06-23>
+
+Introduced the “U_” rule for encoding file names.
 
 =item I<2025-04-16>
 
