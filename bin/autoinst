@@ -1070,10 +1070,10 @@ sub _parse_sizedata {
         && $minsize == 8.9 && $maxsize == 13.9) {
         ($minsize, $maxsize) = (23, 72);
     }
-    # Adobe's Source Serif 4 follows the latest version of the OpenType
-    # spec and keeps its optical size info in the STAT (Style Attributes)
-    # table rather than in the OS/2 table. This isn't (yet?) supported
-    # by otfinfo, so we add the missing size info here.
+    # Adobe's Source Serif 4 follows a recent version of the OpenType
+    # spec and keeps its optical size info as a `size` feature rather
+    #  than in the OS/2 table. This isn't (yet?) supported by otfinfo,
+    #  so we add the missing size info here.
     elsif ($self->{family} eq 'SourceSerifFour'
         && $minsize == 0 && $maxsize == 0) {
         if ($self->{subfamily} eq 'Caption') {
