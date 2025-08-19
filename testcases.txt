@@ -1,6 +1,7 @@
 | ------------------- | ----------------------------------------------------------- |
 | font                | test case                                                   |
 | ------------------- | ----------------------------------------------------------- |
+| americantypewriter  | “Typewriter” would be parsed as “italic” ...                |
 | cormorantgaramond   | Roman shapes have no 'pnum'; tripped over -inferiors bug    |
 | dolly               | SC font has SmallCaps in name, but not in familyname        |
 | firasans            | Book maps to sl                                             |

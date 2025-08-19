@@ -834,6 +834,10 @@ END_ERR_METADATA_MISSING
     # remove Adobe's SmallText size, to avoid mistaking it for Text weight
     $fullinfo =~ s/(?: SmallText | SmText )//gxmsi;
 
+    # remove the word 'TypeWriter' from the info, to avoid it matching
+    # against the "It" shape
+    $fullinfo =~ s/typewriter//gxmsi;
+
     # We need to be careful when parsing the font info; in particular
     # we must parse strings like 'UltraCondensed' as 'Regular' weight
     # and 'UltraCondensed' width, not as 'Ultra' weight and 'Condensed' width.
@@ -4112,10 +4116,10 @@ otherwise the argument is assumed to be the name of one of
 the built-in encodings.
 If the argument is a filename,
 B<autoinst> will define the font with an NFSS encoding
-equal to the filename (minus a “.enc” extension),
-except when the filename starts with “U_”;
-in that case the NFSS encoding will be “U”
-and the part after “U_” will be used as the “enc” part
+equal to the filename (minus a ".enc" extension),
+except when the filename starts with "U_";
+in that case the NFSS encoding will be "U"
+and the part after "U_" will be used as the "enc" part
 of the name of the generated font.
 
 Currently B<autoinst> comes with built-in support for the OT1, T1/TS1, LY1,
@@ -4436,6 +4440,11 @@ This document describes B<autoinst> version __VERSION__.
 
 =over 12
 
+=item I<2025-08-19>
+
+Fixed a bug where any fonts with the word "Typewriter"
+in their name would be parsed as "Italic".
+
 =item I<2025-07-02>
 
 The hack in font metadata parsing for Source Serif 4
@@ -4446,7 +4455,7 @@ except for Libertinus.
 
 =item I<2025-06-23>
 
-Introduced the “U_” rule for encoding file names.
+Introduced the "U_" rule for encoding file names.
 
 =item I<2025-04-16>
 
