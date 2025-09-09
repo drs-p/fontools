@@ -2,7 +2,8 @@
 | font                | test case                                                   |
 | ------------------- | ----------------------------------------------------------- |
 | americantypewriter  | “Typewriter” would be parsed as “italic” ...                |
-| cormorantgaramond   | Roman shapes have no 'pnum'; tripped over -inferiors bug    |
+| berkeleystd         | "Italic" font has weight 500, should be parsed as "Medium"  |
+| cormorant           | Roman shapes have no 'pnum'; tripped over -inferiors bug    |
 | dolly               | SC font has SmallCaps in name, but not in familyname        |
 | firasans            | Book maps to sl                                             |
 | garamondlibre       | tripped over -inferiors; contains ornaments                 |

@@ -15,7 +15,8 @@ else
     done
 fi
 
-$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -defaultproportional      -t1suffix ../testfiles/cormorantgaramond/*.[ot]tf
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -noproportional           -t1suffix $(ls ../testfiles/berkeleystd/*.[ot]tf | egrep -iv 'book')
+$AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -defaultproportional      -t1suffix ../testfiles/cormorant/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -nfssweight=m=medium      -t1suffix ../testfiles/franklingothic/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors=subs                      -t1suffix ../testfiles/lato/*.[ot]tf
 $AUTOINST -dryrun -verbose -target="$PWD" -enc=OT1,T1 -inferiors -nfssweight=m=medium      -t1suffix $(ls ../testfiles/saira/*.[ot]tf)
