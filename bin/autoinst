@@ -2751,7 +2751,7 @@ my %STYLE = (
     math => {
         code  => { n => 'n', it => 'it', sl => 'sl' },
         reqd  => [],
-        nice  => [ 'onum' ],
+        nice  => [ 'onum', 'mgrk' ],
         extra => '--math-spacing=127',
         name  => '',
     },
@@ -4449,6 +4449,8 @@ This document describes B<autoinst> version __VERSION__.
 
 =item I<2025-12-22>
 
+When creating math fonts, use the "mgrk" feature if the font
+supports it.
 Fixed a bug in the use of WeightClass.
 
 =item I<2025-09-09>
