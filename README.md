@@ -1,3 +1,5 @@
+**WARNING: DEVELOPMENT HAS MOVED TO [CODEBERG](https://codeberg.org/drs-p/fontools)**
+
 FONTOOLS
 ========
 
